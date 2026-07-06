@@ -16,6 +16,33 @@ export async function GET() {
   return NextResponse.json({ residents });
 }
 
+// Body: { fullName, address, email, phone?, moveInYear?, listedInDirectory? }
+export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(userId)) return NextResponse.json({ error: "Admins only" }, { status: 403 });
+
+  const body = await req.json();
+  if (!body.fullName || !body.address || !body.email) {
+    return NextResponse.json(
+      { error: "Name, address, and email are required" },
+      { status: 400 }
+    );
+  }
+
+  await connectToDatabase();
+  const resident = await Resident.create({
+    fullName: body.fullName,
+    address: body.address,
+    email: body.email,
+    phone: body.phone || undefined,
+    moveInYear: body.moveInYear || undefined,
+    listedInDirectory: body.listedInDirectory ?? true,
+  });
+
+  return NextResponse.json({ resident }, { status: 201 });
+}
+
 // Body: { id, fullName?, address?, email?, phone?, moveInYear?, listedInDirectory? }
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();

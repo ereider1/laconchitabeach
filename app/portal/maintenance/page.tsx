@@ -65,13 +65,13 @@ export default function MaintenancePage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink">Maintenance requests</h1>
+      <h1 className="font-display text-3xl text-ink">Community Corner</h1>
       <p className="mt-2 text-ink/60">
         Report an issue with common areas, the beach path, or lighting.
       </p>
 
       <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
-        <p className="font-display text-lg text-marina">New request</p>
+        <p className="font-display text-lg text-marina">New Post</p>
         <input
           className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
           placeholder="Address or location (e.g. Beach path near Stair 3)"
@@ -87,8 +87,10 @@ export default function MaintenancePage() {
           >
             <option value="common-area">Common area</option>
             <option value="beach-access">Beach access</option>
-            <option value="landscaping">Landscaping</option>
-            <option value="lighting">Lighting</option>
+            <option value="Lost & Found">Lost & Found</option>
+            <option value="for sale">For Sale</option>
+            <option value="looking for">Looking For</option>
+            <option value="free">Free</option>
             <option value="other">Other</option>
           </select>
         </div>

@@ -1,12 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Announcement from "@/lib/models/Announcement";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
+import Resident from "@/lib/models/Resident";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
-  const [announcements, myRequests] = await Promise.all([
+  const [hasProfile, announcements, myRequests] = await Promise.all([
+    Resident.exists({ clerkUserId }),
     Announcement.find().sort({ pinned: -1, createdAt: -1 }).limit(3).lean(),
     MaintenanceRequest.find({ submittedByClerkId: clerkUserId })
       .sort({ createdAt: -1 })
@@ -14,6 +17,7 @@ async function getDashboardData(clerkUserId: string) {
       .lean(),
   ]);
   return {
+    hasProfile: !!hasProfile,
     announcements: JSON.parse(JSON.stringify(announcements)),
     myRequests: JSON.parse(JSON.stringify(myRequests)),
   };
@@ -26,14 +30,19 @@ export default async function PortalDashboard() {
   let announcements: Array<{ _id: string; title: string; body: string; category: string }> = [];
   let myRequests: Array<{ _id: string; description: string; status: string }> = [];
   let dbError = false;
+  let hasProfile = true;
 
   try {
     const data = await getDashboardData(user?.id ?? "");
+    hasProfile = data.hasProfile;
     announcements = data.announcements;
     myRequests = data.myRequests;
   } catch {
     dbError = true;
   }
+
+  // New residents complete their directory profile before seeing the dashboard.
+  if (!dbError && !hasProfile) redirect("/portal/profile");
 
   return (
     <div>

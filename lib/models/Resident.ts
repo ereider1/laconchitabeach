@@ -1,7 +1,7 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
 export interface IResident {
-  clerkUserId: string;
+  clerkUserId?: string;
   fullName: string;
   address: string;
   email: string;
@@ -15,7 +15,9 @@ export interface IResident {
 
 const ResidentSchema = new Schema<IResident>(
   {
-    clerkUserId: { type: String, required: true, unique: true, index: true },
+    // Admins can add a resident's directory info before that resident has
+    // signed up (or ever will) — clerkUserId is filled in once/if they do.
+    clerkUserId: { type: String, unique: true, sparse: true },
     fullName: { type: String, required: true },
     address: { type: String, required: true },
     email: { type: String, required: true },

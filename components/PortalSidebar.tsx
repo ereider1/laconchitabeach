@@ -11,7 +11,8 @@ const links = [
   { href: "/portal/directory", label: "Directory" },
   { href: "/portal/documents", label: "Documents" },
   { href: "/portal/events", label: "Events & RSVPs" },
-  { href: "/portal/maintenance", label: "Maintenance requests" },
+  { href: "/portal/maintenance", label: "Community Corner" },
+  { href: "/portal/profile", label: "My profile" },
 ];
 
 export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }) {

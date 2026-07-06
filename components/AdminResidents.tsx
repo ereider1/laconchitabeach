@@ -33,6 +33,8 @@ function toEditableFields(r: Resident): EditableFields {
   };
 }
 
+const emptyNewResident = { fullName: "", address: "", email: "", phone: "" };
+
 export default function AdminResidents() {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,8 @@ export default function AdminResidents() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditableFields | null>(null);
   const [saving, setSaving] = useState(false);
+  const [newResident, setNewResident] = useState(emptyNewResident);
+  const [adding, setAdding] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -114,6 +118,29 @@ export default function AdminResidents() {
     }
   }
 
+  async function addResident(e: React.FormEvent) {
+    e.preventDefault();
+    setAdding(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/residents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newResident),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to add resident");
+      setResidents((prev) =>
+        [...prev, data.resident].sort((a, b) => a.fullName.localeCompare(b.fullName))
+      );
+      setNewResident(emptyNewResident);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   const filtered = residents.filter((r) => {
     const term = q.trim().toLowerCase();
     if (!term) return true;
@@ -126,6 +153,50 @@ export default function AdminResidents() {
 
   return (
     <div>
+      <form
+        onSubmit={addResident}
+        className="mb-8 space-y-3 rounded-xl border border-ink/10 p-5"
+      >
+        <p className="font-display text-lg text-marina">Add a resident</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input
+            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            placeholder="Full name"
+            value={newResident.fullName}
+            onChange={(e) => setNewResident({ ...newResident, fullName: e.target.value })}
+            required
+          />
+          <input
+            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            placeholder="Address"
+            value={newResident.address}
+            onChange={(e) => setNewResident({ ...newResident, address: e.target.value })}
+            required
+          />
+          <input
+            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            placeholder="Email"
+            type="email"
+            value={newResident.email}
+            onChange={(e) => setNewResident({ ...newResident, email: e.target.value })}
+            required
+          />
+          <input
+            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            placeholder="Phone (optional)"
+            value={newResident.phone}
+            onChange={(e) => setNewResident({ ...newResident, phone: e.target.value })}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={adding}
+          className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+        >
+          {adding ? "Adding…" : "Add resident"}
+        </button>
+      </form>
+
       <div className="flex items-center justify-between gap-4">
         <input
           className="w-full max-w-sm rounded-lg border border-ink/15 px-4 py-2 text-sm"
