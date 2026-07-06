@@ -14,8 +14,9 @@ const links = [
   { href: "/portal/maintenance", label: "Maintenance requests" },
 ];
 
-export default function PortalSidebar() {
+export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const navLinks = isAdmin ? [...links, { href: "/portal/admin", label: "Admin" }] : links;
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-ink/10 bg-fog px-5 py-6">
@@ -28,7 +29,7 @@ export default function PortalSidebar() {
         </p>
 
         <nav className="mt-8 flex flex-col gap-1">
-          {links.map((l) => {
+          {navLinks.map((l) => {
             const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
             return (
               <Link
