@@ -7,6 +7,7 @@ import { UserButton } from "@clerk/nextjs";
 const links = [
   { href: "/portal", label: "Dashboard", exact: true },
   { href: "/portal/announcements", label: "Announcements" },
+  { href: "/portal/calendar", label: "Calendar" },
   { href: "/portal/directory", label: "Directory" },
   { href: "/portal/documents", label: "Documents" },
   { href: "/portal/events", label: "Events & RSVPs" },

@@ -79,8 +79,8 @@ export default function HomePage() {
                 copy: "CC&Rs, bylaws, budgets, and meeting minutes, always the current version.",
               },
               {
-                title: "Maintenance requests",
-                copy: "Report a broken light on the beach path or a sprinkler that won't quit, and track it to resolved.",
+                title: "Bulletin Board",
+                copy: "Lost & Found, For Sale, Looking for, Selling...",
               },
             ].map((f) => (
               <div
