@@ -26,15 +26,19 @@ export async function POST(req: NextRequest) {
 
   const user = await currentUser();
   await connectToDatabase();
-  const request = await MaintenanceRequest.create({
-    address: body.address,
-    description: body.description,
-    category: body.category ?? "other",
-    submittedByName: user?.fullName ?? user?.username ?? "Resident",
-    submittedByClerkId: userId,
-  });
-
-  return NextResponse.json({ request }, { status: 201 });
+  try {
+    const request = await MaintenanceRequest.create({
+      address: body.address,
+      description: body.description,
+      category: body.category ?? "other",
+      submittedByName: user?.fullName ?? user?.username ?? "Resident",
+      submittedByClerkId: userId,
+    });
+    return NextResponse.json({ request }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to submit request";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }
 
 // Admin-only status update. Body: { id, status }

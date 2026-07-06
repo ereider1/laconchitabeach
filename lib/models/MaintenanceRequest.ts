@@ -4,7 +4,16 @@ export interface IMaintenanceRequest {
   submittedByName: string;
   submittedByClerkId: string;
   address: string;
-  category: "common-area" | "beach-access" | "landscaping" | "lighting" | "other";
+  category:
+    | "common-area"
+    | "beach-access"
+    | "landscaping"
+    | "lighting"
+    | "Lost & Found"
+    | "for sale"
+    | "looking for"
+    | "free"
+    | "other";
   description: string;
   status: "open" | "in-progress" | "resolved";
   createdAt: Date;
@@ -18,7 +27,17 @@ const MaintenanceRequestSchema = new Schema<IMaintenanceRequest>(
     address: { type: String, required: true },
     category: {
       type: String,
-      enum: ["common-area", "beach-access", "landscaping", "lighting", "other"],
+      enum: [
+        "common-area",
+        "beach-access",
+        "landscaping",
+        "lighting",
+        "Lost & Found",
+        "for sale",
+        "looking for",
+        "free",
+        "other",
+      ],
       default: "other",
     },
     description: { type: String, required: true },
