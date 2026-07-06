@@ -20,7 +20,7 @@ export default function PortalSidebar() {
     <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-ink/10 bg-fog px-5 py-6">
       <div>
         <Link href="/" className="font-display text-lg text-marina">
-          Sandpiper Cove
+          La Conchita, California
         </Link>
         <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-dune">
           Resident Intranet

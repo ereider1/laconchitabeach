@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "tailwindcss";
+
+
 :root {
   --font-display: "Fraunces", serif;
   --font-body: "Public Sans", system-ui, sans-serif;

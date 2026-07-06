@@ -23,9 +23,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sandpiper Cove | A Small Beach Community, California",
+  title: "La Conchita | A Small Beach Community, California",
   description:
-    "The public site and resident intranet for the Sandpiper Cove beach community.",
+    "The public site and resident intranet for the La Conchita Beach community.",
 };
 
 export default function RootLayout({

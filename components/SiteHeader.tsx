@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
 
 const links = [
-  { href: "/about", label: "About the Cove" },
+  { href: "/about", label: "About La Conchita" },
   { href: "/events", label: "Events" },
   { href: "/contact", label: "Contact" },
 ];
@@ -12,7 +12,7 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-fog/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="font-display text-xl tracking-tight text-marina">
-          Sandpiper Cove
+          La Conchita Beach
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {links.map((l) => (

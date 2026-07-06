@@ -1,4 +1,4 @@
-// The Harbor Board is Sandpiper Cove's signature visual element: a
+// The La Conchita signature visual element: a
 // hand-lettered conditions board like the ones posted at a marina office.
 // It ships with representative sample data. To make it live, swap the
 // `conditions` array for a fetch to a tide/weather API (e.g. NOAA CO-OPS
@@ -22,7 +22,7 @@ export default function HarborBoard() {
   return (
     <div className="paper-grain relative rounded-2xl border border-dune/30 bg-marina px-6 py-5 shadow-[0_18px_40px_-20px_rgba(27,58,75,0.6)]">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-sm italic text-sand/70">Today at the Cove</span>
+        <span className="font-display text-sm italic text-sand/70">Today at La Conchita</span>
         <span className="h-2 w-2 rounded-full bg-coral" aria-hidden />
       </div>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5">

@@ -28,7 +28,7 @@ export default function HomePage() {
                 <em className="text-marina"> small town.</em>
               </h1>
               <p className="mt-6 max-w-lg text-lg text-ink/70">
-                Sandpiper Cove is 118 households between the bluffs and the
+                La Conchita is 118 households between the bluffs and the
                 tideline. This is our front porch — and behind resident
                 login, our kitchen table.
               </p>
