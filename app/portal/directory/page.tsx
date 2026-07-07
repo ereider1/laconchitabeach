@@ -54,27 +54,26 @@ export default function DirectoryPage() {
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Address</th>
-              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Phone</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={3}>Loading…</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={4}>Loading…</td></tr>
             )}
             {!loading && error && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={3}>Connect MongoDB to load the directory.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={4}>Connect MongoDB to load the directory.</td></tr>
             )}
             {!loading && !error && residents.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={3}>No matches.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={4}>No matches.</td></tr>
             )}
             {residents.map((r) => (
               <tr key={r._id} className="border-t border-ink/10">
                 <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
                 <td className="px-4 py-3 text-ink/70">{r.address}</td>
-                <td className="px-4 py-3 font-mono text-xs text-ink/60">
-                  {r.email}
-                  {r.phone ? ` · ${r.phone}` : ""}
-                </td>
+                <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
+                <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
               </tr>
             ))}
           </tbody>

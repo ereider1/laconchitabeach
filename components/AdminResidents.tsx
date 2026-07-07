@@ -217,17 +217,18 @@ export default function AdminResidents() {
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Address</th>
-              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Directory</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={5}>Loading…</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={5}>No matches.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>No matches.</td></tr>
             )}
             {!loading &&
               filtered.map((r) => {
@@ -250,13 +251,15 @@ export default function AdminResidents() {
                             onChange={(e) => setDraft({ ...draft, address: e.target.value })}
                           />
                         </td>
-                        <td className="px-4 py-3 space-y-1">
+                        <td className="px-4 py-3">
                           <input
                             className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
                             placeholder="Email"
                             value={draft.email}
                             onChange={(e) => setDraft({ ...draft, email: e.target.value })}
                           />
+                        </td>
+                        <td className="px-4 py-3">
                           <input
                             className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
                             placeholder="Phone"
@@ -298,10 +301,8 @@ export default function AdminResidents() {
                       <>
                         <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
                         <td className="px-4 py-3 text-ink/70">{r.address}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-ink/60">
-                          {r.email}
-                          {r.phone ? ` · ${r.phone}` : ""}
-                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
                         <td className="px-4 py-3">
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-medium ${
