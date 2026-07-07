@@ -80,7 +80,7 @@ export default function HomePage() {
               },
               {
                 title: "Bulletin Board",
-                copy: "Lost & Found, For Sale, Looking for, Selling...",
+                copy: "Lost & Found, For Sale, Free Stuff, Maintenance Requests...",
               },
             ].map((f) => (
               <div
@@ -99,7 +99,7 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 px-6 md:flex-row md:items-center">
             <div>
               <h2 className="font-display text-3xl">
-                118 households. One beach path. Zero HOA newsletters lost to spam.
+                118 households. One beach path. Zero BS.
               </h2>
             </div>
             <Link
