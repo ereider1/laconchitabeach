@@ -61,7 +61,7 @@ export default function HomePage() {
               For residents
             </p>
             <h2 className="mt-2 font-display text-3xl text-ink">
-              One login. Everything the HOA used to email you.
+              One login. Everything to keep you updated on whats happening in the community.
             </h2>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
