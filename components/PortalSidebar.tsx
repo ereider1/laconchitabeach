@@ -20,26 +20,30 @@ export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }
   const navLinks = isAdmin ? [...links, { href: "/portal/admin", label: "Admin" }] : links;
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-ink/10 bg-fog px-5 py-6">
+    <aside className="flex w-full shrink-0 flex-col justify-between bg-ink px-5 py-6 text-white md:w-64">
       <div>
-        <Link href="/" className="font-display text-lg text-marina">
-          La Conchita, California
+        <Link href="/" className="flex items-center gap-3 text-white">
+          <span className="grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-white/10" aria-hidden>≋</span>
+          <span className="font-semibold leading-tight">
+            La Conchita
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-white/45">California coast</span>
+          </span>
         </Link>
-        <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-dune">
+        <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
           Resident Intranet
         </p>
 
-        <nav className="mt-8 flex flex-col gap-1">
+        <nav className="mt-4 grid grid-cols-2 gap-1 sm:grid-cols-3 md:flex md:flex-col">
           {navLinks.map((l) => {
             const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                   active
-                    ? "bg-marina text-fog"
-                    : "text-ink/70 hover:bg-ink/5 hover:text-ink"
+                    ? "bg-marina text-white shadow-lg"
+                    : "text-white/65 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {l.label}
@@ -49,9 +53,9 @@ export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }
         </nav>
       </div>
 
-      <div className="flex items-center gap-3 border-t border-ink/10 pt-4">
+      <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
         <UserButton />
-        <span className="text-xs text-ink/60">Signed in</span>
+        <span className="text-xs text-white/50">Signed in</span>
       </div>
     </aside>
   );

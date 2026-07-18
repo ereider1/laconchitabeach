@@ -4,15 +4,15 @@ const config = {
   theme: {
     extend: {
       colors: {
-        sand: "#EDE6D6",
-        "sand-dark": "#DCD1B6",
-        ink: "#1C2321",
-        marina: "#1B3A4B",
-        "marina-light": "#2E5468",
-        dune: "#7C8B6F",
-        driftwood: "#A69B8D",
-        coral: "#E8886B",
-        fog: "#F6F3EA",
+        sand: "#DFF5F4",
+        "sand-dark": "#C2E9E8",
+        ink: "#0B3040",
+        marina: "#079EC4",
+        "marina-light": "#22BCDA",
+        dune: "#4E8390",
+        driftwood: "#84B9BE",
+        coral: "#F4C879",
+        fog: "#F6FCFC",
       },
       fontFamily: {
         display: ["var(--font-display)", "serif"],
@@ -20,7 +20,7 @@ const config = {
         mono: ["var(--font-mono)", "monospace"],
       },
       backgroundImage: {
-        grain: "radial-gradient(circle at 1px 1px, rgba(28,35,33,0.06) 1px, transparent 0)",
+        grain: "radial-gradient(circle at 1px 1px, rgba(7,158,196,0.08) 1px, transparent 0)",
       },
     },
   },

@@ -24,30 +24,36 @@ export default async function EventsPage() {
   }
 
   return (
-    <>
+    <div className="site-frame">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-6 py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-dune">Community calendar</p>
-        <h1 className="mt-2 font-display text-4xl text-ink">Public events</h1>
-        <p className="mt-4 text-ink/70">
-          Open-to-everyone gatherings. Residents see the full calendar,
-          including HOA meetings and RSVP counts, in the intranet.
-        </p>
-
-        <div className="mt-10 space-y-4">
+      <main>
+        <section className="subpage-hero">
+          <div>
+            <p className="eyebrow text-white/75">Community calendar</p>
+            <h1 className="mt-3 text-4xl font-bold uppercase tracking-[-0.05em] sm:text-6xl">
+              Events by the sea
+            </h1>
+          </div>
+        </section>
+        <section className="content-card relative max-w-3xl px-7 py-10 sm:px-12 sm:py-14">
+          <p className="leading-7 text-ink/65">
+            Open-to-everyone gatherings. Residents see the full calendar,
+            including community meetings and RSVP counts, in the portal.
+          </p>
+          <div className="mt-8 space-y-4">
           {dbError && (
-            <p className="rounded-lg border border-dune/30 bg-white/60 p-4 text-sm text-ink/60">
+            <p className="rounded-xl border border-marina/15 bg-sand/40 p-5 text-sm text-ink/60">
               Connect a MongoDB database to show live events here.
             </p>
           )}
           {!dbError && events.length === 0 && (
-            <p className="rounded-lg border border-dune/30 bg-white/60 p-4 text-sm text-ink/60">
+            <p className="rounded-xl border border-marina/15 bg-sand/40 p-5 text-sm text-ink/60">
               Nothing on the public calendar right now — check back soon.
             </p>
           )}
           {events.map((e) => (
-            <div key={e._id} className="rounded-xl border border-ink/10 bg-white/60 p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-dune">
+            <div key={e._id} className="rounded-2xl border border-marina/15 bg-white p-6 shadow-sm">
+              <p className="eyebrow text-marina">
                 {new Date(e.startsAt).toLocaleString("en-US", {
                   weekday: "short",
                   month: "short",
@@ -56,14 +62,15 @@ export default async function EventsPage() {
                   minute: "2-digit",
                 })}
               </p>
-              <h3 className="mt-1 font-display text-xl text-marina">{e.title}</h3>
+              <h3 className="mt-2 text-xl font-bold uppercase tracking-tight text-ink">{e.title}</h3>
               <p className="mt-1 text-sm text-ink/70">{e.location}</p>
               <p className="mt-3 text-sm text-ink/70">{e.description}</p>
             </div>
           ))}
-        </div>
+          </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

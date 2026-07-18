@@ -1,38 +1,42 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Fraunces, Public_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-});
+const title = "La Conchita Beach | California Coastal Community";
+const description =
+  "Community news, events, resources, and resident services for La Conchita Beach, California.";
 
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
+  const protocol = headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const origin = `${protocol}://${host}`;
 
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  weight: ["400", "500"],
-});
-
-export const metadata: Metadata = {
-  title: "La Conchita | A Small Beach Community, California",
-  description:
-    "The public site and resident intranet for the La Conchita Beach community.",
-};
+  return {
+    metadataBase: new URL(origin),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: [{ url: "/og.png", width: 1732, height: 908, alt: "La Conchita Beach, California coastal community" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og.png"],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${publicSans.variable} ${plexMono.variable}`}>
+    <html lang="en">
       <body className="font-body">
         <ClerkProvider>{children}</ClerkProvider>
       </body>

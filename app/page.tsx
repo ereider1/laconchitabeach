@@ -4,107 +4,136 @@ import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
 
 export default function HomePage() {
+  const services = [
+    {
+      mark: "01",
+      title: "Announcements",
+      copy: "Board updates, closures, and safety notices in one clear community feed.",
+      href: "/sign-in",
+    },
+    {
+      mark: "02",
+      title: "Resident directory",
+      copy: "Find a neighbor by name or street, with privacy controlled by each resident.",
+      href: "/sign-in",
+    },
+    {
+      mark: "03",
+      title: "Documents",
+      copy: "Bylaws, budgets, meeting minutes, and community forms in one organized place.",
+      href: "/sign-in",
+    },
+    {
+      mark: "04",
+      title: "Community corner",
+      copy: "Lost and found, local listings, maintenance requests, and neighbor-to-neighbor help.",
+      href: "/sign-in",
+    },
+  ];
+
   return (
-    <>
+    <div className="site-frame">
       <SiteHeader />
 
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-ink/10">
-          <div
-            className="absolute inset-0 -z-10 bg-cover bg-center"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(246, 243, 234, 0.68), rgba(246, 243, 234, 0.68)), url('/beach-hero-bg.jpg')",
-            }}
-          />
-          <div className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-[1.1fr,0.9fr] md:py-28">
-            <div>
-              <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-dune">
-                34.41° N, 119.85° W &middot; Est. 1962
-              </p>
-              <h1 className="font-display text-5xl leading-[1.05] text-ink md:text-6xl">
-                A stretch of California coast that still feels like a
-                <em className="text-marina"> small town.</em>
+        <section className="hero-beach">
+          <div className="mx-auto flex min-h-[620px] max-w-6xl flex-col items-center justify-center px-6 py-16 text-center text-white">
+            <div className="max-w-3xl">
+              <p className="eyebrow text-white/80">Welcome to the coast</p>
+              <h1 className="mt-4 text-5xl font-bold uppercase leading-[0.92] tracking-[-0.055em] drop-shadow-md sm:text-7xl md:text-8xl">
+                La Conchita
+                <span className="block text-white/95">Beach</span>
               </h1>
-              <p className="mt-6 max-w-lg text-lg text-ink/70">
-                La Conchita is 118 households between the bluffs and the
-                tideline. This is our front porch — and behind resident
-                login, our kitchen table.
+              <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-white/90 drop-shadow sm:text-lg">
+                A close-knit California beach community between the bluffs and the Pacific —
+                where neighbors share news, lend a hand, and meet at the water&apos;s edge.
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/sign-up"
-                  className="rounded-full bg-marina px-6 py-3 text-sm font-semibold text-fog transition hover:bg-marina-light"
+                  className="rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-marina shadow-lg transition hover:-translate-y-0.5"
                 >
-                  Create resident account
+                  Join the community
                 </Link>
                 <Link
                   href="/about"
-                  className="rounded-full border border-ink/20 px-6 py-3 text-sm font-semibold text-ink transition hover:border-ink/40"
+                  className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
                 >
-                  About the community
+                  Discover La Conchita
                 </Link>
               </div>
             </div>
-
-            <div className="flex items-end">
+            <div className="mt-12 w-full max-w-4xl">
               <HarborBoard />
             </div>
           </div>
         </section>
 
-        {/* What the intranet does */}
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <div className="mb-12 max-w-xl">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-dune">
-              For residents
-            </p>
-            <h2 className="mt-2 font-display text-3xl text-ink">
-              One login. Everything to keep you updated on whats happening in the community.
-            </h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "Announcements",
-                copy: "Board updates, closures, and safety notices in one feed instead of scattered emails.",
-              },
-              {
-                title: "Resident directory",
-                copy: "Look up a neighbor by street or last name — as much or as little as they choose to share.",
-              },
-              {
-                title: "Documents & minutes",
-                copy: "CC&Rs, bylaws, budgets, and meeting minutes, always the current version.",
-              },
-              {
-                title: "Bulletin Board",
-                copy: "Lost & Found, For Sale, Free Stuff, Maintenance Requests...",
-              },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="rounded-xl border border-ink/10 bg-white/60 p-6 transition hover:border-marina/40 hover:bg-white"
-              >
-                <h3 className="font-display text-lg text-marina">{f.title}</h3>
-                <p className="mt-2 text-sm text-ink/70">{f.copy}</p>
-              </div>
-            ))}
+        <section className="bg-white px-6 py-20 sm:px-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto mb-12 max-w-2xl text-center">
+              <p className="eyebrow text-marina">Resident services</p>
+              <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
+                Everything close to home
+              </h2>
+              <p className="mt-4 text-ink/60">
+                One simple place for the information, resources, and small moments that keep
+                our beach community connected.
+              </p>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {services.map((service) => (
+                <Link
+                  key={service.title}
+                  href={service.href}
+                  data-mark={service.mark}
+                  className="service-card rounded-2xl p-6 transition hover:-translate-y-1 hover:border-marina/35 hover:shadow-xl"
+                >
+                  <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-ink">{service.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-ink/60">{service.copy}</p>
+                  <span className="mt-5 inline-block text-xs font-bold uppercase tracking-wider text-marina">
+                    Open portal →
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* Strip photo-style band */}
-        <section className="border-y border-ink/10 bg-marina py-16 text-fog">
+        <section className="grid bg-sand md:grid-cols-2">
+          <div className="min-h-[360px] bg-[url('/beach-cleanup-1536x880.jpg')] bg-cover bg-center" />
+          <div className="flex items-center px-8 py-16 sm:px-14">
+            <div className="max-w-lg">
+              <p className="eyebrow text-marina">Life by the water</p>
+              <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
+                More than a place on the map
+              </h2>
+              <p className="mt-5 leading-7 text-ink/65">
+                Beach cleanups, neighborhood gatherings, shared resources, and everyday
+                check-ins make La Conchita feel like home. The resident portal keeps all of
+                it within easy reach.
+              </p>
+              <Link
+                href="/events"
+                className="mt-7 inline-flex rounded-full bg-marina px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition hover:bg-marina-light"
+              >
+                See what&apos;s happening
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-marina py-14 text-white">
           <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 px-6 md:flex-row md:items-center">
             <div>
-              <h2 className="font-display text-3xl">
-                118 households. One beach path. Zero BS.
+              <p className="eyebrow text-white/65">For neighbors</p>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-[-0.04em]">
+                Your community is one login away.
               </h2>
             </div>
             <Link
               href="/sign-in"
-              className="whitespace-nowrap rounded-full bg-coral px-6 py-3 text-sm font-semibold text-ink transition hover:brightness-95"
+              className="whitespace-nowrap rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-marina transition hover:bg-sand"
             >
               Resident login &rarr;
             </Link>
@@ -113,6 +142,6 @@ export default function HomePage() {
       </main>
 
       <SiteFooter />
-    </>
+    </div>
   );
 }

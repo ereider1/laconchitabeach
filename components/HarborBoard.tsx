@@ -20,18 +20,18 @@ const conditions: Condition[] = [
 
 export default function HarborBoard() {
   return (
-    <div className="paper-grain relative rounded-2xl border border-dune/30 bg-marina px-6 py-5 shadow-[0_18px_40px_-20px_rgba(27,58,75,0.6)]">
+    <div className="relative w-full rounded-2xl border border-white/35 bg-white/92 px-6 py-5 text-ink shadow-[0_22px_55px_rgba(4,54,75,0.22)] backdrop-blur-md">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-sm italic text-sand/70">Today at La Conchita</span>
-        <span className="h-2 w-2 rounded-full bg-coral" aria-hidden />
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-marina">Today at La Conchita</span>
+        <span className="h-2 w-2 rounded-full bg-marina-light" aria-hidden />
       </div>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5">
         {conditions.map((c) => (
           <div key={c.label} className="min-w-0">
-            <dt className="text-[11px] uppercase tracking-wider text-sand/60">{c.label}</dt>
-            <dd className="font-display text-xl text-sand">
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-dune">{c.label}</dt>
+            <dd className="mt-1 text-lg font-bold text-ink">
               {c.value}
-              {c.note && <span className="ml-1 text-xs font-body text-sand/50">{c.note}</span>}
+              {c.note && <span className="ml-1 text-xs font-body font-normal text-dune">{c.note}</span>}
             </dd>
           </div>
         ))}

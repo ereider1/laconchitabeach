@@ -3,37 +3,40 @@ import SiteFooter from "@/components/SiteFooter";
 
 export default function AboutPage() {
   return (
-    <>
+    <div className="site-frame">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-6 py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-dune">
-          Since 1962
-        </p>
-        <h1 className="mt-2 font-display text-4xl text-ink">About Sandpiper Cove</h1>
-        <div className="prose prose-p:text-ink/75 mt-8 space-y-5 text-lg">
-          <p>
-            Sandpiper Cove sits on a half-mile of bluff-top and beach-level
-            lots south of the harbor. It was platted in the early 1960s as a
-            summer-cottage colony and has since become a full-time
-            neighborhood of 118 households, a handful of short-term rentals,
-            and a lot of opinions about parking.
-          </p>
-          <p>
-            The Homeowners Association maintains the private beach path,
-            the bluff stairs, common landscaping, and the little park at the
-            end of Shoreline Lane. Day to day, that means mowing, lighting,
-            erosion control, and a monthly board meeting that residents are
-            always welcome to attend.
-          </p>
-          <p>
-            This site is the public front door. Residents get a second,
-            private door — the intranet — for directory lookups,
-            maintenance requests, HOA documents, and the announcements that
-            used to get lost in email.
-          </p>
-        </div>
+      <main>
+        <section className="subpage-hero">
+          <div>
+            <p className="eyebrow text-white/75">Since 1962</p>
+            <h1 className="mt-3 text-4xl font-bold uppercase tracking-[-0.05em] sm:text-6xl">
+              About La Conchita
+            </h1>
+          </div>
+        </section>
+        <section className="content-card relative max-w-3xl px-7 py-10 sm:px-12 sm:py-14">
+          <p className="eyebrow text-marina">A small place with a big horizon</p>
+          <div className="mt-6 space-y-6 text-base leading-8 text-ink/70 sm:text-lg">
+            <p>
+              La Conchita sits between the coastal bluffs and the Pacific, a
+              compact neighborhood shaped by salt air, ocean views, and the
+              easy familiarity of people who know the same stretch of beach.
+            </p>
+            <p>
+              The community shares responsibility for the paths, common areas,
+              neighborhood gatherings, and the practical work of caring for a
+              place this close to the water. Residents are always welcome to
+              take part and stay informed.
+            </p>
+            <p>
+              This site is our public front door. Residents have a second,
+              private door for directory lookups, community requests, shared
+              documents, and the announcements that keep everyday life moving.
+            </p>
+          </div>
+        </section>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }
