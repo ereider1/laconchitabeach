@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type EventItem = {
   _id: string;
@@ -88,18 +89,20 @@ export default function PortalCalendarPage() {
       <div className="mt-8 flex items-center justify-between">
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          className="rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
         >
-          ← Prev
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          Prev
         </button>
         <h2 className="font-display text-xl text-ink">
           {cursor.toLocaleString("en-US", { month: "long", year: "numeric" })}
         </h2>
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          className="rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
         >
-          Next →
+          Next
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { Check } from "lucide-react";
 
 type EventItem = {
   _id: string;
@@ -89,11 +90,12 @@ export default function PortalEventsPage() {
                 <button
                   onClick={() => toggleRsvp(e._id)}
                   disabled={pending === e._id}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
                     going ? "bg-sand text-ink" : "bg-marina text-fog hover:bg-marina-light"
                   }`}
                 >
-                  {going ? "You're going ✓" : "RSVP"}
+                  {going && <Check className="h-4 w-4" aria-hidden="true" />}
+                  {going ? "You're going" : "RSVP"}
                 </button>
               </div>
               <p className="mt-3 text-xs text-ink/40">

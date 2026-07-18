@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
+import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   const services = [
@@ -91,8 +92,9 @@ export default function HomePage() {
                 >
                   <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-ink">{service.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-ink/60">{service.copy}</p>
-                  <span className="mt-5 inline-block text-xs font-bold uppercase tracking-wider text-marina">
-                    Open portal →
+                  <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-marina">
+                    Open portal
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </Link>
               ))}
@@ -133,9 +135,10 @@ export default function HomePage() {
             </div>
             <Link
               href="/sign-in"
-              className="whitespace-nowrap rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-marina transition hover:bg-sand"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-marina transition hover:bg-sand"
             >
-              Resident login &rarr;
+              Resident login
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
         </section>

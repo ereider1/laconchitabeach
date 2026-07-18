@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
+import { ChevronDown, Waves } from "lucide-react";
 
 const links = [
   { href: "/about", label: "About La Conchita" },
@@ -12,8 +13,8 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-5 px-6 py-4">
         <Link href="/" className="flex items-center gap-3 text-white">
-          <span className="grid h-10 w-10 place-items-center rounded-full border border-white/40 bg-white/10 text-lg" aria-hidden>
-            ≋
+          <span className="grid h-10 w-10 place-items-center rounded-full border border-white/40 bg-white/10">
+            <Waves className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
           </span>
           <span>
             <span className="block text-base font-semibold tracking-tight">La Conchita</span>
@@ -60,8 +61,12 @@ export default function SiteHeader() {
         </div>
       </div>
       <details className="group border-t border-white/15 md:hidden">
-        <summary className="cursor-pointer list-none px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/85">
+        <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/85">
           Explore
+          <ChevronDown
+            className="h-4 w-4 transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
         </summary>
         <nav className="grid gap-1 bg-ink/20 px-4 pb-4">
           {links.map((l) => (

@@ -1,5 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { Clock3, Mail, MapPin } from "lucide-react";
 
 export default function ContactPage() {
   return (
@@ -21,15 +22,24 @@ export default function ContactPage() {
           </p>
           <dl className="mt-9 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-sand/55 p-5">
-              <dt className="eyebrow text-marina">Location</dt>
+              <dt className="eyebrow flex items-center gap-2 text-marina">
+                <MapPin className="h-4 w-4" aria-hidden="true" />
+                Location
+              </dt>
               <dd className="mt-2 text-sm leading-6 text-ink/75">La Conchita, California 93001</dd>
             </div>
             <div className="rounded-2xl bg-sand/55 p-5">
-              <dt className="eyebrow text-marina">Email</dt>
+              <dt className="eyebrow flex items-center gap-2 text-marina">
+                <Mail className="h-4 w-4" aria-hidden="true" />
+                Email
+              </dt>
               <dd className="mt-2 text-sm leading-6 text-ink/75">community@laconchitabeach.org</dd>
             </div>
             <div className="rounded-2xl bg-sand/55 p-5 sm:col-span-2">
-              <dt className="eyebrow text-marina">Community office hours</dt>
+              <dt className="eyebrow flex items-center gap-2 text-marina">
+                <Clock3 className="h-4 w-4" aria-hidden="true" />
+                Community office hours
+              </dt>
               <dd className="mt-2 text-sm leading-6 text-ink/75">Tuesdays &amp; Thursdays, 9am–1pm</dd>
             </div>
           </dl>
