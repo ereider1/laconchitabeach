@@ -1,22 +1,8 @@
-import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
-import { isAdmin } from "@/lib/isAdmin";
-import AdminResidents from "@/components/AdminResidents";
-
-export default async function AdminPage() {
-  const { userId } = await auth();
-  if (!isAdmin(userId)) redirect("/portal");
-
+export default function AdminHubPage() {
   return (
-    <div>
-      <h1 className="font-display text-3xl text-ink">Admin</h1>
-      <p className="mt-2 text-ink/60">
-        Manage resident records and who appears in the directory.
-      </p>
-
-      <div className="mt-8">
-        <AdminResidents />
-      </div>
-    </div>
+    <p className="text-sm text-ink/60">
+      Pick a section above to add, edit, or remove content residents see across the
+      intranet.
+    </p>
   );
 }

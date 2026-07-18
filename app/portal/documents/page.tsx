@@ -62,9 +62,7 @@ export default async function DocumentsPage() {
                     {d.description && <p className="text-sm text-ink/60">{d.description}</p>}
                   </div>
                   <a
-                    href={d.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                    href={`/api/documents/${d._id}`}
                     className="text-sm font-medium text-marina underline underline-offset-4"
                   >
                     Download

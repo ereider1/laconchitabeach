@@ -38,3 +38,42 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ announcement }, { status: 201 });
 }
+
+// Body: { id, title?, body?, category?, pinned? }
+export async function PATCH(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(userId)) {
+    return NextResponse.json({ error: "Only board members can edit announcements" }, { status: 403 });
+  }
+
+  const { id, ...updates } = await req.json();
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const allowed = ["title", "body", "category", "pinned"];
+  const fields: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in updates) fields[key] = updates[key];
+  }
+
+  await connectToDatabase();
+  const announcement = await Announcement.findByIdAndUpdate(id, fields, { new: true });
+  if (!announcement) return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+  return NextResponse.json({ announcement });
+}
+
+// Query: ?id=<announcementId>
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(userId)) {
+    return NextResponse.json({ error: "Only board members can delete announcements" }, { status: 403 });
+  }
+
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  await connectToDatabase();
+  await Announcement.findByIdAndDelete(id);
+  return NextResponse.json({ ok: true });
+}

@@ -41,18 +41,41 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Admin-only status update. Body: { id, status }
+// Admin-only update. Body: { id, address?, category?, description?, status? }
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isAdmin(userId)) {
-    return NextResponse.json({ error: "Only board members can update status" }, { status: 403 });
+    return NextResponse.json({ error: "Only board members can update posts" }, { status: 403 });
   }
 
-  const { id, status } = await req.json();
-  if (!id || !status) return NextResponse.json({ error: "id and status are required" }, { status: 400 });
+  const { id, ...updates } = await req.json();
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const allowed = ["address", "category", "description", "status"];
+  const fields: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in updates) fields[key] = updates[key];
+  }
 
   await connectToDatabase();
-  const updated = await MaintenanceRequest.findByIdAndUpdate(id, { status }, { new: true });
+  const updated = await MaintenanceRequest.findByIdAndUpdate(id, fields, { new: true });
+  if (!updated) return NextResponse.json({ error: "Post not found" }, { status: 404 });
   return NextResponse.json({ request: updated });
+}
+
+// Admin-only delete. Query: ?id=<requestId>
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(userId)) {
+    return NextResponse.json({ error: "Only board members can delete posts" }, { status: 403 });
+  }
+
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  await connectToDatabase();
+  await MaintenanceRequest.findByIdAndDelete(id);
+  return NextResponse.json({ ok: true });
 }
