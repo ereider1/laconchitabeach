@@ -10,7 +10,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectToDatabase();
-  const filter = isAdmin(userId) ? {} : { submittedByClerkId: userId };
+  const filter = (await isAdmin(userId)) ? {} : { submittedByClerkId: userId };
   const requests = await MaintenanceRequest.find(filter).sort({ createdAt: -1 }).lean();
   return NextResponse.json({ requests });
 }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Only board members can update posts" }, { status: 403 });
   }
 
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Only board members can delete posts" }, { status: 403 });
   }
 

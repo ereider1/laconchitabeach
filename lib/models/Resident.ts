@@ -9,6 +9,7 @@ export interface IResident {
   householdMembers?: string[];
   listedInDirectory: boolean;
   moveInYear?: number;
+  isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,9 @@ const ResidentSchema = new Schema<IResident>(
     householdMembers: [{ type: String }],
     listedInDirectory: { type: Boolean, default: true },
     moveInYear: { type: Number },
+    // Grants admin access once this record's clerkUserId matches a signed-in
+    // user. Managed from Admin → Profiles. See lib/isAdmin.ts.
+    isAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

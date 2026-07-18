@@ -5,7 +5,7 @@ import AdminNavGrid from "@/components/AdminNavGrid";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
-  if (!isAdmin(userId)) redirect("/portal");
+  if (!(await isAdmin(userId))) redirect("/portal");
 
   return (
     <div>

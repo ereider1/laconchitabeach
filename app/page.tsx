@@ -68,6 +68,27 @@ export default function HomePage() {
               <HarborBoard />
             </div>
           </div>
+          <div className="hero-wave-divider pt-10" aria-hidden="true">
+            <svg
+            
+              viewBox="0 0 1440 150"
+              preserveAspectRatio="none"
+              focusable="false"
+            >
+              <path
+                className="hero-wave-divider__back"
+                d="M0 89C112 34 203 125 322 91C446 55 493 5 607 48C711 87 766 121 878 70C1001 14 1067 95 1178 78C1284 62 1340 23 1440 65V150H0Z"
+              />
+              <path
+                className="hero-wave-divider__middle"
+                d="M0 105C104 65 182 132 294 106C402 81 467 39 576 78C689 119 765 132 871 93C978 53 1041 50 1146 96C1250 142 1347 65 1440 92V150H0Z"
+              />
+              <path
+                className="hero-wave-divider__front"
+                d="M0 121C101 92 198 139 303 119C411 98 493 75 600 105C706 135 794 143 904 116C1013 89 1106 100 1210 124C1307 147 1376 107 1440 111V150H0Z"
+              />
+            </svg>
+          </div>
         </section>
 
         <section className="bg-white px-6 py-20 sm:px-10">

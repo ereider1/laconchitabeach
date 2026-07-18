@@ -8,7 +8,7 @@ import { isAdmin } from "@/lib/isAdmin";
 // this route only authorizes the upload.
 export async function POST(request: Request): Promise<NextResponse> {
   const { userId } = await auth();
-  if (!userId || !isAdmin(userId)) {
+  if (!userId || !(await isAdmin(userId))) {
     return NextResponse.json({ error: "Admins only" }, { status: 403 });
   }
 

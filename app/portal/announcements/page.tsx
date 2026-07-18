@@ -4,5 +4,5 @@ import AnnouncementsClient from "@/components/AnnouncementsClient";
 
 export default async function AnnouncementsPage() {
   const { userId } = await auth();
-  return <AnnouncementsClient isAdmin={isAdmin(userId)} />;
+  return <AnnouncementsClient isAdmin={await isAdmin(userId)} />;
 }

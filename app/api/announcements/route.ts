@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Only board members can post announcements" }, { status: 403 });
   }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Only board members can edit announcements" }, { status: 403 });
   }
 
@@ -66,7 +66,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Only board members can delete announcements" }, { status: 403 });
   }
 

@@ -10,6 +10,7 @@ type Resident = {
   phone?: string;
   moveInYear?: number;
   listedInDirectory: boolean;
+  isAdmin: boolean;
   clerkUserId: string;
 };
 
@@ -20,6 +21,7 @@ type EditableFields = {
   phone: string;
   moveInYear: string;
   listedInDirectory: boolean;
+  isAdmin: boolean;
 };
 
 function toEditableFields(r: Resident): EditableFields {
@@ -30,6 +32,7 @@ function toEditableFields(r: Resident): EditableFields {
     phone: r.phone ?? "",
     moveInYear: r.moveInYear ? String(r.moveInYear) : "",
     listedInDirectory: r.listedInDirectory,
+    isAdmin: r.isAdmin,
   };
 }
 
@@ -92,6 +95,7 @@ export default function AdminResidents() {
           phone: draft.phone || undefined,
           moveInYear: draft.moveInYear ? Number(draft.moveInYear) : undefined,
           listedInDirectory: draft.listedInDirectory,
+          isAdmin: draft.isAdmin,
         }),
       });
       const data = await res.json();
@@ -220,15 +224,16 @@ export default function AdminResidents() {
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Directory</th>
+              <th className="px-4 py-3">Admin</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>Loading…</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>No matches.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>No matches.</td></tr>
             )}
             {!loading &&
               filtered.map((r) => {
@@ -280,6 +285,16 @@ export default function AdminResidents() {
                           </label>
                         </td>
                         <td className="px-4 py-3">
+                          <label className="flex items-center gap-2 text-xs text-ink/70">
+                            <input
+                              type="checkbox"
+                              checked={draft.isAdmin}
+                              onChange={(e) => setDraft({ ...draft, isAdmin: e.target.checked })}
+                            />
+                            Admin
+                          </label>
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button
                               onClick={() => saveEdit(r._id)}
@@ -313,6 +328,15 @@ export default function AdminResidents() {
                           >
                             {r.listedInDirectory ? "Listed" : "Hidden"}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.isAdmin ? (
+                            <span className="rounded-full bg-coral/10 px-2 py-1 text-xs font-medium text-coral">
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="text-xs text-ink/30">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-3">
