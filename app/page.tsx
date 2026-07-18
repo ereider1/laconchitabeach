@@ -12,10 +12,10 @@ export default function HomePage() {
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-ink/10">
           <div
-            className="absolute inset-0 -z-10"
+            className="absolute inset-0 -z-10 bg-cover bg-center"
             style={{
-              background:
-                "linear-gradient(180deg, #F6F3EA 0%, #EDE6D6 55%, #DCD1B6 100%)",
+              backgroundImage:
+                "linear-gradient(rgba(246, 243, 234, 0.68), rgba(246, 243, 234, 0.68)), url('/beach-hero-bg.jpg')",
             }}
           />
           <div className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-[1.1fr,0.9fr] md:py-28">
