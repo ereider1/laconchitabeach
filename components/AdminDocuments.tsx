@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { upload } from "@vercel/blob/client";
-import { FileText, Upload, X } from "lucide-react";
+import { Download, FileText, Grid2X2, List, Search, Upload, X } from "lucide-react";
 
 type Doc = {
   _id: string;
@@ -11,6 +12,8 @@ type Doc = {
   category: "governing" | "minutes" | "financial" | "forms" | "other";
   fileUrl: string;
 };
+
+type ViewMode = "list" | "grid";
 
 type EditableFields = { title: string; description: string; category: Doc["category"] };
 
@@ -39,7 +42,15 @@ export default function AdminDocuments() {
 
   const [uploading, setUploading] = useState(false);
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredDocs = docs.filter((doc) => {
+    const query = search.trim().toLowerCase();
+    return !query || `${doc.title} ${doc.description ?? ""} ${doc.category}`.toLowerCase().includes(query);
+  });
 
   async function load() {
     setLoading(true);
@@ -170,6 +181,25 @@ export default function AdminDocuments() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  function isImage(doc: Doc) {
+    return /\.(avif|gif|jpe?g|png|webp)$/i.test(doc.title);
+  }
+
+  function thumbnail(doc: Doc, large = false) {
+    return isImage(doc) ? (
+      <Image
+        src={`/api/documents/${doc._id}`}
+        alt=""
+        fill
+        sizes={large ? "(max-width: 768px) 100vw, 768px" : "96px"}
+        className="object-cover"
+        unoptimized
+      />
+    ) : (
+      <FileText className={large ? "h-20 w-20 text-ink/30" : "h-10 w-10 text-ink/30"} aria-hidden="true" />
+    );
+  }
+
   return (
     <div>
       <h2 className="font-display text-xl text-ink">Documents</h2>
@@ -265,10 +295,50 @@ export default function AdminDocuments() {
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-ink/10">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <label className="relative block min-w-64 flex-1 sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search documents"
+            aria-label="Search documents"
+            className="w-full rounded-full border border-ink/15 py-2 pl-9 pr-4 text-sm outline-none ring-marina/30 focus:ring-2"
+          />
+        </label>
+        <div className="flex rounded-full border border-ink/15 p-1" aria-label="Document view mode">
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            aria-label="List view"
+            aria-pressed={viewMode === "list"}
+            className={`rounded-full p-2 ${viewMode === "list" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
+          >
+            <List className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            aria-label="Grid view"
+            aria-pressed={viewMode === "grid"}
+            className={`rounded-full p-2 ${viewMode === "grid" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
+          >
+            <Grid2X2 className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      {!loading && filteredDocs.length === 0 && (
+        <p className="mt-4 rounded-xl border border-ink/10 px-4 py-6 text-sm text-ink/50">
+          {docs.length === 0 ? "No documents uploaded yet." : "No documents match your search."}
+        </p>
+      )}
+
+      {!loading && filteredDocs.length > 0 && viewMode === "list" && <div className="mt-4 overflow-hidden rounded-xl border border-ink/10">
         <table className="w-full text-left text-sm">
           <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
             <tr>
+              <th className="w-24 px-4 py-3">Preview</th>
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">File</th>
@@ -277,18 +347,18 @@ export default function AdminDocuments() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={4}>Loading…</td></tr>
-            )}
-            {!loading && docs.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={4}>No documents uploaded yet.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={5}>Loading…</td></tr>
             )}
             {!loading &&
-              docs.map((d) => {
+              filteredDocs.map((d) => {
                 const isEditing = editingId === d._id;
                 return (
                   <tr key={d._id} className="border-t border-ink/10 align-top">
                     {isEditing && draft ? (
                       <>
+                        <td className="px-4 py-3">
+                          <div className="relative h-14 w-20 overflow-hidden rounded bg-sand/50">{thumbnail(d)}</div>
+                        </td>
                         <td className="px-4 py-3">
                           <input
                             className="w-full rounded border border-ink/15 px-2 py-1 text-sm"
@@ -335,17 +405,20 @@ export default function AdminDocuments() {
                     ) : (
                       <>
                         <td className="px-4 py-3">
+                          <div className="relative h-14 w-20 overflow-hidden rounded bg-sand/50">{thumbnail(d)}</div>
+                        </td>
+                        <td className="px-4 py-3">
                           <p className="font-medium text-ink">{d.title}</p>
                           {d.description && <p className="text-xs text-ink/60">{d.description}</p>}
                         </td>
                         <td className="px-4 py-3 text-ink/70">{d.category}</td>
                         <td className="px-4 py-3">
-                          <a
-                            href={`/api/documents/${d._id}`}
-                            className="text-xs font-medium text-marina underline underline-offset-4"
-                          >
-                            View
-                          </a>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            <button type="button" onClick={() => setPreviewDoc(d)} className="text-xs font-medium text-marina underline underline-offset-4">View</button>
+                            <a href={`/api/documents/${d._id}?download=1`} className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4">
+                              <Download className="h-3 w-3" aria-hidden="true" /> Download
+                            </a>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-3">
@@ -370,7 +443,61 @@ export default function AdminDocuments() {
               })}
           </tbody>
         </table>
-      </div>
+      </div>}
+
+      {!loading && filteredDocs.length > 0 && viewMode === "grid" && (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredDocs.map((d) => (
+            <article key={d._id} className="overflow-hidden rounded-xl border border-ink/10 bg-white">
+              <div className="relative flex h-40 items-center justify-center overflow-hidden bg-sand/40">{thumbnail(d, true)}</div>
+              <div className="p-4">
+                <p className="truncate font-medium text-ink" title={d.title}>{d.title}</p>
+                {d.description && <p className="mt-1 line-clamp-2 text-xs text-ink/60">{d.description}</p>}
+                <p className="mt-2 text-xs uppercase tracking-wider text-ink/50">{d.category}</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="button" onClick={() => setPreviewDoc(d)} className="text-xs font-medium text-marina underline underline-offset-4">View</button>
+                  <a href={`/api/documents/${d._id}?download=1`} className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4">
+                    <Download className="h-3 w-3" aria-hidden="true" /> Download
+                  </a>
+                  <button type="button" onClick={() => startEdit(d)} className="text-xs font-medium text-marina underline underline-offset-4">Edit</button>
+                  <button type="button" onClick={() => remove(d._id)} className="text-xs font-medium text-coral underline underline-offset-4">Delete</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true" aria-label={`Preview ${previewDoc.title}`}>
+          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-fog shadow-xl">
+            <div className="flex items-center justify-between gap-4 border-b border-ink/10 px-5 py-3">
+              <h3 className="truncate font-display text-lg text-ink">{previewDoc.title}</h3>
+              <div className="flex items-center gap-3">
+                <a href={`/api/documents/${previewDoc._id}?download=1`} className="inline-flex items-center gap-1 text-sm font-medium text-marina">
+                  <Download className="h-4 w-4" aria-hidden="true" /> Download
+                </a>
+                <button type="button" onClick={() => setPreviewDoc(null)} className="rounded p-1 text-ink/60 hover:bg-sand" aria-label="Close preview">
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <div className="relative min-h-[60vh] overflow-auto bg-sand/30 p-4">
+              {isImage(previewDoc) ? (
+                <div className="relative h-[70vh] w-full">{thumbnail(previewDoc, true)}</div>
+              ) : (
+                <object data={`/api/documents/${previewDoc._id}`} type="application/pdf" className="h-[70vh] w-full rounded border border-ink/10">
+                  <div className="flex h-full min-h-96 flex-col items-center justify-center text-center text-sm text-ink/60">
+                    <FileText className="mb-3 h-12 w-12 text-ink/30" aria-hidden="true" />
+                    <p>This document cannot be previewed in your browser.</p>
+                    <a href={`/api/documents/${previewDoc._id}?download=1`} className="mt-3 font-medium text-marina underline underline-offset-4">Download the document</a>
+                  </div>
+                </object>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

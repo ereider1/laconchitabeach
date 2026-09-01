@@ -22,12 +22,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const safeName = document.title.replace(/[^\w.\- ]/g, "_");
+  const disposition = _req.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
 
   return new NextResponse(result.stream, {
     headers: {
       "Content-Type": result.blob.contentType,
       "X-Content-Type-Options": "nosniff",
-      "Content-Disposition": `attachment; filename="${safeName}"`,
+      "Content-Disposition": `${disposition}; filename="${safeName}"`,
       "Cache-Control": "private, no-cache",
     },
   });
