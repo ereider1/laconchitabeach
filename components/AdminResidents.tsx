@@ -250,6 +250,160 @@ export default function AdminResidents() {
     );
   });
 
+  const adminResidents = filtered.filter((r) => r.isAdmin);
+  const regularResidents = filtered.filter((r) => !r.isAdmin);
+
+  function renderResidentRows(rows: Resident[]) {
+    return rows.map((r) => {
+      const isEditing = editingId === r._id;
+      return (
+        <tr key={r._id} className="border-t border-ink/10 align-top">
+          {isEditing && draft ? (
+            <>
+              <td className="px-4 py-3">
+                <input
+                  className="w-full rounded border border-ink/15 px-2 py-1 text-sm"
+                  value={draft.fullName}
+                  onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <input
+                  className="w-full rounded border border-ink/15 px-2 py-1 text-sm"
+                  value={draft.address}
+                  onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <input
+                  className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
+                  placeholder="Email"
+                  value={draft.email}
+                  onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <input
+                  className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
+                  placeholder="Phone"
+                  value={draft.phone}
+                  onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <label className="flex items-center gap-2 text-xs text-ink/70">
+                  <input
+                    type="checkbox"
+                    checked={draft.listedInDirectory}
+                    onChange={(e) =>
+                      setDraft({ ...draft, listedInDirectory: e.target.checked })
+                    }
+                  />
+                  Listed
+                </label>
+              </td>
+              <td className="px-4 py-3">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-xs text-ink/70">
+                    <input
+                      type="checkbox"
+                      checked={draft.isAdmin}
+                      onChange={(e) => setDraft({ ...draft, isAdmin: e.target.checked })}
+                    />
+                    Admin
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveEdit(r._id)}
+                      disabled={saving}
+                      className="rounded-full bg-marina px-3 py-1 text-xs font-semibold text-fog disabled:opacity-50"
+                    >
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="rounded-full border border-ink/15 px-3 py-1 text-xs font-medium text-ink/70"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </>
+          ) : (
+            <>
+              <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
+              <td className="px-4 py-3 text-ink/70">{r.address}</td>
+              <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
+              <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`rounded-full px-2 py-1 text-xs font-medium ${
+                    r.listedInDirectory
+                      ? "bg-marina/10 text-marina"
+                      : "bg-ink/5 text-ink/50"
+                  }`}
+                >
+                  {r.listedInDirectory ? "Listed" : "Hidden"}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => startEdit(r)}
+                    className="text-xs font-medium text-marina underline underline-offset-4"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => remove(r._id)}
+                    className="text-xs font-medium text-coral underline underline-offset-4"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </td>
+            </>
+          )}
+        </tr>
+      );
+    });
+  }
+
+  function renderResidentTable(title: string, rows: Resident[], emptyMessage: string) {
+    return (
+      <section className="mt-6 overflow-hidden rounded-xl border border-ink/10">
+        <div className="border-b border-ink/10 bg-sand/30 px-4 py-3">
+          <h3 className="font-display text-lg text-marina">{title}</h3>
+          <p className="text-xs text-ink/50">{rows.length} resident{rows.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[48rem] text-left text-sm">
+            <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
+              <tr>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Address</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Directory</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>Loading…</td></tr>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>{emptyMessage}</td></tr>
+              )}
+              {!loading && renderResidentRows(rows)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div>
       <div className="mb-8 grid gap-5 lg:grid-cols-2">
@@ -353,153 +507,8 @@ export default function AdminResidents() {
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-ink/10">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Address</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Directory</th>
-              <th className="px-4 py-3">Admin</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>Loading…</td></tr>
-            )}
-            {!loading && filtered.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>No matches.</td></tr>
-            )}
-            {!loading &&
-              filtered.map((r) => {
-                const isEditing = editingId === r._id;
-                return (
-                  <tr key={r._id} className="border-t border-ink/10 align-top">
-                    {isEditing && draft ? (
-                      <>
-                        <td className="px-4 py-3">
-                          <input
-                            className="w-full rounded border border-ink/15 px-2 py-1 text-sm"
-                            value={draft.fullName}
-                            onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            className="w-full rounded border border-ink/15 px-2 py-1 text-sm"
-                            value={draft.address}
-                            onChange={(e) => setDraft({ ...draft, address: e.target.value })}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
-                            placeholder="Email"
-                            value={draft.email}
-                            onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            className="w-full rounded border border-ink/15 px-2 py-1 text-xs font-mono"
-                            placeholder="Phone"
-                            value={draft.phone}
-                            onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <label className="flex items-center gap-2 text-xs text-ink/70">
-                            <input
-                              type="checkbox"
-                              checked={draft.listedInDirectory}
-                              onChange={(e) =>
-                                setDraft({ ...draft, listedInDirectory: e.target.checked })
-                              }
-                            />
-                            Listed
-                          </label>
-                        </td>
-                        <td className="px-4 py-3">
-                          <label className="flex items-center gap-2 text-xs text-ink/70">
-                            <input
-                              type="checkbox"
-                              checked={draft.isAdmin}
-                              onChange={(e) => setDraft({ ...draft, isAdmin: e.target.checked })}
-                            />
-                            Admin
-                          </label>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => saveEdit(r._id)}
-                              disabled={saving}
-                              className="rounded-full bg-marina px-3 py-1 text-xs font-semibold text-fog disabled:opacity-50"
-                            >
-                              {saving ? "Saving…" : "Save"}
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="rounded-full border border-ink/15 px-3 py-1 text-xs font-medium text-ink/70"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
-                        <td className="px-4 py-3 text-ink/70">{r.address}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-medium ${
-                              r.listedInDirectory
-                                ? "bg-marina/10 text-marina"
-                                : "bg-ink/5 text-ink/50"
-                            }`}
-                          >
-                            {r.listedInDirectory ? "Listed" : "Hidden"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {r.isAdmin ? (
-                            <span className="rounded-full bg-coral/10 px-2 py-1 text-xs font-medium text-coral">
-                              Admin
-                            </span>
-                          ) : (
-                            <span className="text-xs text-ink/30">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => startEdit(r)}
-                              className="text-xs font-medium text-marina underline underline-offset-4"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => remove(r._id)}
-                              className="text-xs font-medium text-coral underline underline-offset-4"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
+      {renderResidentTable("Administrators", adminResidents, "No administrators match.")}
+      {renderResidentTable("Residents", regularResidents, "No residents match.")}
     </div>
   );
 }
