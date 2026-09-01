@@ -153,13 +153,14 @@ export default function AdminResidents() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Remove this resident's record? This cannot be undone.")) return;
+    if (!confirm("Delete this resident's record? This cannot be undone.")) return;
     setError(null);
     try {
       const res = await fetch(`/api/admin/residents?id=${id}`, { method: "DELETE" });
-      const data = await readJsonResponse(res, "Failed to preview CSV");
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to delete resident");
       setResidents((prev) => prev.filter((r) => r._id !== id));
+      cancelEdit();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -326,6 +327,12 @@ export default function AdminResidents() {
                     >
                       Cancel
                     </button>
+                    <button
+                      onClick={() => void remove(r._id)}
+                      className="rounded-full border border-coral/30 px-3 py-1 text-xs font-medium text-coral"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </td>
@@ -354,12 +361,6 @@ export default function AdminResidents() {
                     className="text-xs font-medium text-marina underline underline-offset-4"
                   >
                     Edit
-                  </button>
-                  <button
-                    onClick={() => remove(r._id)}
-                    className="text-xs font-medium text-coral underline underline-offset-4"
-                  >
-                    Remove
                   </button>
                 </div>
               </td>
