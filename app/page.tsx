@@ -177,20 +177,19 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="about" className="bg-white px-6 py-20 sm:px-10">
-          <div className="mx-auto max-w-6xl">
-            <div className="mx-auto mb-12 max-w-2xl text-center">
+
+        <section className="grid bg-sand md:grid-cols-2">		  
+          <div className="flex items-center px-8 py-16 sm:px-14">
+            <div className="max-w-lg">
               <p className="eyebrow text-marina">About La Conchita</p>
-              <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
-                A small place with a big horizon
-              </h2>
-              <p className="mt-4 text-ink/60">
-				La Conchita sits between the coastal bluffs and the Pacific, a compact neighborhood shaped by salt air, ocean views, and the easy familiarity of people who know the same stretch of beach.</p>
-				<p className="mt-4 text-ink/60">The community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.</p>
-				<p className="mt-4 text-ink/60">This site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.
-              </p>
+              <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">A small place with a big horizon</h2>
+              <p className="mt-5 text-ink/60">La Conchita sits between the coastal bluffs and the Pacific, a compact neighborhood shaped by salt air, ocean views, and the easy familiarity of people who know the same stretch of beach.</p>
+              <p className="mt-4 text-ink/60">The community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.</p>
+              <p className="mt-4 text-ink/60">This site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.</p>
             </div>
           </div>
+          <div className="min-h-[360px] bg-[url('/beach-access.png')] bg-cover bg-center" />
+		  
         </section>
 
 
