@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { FileText, Upload, X } from "lucide-react";
 
 type Doc = {
   _id: string;
@@ -12,6 +13,15 @@ type Doc = {
 };
 
 type EditableFields = { title: string; description: string; category: Doc["category"] };
+
+type UploadItem = {
+  id: string;
+  file: File;
+  progress: number;
+  status: "uploading" | "completed" | "error";
+  error?: string;
+  controller: AbortController;
+};
 
 const categories: Doc["category"][] = ["governing", "minutes", "financial", "forms", "other"];
 
@@ -27,10 +37,8 @@ export default function AdminDocuments() {
   const [draft, setDraft] = useState<EditableFields | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newCategory, setNewCategory] = useState<Doc["category"]>("other");
   const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -97,44 +105,69 @@ export default function AdminDocuments() {
     }
   }
 
-  async function handleUpload(e: React.FormEvent) {
-    e.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
-    if (!file || !newTitle) {
-      setError("A title and a file are required");
-      return;
-    }
+  function updateUploadItem(id: string, update: Partial<UploadItem>) {
+    setUploadItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...update } : item)));
+  }
 
-    setUploading(true);
-    setError(null);
+  async function uploadOne(item: UploadItem) {
     try {
-      const blob = await upload(file.name, file, {
+      const blob = await upload(item.file.name, item.file, {
         access: "private",
         handleUploadUrl: "/api/documents/upload",
+        onUploadProgress: ({ percentage }) => {
+          updateUploadItem(item.id, { progress: percentage });
+        },
+        abortSignal: item.controller.signal,
       });
 
       const res = await fetch("/api/admin/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: newTitle,
-          description: newDescription || undefined,
-          category: newCategory,
+          title: item.file.name,
+          category: "other",
           fileUrl: blob.url,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save document");
+
       setDocs((prev) => [data.document, ...prev]);
-      setNewTitle("");
-      setNewDescription("");
-      setNewCategory("other");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      updateUploadItem(item.id, { progress: 100, status: "completed" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
+      if (item.controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : "Upload failed";
+      updateUploadItem(item.id, { status: "error", error: message });
     }
+  }
+
+  async function handleFiles(files: File[]) {
+    const selected = files.filter((file) => file.size > 0);
+    if (selected.length === 0) return;
+
+    const items = selected.map((file, index) => ({
+      id: `${file.name}-${file.lastModified}-${index}-${Date.now()}`,
+      file,
+      progress: 0,
+      status: "uploading" as const,
+      controller: new AbortController(),
+    }));
+
+    setUploadItems((prev) => [...prev, ...items]);
+    setUploading(true);
+    setError(null);
+    await Promise.all(items.map(uploadOne));
+    setUploading(false);
+  }
+
+  function removeUploadItem(item: UploadItem) {
+    item.controller.abort();
+    setUploadItems((prev) => prev.filter((current) => current.id !== item.id));
+  }
+
+  function formatFileSize(bytes: number) {
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   return (
@@ -144,41 +177,91 @@ export default function AdminDocuments() {
         Upload governing documents, meeting minutes, financials, and forms.
       </p>
 
-      <form onSubmit={handleUpload} className="mt-6 space-y-3 rounded-xl border border-ink/10 p-5">
-        <p className="font-display text-lg text-marina">Upload a document</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
-            placeholder="Title"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            required
-          />
-          <select
-            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value as Doc["category"])}
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+      <section className="mt-6 rounded-xl border border-ink/10 p-5">
+        <h3 className="font-display text-lg text-marina">File Upload</h3>
+        <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(16rem,0.9fr)_minmax(20rem,1.1fr)]">
+          <div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                void handleFiles(Array.from(event.dataTransfer.files));
+              }}
+              className="flex min-h-56 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-ink/15 bg-sand/20 px-5 text-center text-ink/60 transition hover:border-marina hover:bg-sand/40"
+            >
+              <Upload className="mb-3 h-9 w-9 text-marina" aria-hidden="true" />
+              <span className="font-medium">Drag files to upload</span>
+              <span className="mt-1 text-xs">You can select multiple files</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                if (event.target.files) void handleFiles(Array.from(event.target.files));
+                event.currentTarget.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="mt-4 rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+            >
+              Choose Files
+            </button>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-ink">Uploading</h4>
+              {uploadItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setUploadItems((prev) => prev.filter((item) => item.status === "uploading"))}
+                  className="text-xs text-ink/50 underline underline-offset-4"
+                >
+                  Clear completed
+                </button>
+              )}
+            </div>
+            <div className="mt-2 divide-y divide-ink/10">
+              {uploadItems.length === 0 && <p className="py-8 text-sm text-ink/50">No files selected yet.</p>}
+              {uploadItems.map((item) => (
+                <div key={item.id} className="py-4 first:pt-2 last:pb-2">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-7 w-7 shrink-0 text-ink/40" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink">{item.file.name}</p>
+                      <p className="text-xs text-ink/50">{formatFileSize(item.file.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeUploadItem(item)}
+                      className="rounded p-1 text-ink/50 hover:bg-sand hover:text-ink"
+                      aria-label={`Remove ${item.file.name}`}
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10">
+                    <div
+                      className={`h-full transition-[width] ${item.status === "error" ? "bg-coral" : "bg-sky-400"}`}
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                  <p className={`mt-1 text-xs ${item.status === "error" ? "text-coral" : "text-ink/50"}`}>
+                    {item.status === "completed" ? "Completed" : item.status === "error" ? item.error : `${Math.round(item.progress)}% done`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <input
-          className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-          placeholder="Description (optional)"
-          value={newDescription}
-          onChange={(e) => setNewDescription(e.target.value)}
-        />
-        <input ref={fileInputRef} type="file" required className="text-sm" />
-        <button
-          type="submit"
-          disabled={uploading}
-          className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
-        >
-          {uploading ? "Uploading…" : "Upload document"}
-        </button>
-      </form>
+      </section>
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
