@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, X } from "lucide-react";
 
 type Resident = {
   _id: string;
@@ -17,6 +18,7 @@ export default function AdminDirectory() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -36,6 +38,29 @@ export default function AdminDirectory() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
+
+  async function copyEmails() {
+    const emails = filtered.map((resident) => resident.email.trim()).filter(Boolean);
+    if (emails.length === 0) {
+      setError("There are no email addresses to copy.");
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard access is unavailable");
+      await navigator.clipboard.writeText(emails.join("\n"));
+      setError(null);
+      setCopied(true);
+    } catch {
+      setError("Unable to copy email addresses. Check your browser permissions and try again.");
+    }
+  }
 
   async function toggleListed(r: Resident) {
     setTogglingId(r._id);
@@ -74,19 +99,45 @@ export default function AdminDirectory() {
         For full editing (name, address, contact info), use Profiles.
       </p>
 
-      <div className="mt-6 flex items-center justify-between gap-4">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <input
-          className="w-full max-w-sm rounded-lg border border-ink/15 px-4 py-2 text-sm"
+          className="w-full max-w-sm flex-1 rounded-lg border border-ink/15 px-4 py-2 text-sm"
           placeholder="Search residents…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        <button
+          type="button"
+          onClick={() => void copyEmails()}
+          className="rounded-full bg-marina px-4 py-2 text-xs font-semibold tracking-wide text-fog transition hover:opacity-90"
+        >
+          COPY EMAILS
+        </button>
         <span className="shrink-0 text-xs text-ink/50">
           {residents.filter((r) => r.listedInDirectory).length} listed of {residents.length}
         </span>
       </div>
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
+
+      {copied && (
+        <div
+          role="status"
+          className="fixed right-4 top-4 z-50 flex items-center gap-3 rounded-lg bg-emerald-600 px-4 py-3 text-fog shadow-lg"
+        >
+          <Check aria-hidden="true" className="h-5 w-5 rounded-full bg-fog p-0.5 text-emerald-600" />
+          <span className="text-sm font-medium">Copied to clipboard</span>
+          <span aria-hidden="true" className="h-7 w-px bg-fog/25" />
+          <button
+            type="button"
+            aria-label="Dismiss copied message"
+            onClick={() => setCopied(false)}
+            className="text-fog/90 transition hover:text-fog"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-ink/10">
         <table className="w-full text-left text-sm">
