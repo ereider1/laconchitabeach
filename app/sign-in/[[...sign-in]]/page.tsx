@@ -6,6 +6,10 @@ export default function SignInPage() {
       <div>
         <p className="mb-6 text-center text-2xl font-bold uppercase tracking-[-0.04em] text-white">La Conchita Beach</p>
         <SignIn
+          path="/sign-in"
+          routing="path"
+          signUpUrl="/sign-up"
+          fallbackRedirectUrl="/portal"
           appearance={{
             variables: {
               colorPrimary: "#079EC4",
