@@ -24,6 +24,23 @@ type EditableFields = {
   isAdmin: boolean;
 };
 
+type ImportRow = {
+  rowNumber: number;
+  fullName: string;
+  address: string;
+  email: string;
+  phone?: string;
+  status: "valid" | "existing" | "invalid";
+  errors: string[];
+};
+
+type ImportSummary = {
+  found: number;
+  added: number;
+  skippedExisting: number;
+  invalid: number;
+};
+
 function toEditableFields(r: Resident): EditableFields {
   return {
     fullName: r.fullName,
@@ -48,6 +65,12 @@ export default function AdminResidents() {
   const [saving, setSaving] = useState(false);
   const [newResident, setNewResident] = useState(emptyNewResident);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importCsv, setImportCsv] = useState<string | null>(null);
+  const [importFileName, setImportFileName] = useState("");
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importComplete, setImportComplete] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -145,6 +168,56 @@ export default function AdminResidents() {
     }
   }
 
+  async function previewImport(file: File) {
+    setImporting(true);
+    setError(null);
+    setImportComplete(false);
+    setImportSummary(null);
+    try {
+      const csv = await file.text();
+      const res = await fetch("/api/admin/residents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview", csv }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to preview CSV");
+      setImportCsv(csv);
+      setImportFileName(file.name);
+      setImportRows(data.rows);
+      setImportSummary(data.summary);
+    } catch (err) {
+      setImportCsv(null);
+      setImportRows([]);
+      setError(err instanceof Error ? err.message : "Unable to preview CSV");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function confirmImport() {
+    if (!importCsv) return;
+    setImporting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/residents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "import", csv: importCsv }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to import residents");
+      setImportRows(data.rows);
+      setImportSummary(data.summary);
+      setImportComplete(true);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to import residents");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   const filtered = residents.filter((r) => {
     const term = q.trim().toLowerCase();
     if (!term) return true;
@@ -157,12 +230,10 @@ export default function AdminResidents() {
 
   return (
     <div>
-      <form
-        onSubmit={addResident}
-        className="mb-8 space-y-3 rounded-xl border border-ink/10 p-5"
-      >
-        <p className="font-display text-lg text-marina">Add a resident</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+      <div className="mb-8 grid gap-5 lg:grid-cols-2">
+        <form onSubmit={addResident} className="space-y-3 rounded-xl border border-ink/10 p-5">
+          <p className="font-display text-lg text-marina">Add a resident</p>
+          <div className="grid gap-3 sm:grid-cols-2">
           <input
             className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
             placeholder="Full name"
@@ -191,15 +262,53 @@ export default function AdminResidents() {
             value={newResident.phone}
             onChange={(e) => setNewResident({ ...newResident, phone: e.target.value })}
           />
-        </div>
-        <button
-          type="submit"
-          disabled={adding}
-          className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
-        >
-          {adding ? "Adding…" : "Add resident"}
-        </button>
-      </form>
+          </div>
+          <button type="submit" disabled={adding} className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50">
+            {adding ? "Adding…" : "Add resident"}
+          </button>
+        </form>
+
+        <section className="space-y-3 rounded-xl border border-ink/10 p-5">
+          <div>
+            <p className="font-display text-lg text-marina">Import residents</p>
+            <p className="mt-1 text-sm text-ink/60">Upload a WordPress member export to preview before adding anyone.</p>
+          </div>
+          <label className="block cursor-pointer rounded-lg border border-dashed border-ink/20 px-4 py-4 text-sm text-ink/70 hover:border-marina">
+            <span>{importFileName || "Choose a CSV file"}</span>
+            <input type="file" accept=".csv,text/csv" className="sr-only" disabled={importing} onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void previewImport(file);
+              e.currentTarget.value = "";
+            }} />
+          </label>
+          {importSummary && (
+            <div className="space-y-3 text-sm">
+              <p className="text-ink/70">{importComplete ? "Import complete." : "Preview ready."} {importSummary.found} record{importSummary.found === 1 ? "" : "s"} found.</p>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <span className="rounded-lg bg-marina/10 px-2 py-2 text-marina">{importComplete ? "Added" : "Ready"}: {importSummary.added}</span>
+                <span className="rounded-lg bg-sand px-2 py-2 text-ink/70">Skipped (existing): {importSummary.skippedExisting}</span>
+                <span className="rounded-lg bg-coral/10 px-2 py-2 text-coral">Invalid/errors: {importSummary.invalid}</span>
+              </div>
+              <div className="max-h-52 overflow-auto rounded-lg border border-ink/10 text-xs">
+                {importRows.map((row) => (
+                  <div key={row.rowNumber} className="border-b border-ink/10 px-3 py-2 last:border-0">
+                    <span className="mr-2 text-ink/40">Row {row.rowNumber}</span>
+                    <span className="font-medium">{row.fullName || "Unnamed resident"}</span>
+                    <span className="ml-2 text-ink/60">{row.email || "No email"}</span>
+                    {row.address && <p className="mt-1 text-ink/60">{row.address}{row.phone ? ` · ${row.phone}` : ""}</p>}
+                    {row.errors.length > 0 && <p className="mt-1 text-coral">{row.errors.join("; ")}</p>}
+                  </div>
+                ))}
+              </div>
+              {!importComplete && importSummary.added > 0 && (
+                <button type="button" onClick={() => void confirmImport()} disabled={importing} className="rounded-full bg-marina px-5 py-2 font-semibold text-fog disabled:opacity-50">
+                  {importing ? "Importing…" : `Add ${importSummary.added} resident${importSummary.added === 1 ? "" : "s"}`}
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
 
       <div className="flex items-center justify-between gap-4">
         <input

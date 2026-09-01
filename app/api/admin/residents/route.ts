@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Resident from "@/lib/models/Resident";
 import { isAdmin } from "@/lib/isAdmin";
+import { normalizeEmail, parseResidentCsv } from "@/lib/residentCsv";
 
 // Full resident roster, including residents who've opted out of the public
 // directory. Admin-only — this is the underlying data for /portal/admin.
@@ -23,6 +24,44 @@ export async function POST(req: NextRequest) {
   if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const body = await req.json();
+
+  if (body.action === "preview" || body.action === "import") {
+    if (typeof body.csv !== "string" || !body.csv.trim()) {
+      return NextResponse.json({ error: "A CSV file is required" }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    const existing = await Resident.find().select("email").lean();
+    const existingEmails = new Set(existing.map((resident) => normalizeEmail(resident.email)));
+    let rows;
+    try {
+      rows = parseResidentCsv(body.csv, existingEmails);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Unable to parse CSV" },
+        { status: 400 }
+      );
+    }
+
+    const summary = {
+      found: rows.length,
+      added: rows.filter((row) => row.status === "valid").length,
+      skippedExisting: rows.filter((row) => row.status === "existing").length,
+      invalid: rows.filter((row) => row.status === "invalid").length,
+    };
+
+    if (body.action === "preview") return NextResponse.json({ rows, summary });
+
+    const toInsert = rows
+      .filter((row) => row.status === "valid")
+      .map(({ fullName, address, email, phone }) => ({ fullName, address, email, phone }));
+    const inserted = toInsert.length > 0 ? await Resident.insertMany(toInsert) : [];
+    return NextResponse.json({
+      summary: { ...summary, added: inserted.length },
+      rows,
+    });
+  }
+
   if (!body.fullName || !body.address || !body.email) {
     return NextResponse.json(
       { error: "Name, address, and email are required" },
