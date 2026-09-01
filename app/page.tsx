@@ -4,6 +4,8 @@ import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
 import { ArrowRight } from "lucide-react";
 
+
+
 export default function HomePage() {
   const services = [
     {
@@ -31,6 +33,8 @@ export default function HomePage() {
       href: "/sign-in",
     },
   ];
+
+
 
   return (
     <div className="site-frame">
@@ -91,6 +95,10 @@ export default function HomePage() {
           </div>
         </section>
 
+
+
+
+
         <section className="bg-white px-6 py-20 sm:px-10">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -122,6 +130,11 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+
+
+
+
 
         <section className="grid bg-sand md:grid-cols-2">
           <div className="min-h-[360px] bg-[url('/beach-cleanup-1536x880.jpg')] bg-cover bg-center" />
@@ -163,6 +176,24 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+
+        <section id="about" className="bg-white px-6 py-20 sm:px-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto mb-12 max-w-2xl text-center">
+              <p className="eyebrow text-marina">About La Conchita</p>
+              <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
+                A small place with a big horizon
+              </h2>
+              <p className="mt-4 text-ink/60">
+				La Conchita sits between the coastal bluffs and the Pacific, a compact neighborhood shaped by salt air, ocean views, and the easy familiarity of people who know the same stretch of beach.</p>
+				<p className="mt-4 text-ink/60">The community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.</p>
+				<p className="mt-4 text-ink/60">This site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.
+              </p>
+            </div>
+          </div>
+        </section>
+
+
       </main>
 
       <SiteFooter />

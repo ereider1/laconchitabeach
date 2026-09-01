@@ -33,7 +33,7 @@ export default function ContactPage() {
                 <Mail className="h-4 w-4" aria-hidden="true" />
                 Email
               </dt>
-              <dd className="mt-2 text-sm leading-6 text-ink/75">community@laconchitabeach.org</dd>
+              <dd className="mt-2 text-sm leading-6 text-ink/75">Jerome.Nesnadny@gmail.com</dd>
             </div>
             <div className="rounded-2xl bg-sand/55 p-5 sm:col-span-2">
               <dt className="eyebrow flex items-center gap-2 text-marina">

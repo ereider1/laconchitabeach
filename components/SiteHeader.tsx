@@ -3,7 +3,6 @@ import { Show, UserButton } from "@clerk/nextjs";
 import { ChevronDown, Waves } from "lucide-react";
 
 const links = [
-  { href: "/about", label: "About La Conchita" },
   { href: "/events", label: "Events" },
   { href: "/contact", label: "Contact" },
 ];
