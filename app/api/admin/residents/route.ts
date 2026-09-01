@@ -17,7 +17,7 @@ export async function GET() {
   return NextResponse.json({ residents });
 }
 
-// Body: { fullName, address, email, phone?, moveInYear?, listedInDirectory? }
+// Body: { firstName, lastName, address, email, phone?, moveInYear?, listedInDirectory? }
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +54,14 @@ export async function POST(req: NextRequest) {
 
     const toInsert = rows
       .filter((row) => row.status === "valid")
-      .map(({ fullName, address, email, phone }) => ({ fullName, address, email, phone }));
+      .map(({ firstName, lastName, fullName, address, email, phone }) => ({
+        firstName,
+        lastName,
+        fullName,
+        address,
+        email,
+        phone,
+      }));
     const inserted = toInsert.length > 0 ? await Resident.insertMany(toInsert) : [];
     return NextResponse.json({
       summary: { ...summary, added: inserted.length },
@@ -62,16 +69,21 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!body.fullName || !body.address || !body.email) {
+  const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
+  const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  if (!firstName || !lastName || !body.address || !body.email) {
     return NextResponse.json(
-      { error: "Name, address, and email are required" },
+      { error: "First name, last name, address, and email are required" },
       { status: 400 }
     );
   }
 
   await connectToDatabase();
   const resident = await Resident.create({
-    fullName: body.fullName,
+    firstName,
+    lastName,
+    fullName,
     address: body.address,
     email: body.email,
     phone: body.phone || undefined,

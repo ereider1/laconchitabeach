@@ -14,13 +14,17 @@ export async function GET() {
 }
 
 // Self-service create/update of the signed-in resident's own profile.
-// Body: { fullName, address, email, phone?, moveInYear?, listedInDirectory }
+// Body: { firstName, lastName, fullName?, address, email, phone?, moveInYear?, listedInDirectory }
 export async function PUT(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  if (!body.fullName || !body.address || !body.email) {
+  const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
+  const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+  const legacyFullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ") || legacyFullName;
+  if (!fullName || !body.address || !body.email) {
     return NextResponse.json(
       { error: "Name, address, and email are required" },
       { status: 400 }
@@ -30,7 +34,9 @@ export async function PUT(req: NextRequest) {
   await connectToDatabase();
 
   const fields = {
-    fullName: body.fullName,
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    fullName,
     address: body.address,
     email: body.email,
     phone: body.phone || undefined,

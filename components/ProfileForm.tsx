@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type Defaults = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   address: string;
   email: string;
   phone: string;
@@ -35,6 +36,7 @@ export default function ProfileForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          fullName: [form.firstName, form.lastName].filter(Boolean).join(" "),
           moveInYear: form.moveInYear ? Number(form.moveInYear) : undefined,
         }),
       });
@@ -52,15 +54,30 @@ export default function ProfileForm({
   return (
     <form onSubmit={submit} className="space-y-4 rounded-xl border border-ink/10 p-5">
       <div>
-        <label className="block text-xs font-medium uppercase tracking-wider text-ink/60">
-          Full name
-        </label>
-        <input
-          className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-          value={form.fullName}
-          onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-          required
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-ink/60">
+              First name
+            </label>
+            <input
+              className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-ink/60">
+              Last name
+            </label>
+            <input
+              className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              required
+            />
+          </div>
+        </div>
       </div>
 
       <div>

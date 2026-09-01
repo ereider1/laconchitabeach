@@ -15,7 +15,8 @@ export default async function ProfilePage() {
   }
 
   const defaults = {
-    fullName: initialResident?.fullName ?? user?.fullName ?? "",
+    firstName: initialResident?.firstName ?? user?.firstName ?? initialResident?.fullName?.split(" ")[0] ?? "",
+    lastName: initialResident?.lastName ?? user?.lastName ?? initialResident?.fullName?.split(" ").slice(1).join(" ") ?? "",
     address: initialResident?.address ?? "",
     email: initialResident?.email ?? user?.primaryEmailAddress?.emailAddress ?? "",
     phone: initialResident?.phone ?? "",

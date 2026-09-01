@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 type Resident = {
   _id: string;
+  firstName?: string;
+  lastName?: string;
   fullName: string;
   address: string;
   email: string;
@@ -53,7 +55,7 @@ function toEditableFields(r: Resident): EditableFields {
   };
 }
 
-const emptyNewResident = { fullName: "", address: "", email: "", phone: "" };
+const emptyNewResident = { firstName: "", lastName: "", address: "", email: "", phone: "" };
 
 export default function AdminResidents() {
   const [residents, setResidents] = useState<Resident[]>([]);
@@ -236,9 +238,16 @@ export default function AdminResidents() {
           <div className="grid gap-3 sm:grid-cols-2">
           <input
             className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
-            placeholder="Full name"
-            value={newResident.fullName}
-            onChange={(e) => setNewResident({ ...newResident, fullName: e.target.value })}
+            placeholder="First name"
+            value={newResident.firstName}
+            onChange={(e) => setNewResident({ ...newResident, firstName: e.target.value })}
+            required
+          />
+          <input
+            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            placeholder="Last name"
+            value={newResident.lastName}
+            onChange={(e) => setNewResident({ ...newResident, lastName: e.target.value })}
             required
           />
           <input

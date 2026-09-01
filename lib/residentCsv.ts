@@ -1,4 +1,6 @@
 export type ImportedResident = {
+  firstName: string;
+  lastName: string;
   fullName: string;
   address: string;
   email: string;
@@ -93,6 +95,8 @@ export function parseResidentCsv(csv: string, existingEmails: Set<string>): Resi
     ].filter(Boolean);
     const email = normalizeEmail(value(record, "Email", "Email Address"));
     const imported: ImportedResident = {
+      firstName,
+      lastName,
       fullName: [firstName, lastName].filter(Boolean).join(" "),
       address: addressParts.join(", "),
       email,
@@ -118,4 +122,3 @@ export function parseResidentCsv(csv: string, existingEmails: Set<string>): Resi
     return { ...imported, rowNumber: index + 2, status, errors };
   });
 }
-
