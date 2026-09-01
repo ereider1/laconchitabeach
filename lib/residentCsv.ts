@@ -13,7 +13,7 @@ export type ResidentImportRow = ImportedResident & {
   errors: string[];
 };
 
-const requiredHeaders = ["First Name", "Last Name", "Address 1", "City", "Zip", "Email"];
+const requiredHeaders = ["First Name", "Last Name", "Address", "Email"];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizeHeader(value: string) {
@@ -87,24 +87,20 @@ export function parseResidentCsv(csv: string, existingEmails: Set<string>): Resi
     const record = Object.fromEntries(headers.map((header, columnIndex) => [header, columns[columnIndex] ?? ""]));
     const firstName = value(record, "First Name", "FirstName");
     const lastName = value(record, "Last Name", "LastName");
-    const addressParts = [
-      value(record, "Address 1", "Address1"),
-      value(record, "Address 2", "Address2"),
-      value(record, "City"),
-      value(record, "Zip", "ZIP", "Postal Code"),
-    ].filter(Boolean);
+    const address = value(record, "Address");
     const email = normalizeEmail(value(record, "Email", "Email Address"));
     const imported: ImportedResident = {
       firstName,
       lastName,
       fullName: [firstName, lastName].filter(Boolean).join(" "),
-      address: addressParts.join(", "),
+      address,
       email,
       phone: value(record, "Phone", "Phone Number") || undefined,
     };
     const errors: string[] = [];
 
-    if (!imported.fullName) errors.push("Full name is required");
+    if (!firstName) errors.push("First name is required");
+    if (!lastName) errors.push("Last name is required");
     if (!imported.address) errors.push("Address is required");
     if (!imported.email) errors.push("Email is required");
     else if (!emailPattern.test(imported.email)) errors.push("Email format is invalid");
