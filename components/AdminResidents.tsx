@@ -16,6 +16,14 @@ type Resident = {
   clerkUserId: string;
 };
 
+type ResidentApiResponse = {
+  error?: string;
+  rows?: ImportRow[];
+  summary?: ImportSummary;
+  residents?: Resident[];
+  resident?: Resident;
+};
+
 type EditableFields = {
   fullName: string;
   address: string;
@@ -56,6 +64,16 @@ function toEditableFields(r: Resident): EditableFields {
 }
 
 const emptyNewResident = { firstName: "", lastName: "", address: "", email: "", phone: "" };
+
+async function readJsonResponse(res: Response, fallback: string) {
+  const text = await res.text();
+  if (!text) throw new Error(`${fallback} (server returned no response)`);
+  try {
+    return JSON.parse(text) as ResidentApiResponse;
+  } catch {
+    throw new Error(`${fallback} (server returned an invalid response)`);
+  }
+}
 
 export default function AdminResidents() {
   const [residents, setResidents] = useState<Resident[]>([]);
@@ -139,7 +157,7 @@ export default function AdminResidents() {
     setError(null);
     try {
       const res = await fetch(`/api/admin/residents?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
+      const data = await readJsonResponse(res, "Failed to preview CSV");
       if (!res.ok) throw new Error(data.error ?? "Failed to delete resident");
       setResidents((prev) => prev.filter((r) => r._id !== id));
     } catch (err) {
@@ -182,8 +200,9 @@ export default function AdminResidents() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "preview", csv }),
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res, "Failed to preview CSV");
       if (!res.ok) throw new Error(data.error ?? "Failed to preview CSV");
+      if (!data.rows || !data.summary) throw new Error("Failed to preview CSV (incomplete server response)");
       setImportCsv(csv);
       setImportFileName(file.name);
       setImportRows(data.rows);
@@ -207,8 +226,9 @@ export default function AdminResidents() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "import", csv: importCsv }),
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res, "Failed to import residents");
       if (!res.ok) throw new Error(data.error ?? "Failed to import residents");
+      if (!data.rows || !data.summary) throw new Error("Failed to import residents (incomplete server response)");
       setImportRows(data.rows);
       setImportSummary(data.summary);
       setImportComplete(true);

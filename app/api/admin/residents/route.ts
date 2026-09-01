@@ -5,6 +5,20 @@ import Resident from "@/lib/models/Resident";
 import { isAdmin } from "@/lib/isAdmin";
 import { normalizeEmail, parseResidentCsv } from "@/lib/residentCsv";
 
+async function ensureSparseClerkUserIndex() {
+  const indexes = await Resident.collection.indexes();
+  const clerkIndex = indexes.find((index) => index.name === "clerkUserId_1");
+  const isCorrect = clerkIndex?.unique === true && clerkIndex?.sparse === true;
+
+  if (!isCorrect && clerkIndex) await Resident.collection.dropIndex("clerkUserId_1");
+  if (!isCorrect) {
+    await Resident.collection.createIndex(
+      { clerkUserId: 1 },
+      { name: "clerkUserId_1", unique: true, sparse: true }
+    );
+  }
+}
+
 // Full resident roster, including residents who've opted out of the public
 // directory. Admin-only — this is the underlying data for /portal/admin.
 export async function GET() {
@@ -19,9 +33,10 @@ export async function GET() {
 
 // Body: { firstName, lastName, address, email, phone?, moveInYear?, listedInDirectory? }
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const body = await req.json();
 
@@ -62,6 +77,7 @@ export async function POST(req: NextRequest) {
         email,
         phone,
       }));
+    if (toInsert.length > 0) await ensureSparseClerkUserIndex();
     const inserted = toInsert.length > 0 ? await Resident.insertMany(toInsert) : [];
     return NextResponse.json({
       summary: { ...summary, added: inserted.length },
@@ -91,7 +107,11 @@ export async function POST(req: NextRequest) {
     listedInDirectory: body.listedInDirectory ?? true,
   });
 
-  return NextResponse.json({ resident }, { status: 201 });
+    return NextResponse.json({ resident }, { status: 201 });
+  } catch (error) {
+    console.error("[api/admin/residents] POST failed", error);
+    return NextResponse.json({ error: "Unable to process resident request" }, { status: 500 });
+  }
 }
 
 // Body: { id, fullName?, address?, email?, phone?, moveInYear?, listedInDirectory? }
