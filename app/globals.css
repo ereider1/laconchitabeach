@@ -180,6 +180,30 @@ select:focus-visible {
   place-items: center;
 }
 
+.preparedness-section {
+  background:
+    linear-gradient(160deg, rgba(4, 73, 104, 0.96), rgba(7, 158, 196, 0.92) 55%, rgba(18, 69, 139, 0.98)),
+    url("/beach-hero-bg.jpg") center / cover;
+}
+
+.resource-link {
+  display: flex;
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid rgba(7, 158, 196, 0.16);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: var(--ocean);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.resource-link:hover {
+  border-color: rgba(7, 158, 196, 0.35);
+  box-shadow: 0 12px 24px rgba(7, 92, 112, 0.08);
+  transform: translateY(-2px);
+}
+
 .subpage-hero {
   position: relative;
   display: grid;

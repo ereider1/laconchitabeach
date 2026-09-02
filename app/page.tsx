@@ -2,7 +2,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react";
 
 
 
@@ -135,6 +135,51 @@ export default function HomePage() {
 
 
 
+
+        <section className="preparedness-section px-6 py-20 sm:px-10" aria-labelledby="preparedness-heading">
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="eyebrow text-white/75">town hall</p>
+              <h2 id="preparedness-heading" className="mt-3 text-4xl font-bold uppercase tracking-[-0.05em] text-white sm:text-5xl">Community preparedness</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-white/80">Understanding La Conchita&apos;s hillside, rainfall patterns, and emergency resources helps us stay ready together.</p>
+            </div>
+            <div className="mt-12 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+              <article className="rounded-[1.75rem] bg-white p-7 shadow-xl shadow-deep-ocean/10 sm:p-9">
+                <h3 className="text-2xl font-bold tracking-[-0.04em] text-marina sm:text-3xl">History of a hillside</h3>
+                <p className="mt-4 leading-7 text-ink/70">La Conchita&apos;s hillside has been active for thousands of years. Long before the area was first settled in the 1920s, slide activity had been commonly reported in the press since 1865. Major slide events in 1889 and 1909 interrupted railroad service along the coast.</p>
+                <p className="mt-4 leading-7 text-ink/70">Modern studies show the bluff is part of an ancient, slow-moving landslide system that can become unstable after periods of heavy rain.</p>
+                <div className="mt-7 border-t border-marina/10 pt-6">
+                  <h3 className="text-xl font-bold tracking-[-0.03em] text-marina">Ongoing concerns</h3>
+                  <p className="mt-3 leading-7 text-ink/70">The potential for landslide and debris flow activity continues to be a concern, particularly when wet weather patterns are anticipated. Situational awareness is key. Land movement indicators include changes in hillside appearance, loud noises, cracks, bulging at the base, leaning trees, and water drainage.</p>
+                  <p className="mt-4 font-bold text-marina">If the situation looks or feels dangerous…LEAVE!</p>
+                </div>
+              </article>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+                <article className="rounded-[1.75rem] bg-white p-7 shadow-xl shadow-deep-ocean/10">
+                  <div className="flex items-start justify-between gap-4"><div><h3 className="text-2xl font-bold tracking-[-0.04em] text-marina">Rainfall thresholds</h3><p className="mt-2 text-ink/65">Stay alert when it rains. Historically, these thresholds are linked to land movement:</p></div><CloudRain className="h-10 w-10 shrink-0 text-ocean" aria-hidden="true" /></div>
+                  <ul className="mt-5 space-y-2 text-sm font-bold text-marina"><li className="flex items-center gap-2"><TriangleAlert className="h-4 w-4 text-coral" aria-hidden="true" />1 inch of rain per hour</li><li className="pl-6">8 inches of rain within two weeks</li><li className="pl-6">15 inches of rain within 30 days</li></ul>
+                </article>
+                <article className="rounded-[1.75rem] bg-white p-7 shadow-xl shadow-deep-ocean/10">
+                  <h3 className="text-2xl font-bold tracking-[-0.04em] text-marina">Key contacts &amp; hotlines</h3>
+                  <ul className="mt-5 space-y-4 text-sm leading-6 text-ink/70">
+                    <li><strong className="text-ink">Incident Information Hotline:</strong><br />(805) 465-6650</li>
+                    <li><strong className="text-ink">Sheriff Emergency Services Business Line:</strong><br />(805) 322-4679</li>
+                    <li><strong className="text-ink">VC Alert Help / Registration:</strong> Register online via <a href="https://ready.venturacounty.gov/" target="_blank" rel="noreferrer" className="font-bold text-marina underline underline-offset-4">Ready Ventura County</a> or call (888) 772-4482.</li>
+                    <li><strong className="text-ink">Ventura County Fire Department:</strong><br />(805) 389-9710</li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+            <article className="mt-5 rounded-[1.75rem] bg-white p-7 shadow-xl shadow-deep-ocean/10 sm:p-9">
+              <h3 className="text-2xl font-bold tracking-[-0.04em] text-marina sm:text-3xl">Resources</h3>
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <a href="https://readyventuracounty.org" target="_blank" rel="noreferrer" className="resource-link"><span className="text-lg font-bold">Get Ready, Stay Ready</span><span className="mt-1 text-sm text-ink/60">Ready Ventura County</span><ExternalLink className="mt-3 h-4 w-4" aria-hidden="true" /></a>
+                <a href="https://vcalert.org" target="_blank" rel="noreferrer" className="resource-link"><span className="text-lg font-bold">Stay Informed</span><span className="mt-1 text-sm text-ink/60">VC Alert emergency notifications</span><ExternalLink className="mt-3 h-4 w-4" aria-hidden="true" /></a>
+                <a href="https://vcemergency.com" target="_blank" rel="noreferrer" className="resource-link"><span className="text-lg font-bold">Emergency information</span><span className="mt-1 text-sm text-ink/60">Ventura County emergency services</span><ExternalLink className="mt-3 h-4 w-4" aria-hidden="true" /></a>
+              </div>
+            </article>
+          </div>
+        </section>
 
         <section className="grid bg-sand md:grid-cols-2">
           <div className="min-h-[360px] bg-[url('/beach-cleanup-1536x880.jpg')] bg-cover bg-center" />
