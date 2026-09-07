@@ -110,7 +110,7 @@ export default async function HarborBoard() {
         <span className="text-xs font-bold uppercase tracking-[0.18em] text-marina">Today at La Conchita</span>
         <span className="h-2 w-2 rounded-full bg-marina-light" aria-hidden />
       </div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5 items-center">
         {conditions.map((c) => (
           <div key={c.label} className="min-w-0">
             <dt className="text-[10px] font-semibold uppercase tracking-wider text-dune">{c.label}</dt>
@@ -120,6 +120,21 @@ export default async function HarborBoard() {
             </dd>
           </div>
         ))}
+        
+        {/* Surf Forecast Navigation Button */}
+        <div className="col-span-2 sm:col-span-1 flex items-center justify-stretch pt-2 sm:pt-0">
+          <a
+            href="https://ereider1.github.io/SoCal-Surf/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-marina py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-ink hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 18c-3 0-4-3-6-3s-4 3-6 3V2h24v16c-2 0-3-3-6-3s-3 3-6 3z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Surf Forecast
+          </a>
+        </div>
       </dl>
     </div>
   );
