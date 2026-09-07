@@ -125,8 +125,6 @@ export default async function HarborBoard() {
         <div className="col-span-2 sm:col-span-1 flex items-center justify-stretch pt-2 sm:pt-0">
           <a
             href="/surf-forecast"
-            target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full rounded-xl bg-marina py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-ink hover:scale-[1.02] active:scale-[0.98] shadow-sm"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
