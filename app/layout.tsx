@@ -32,13 +32,21 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "";
+  const isLocalHost = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const configuredPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const publishableKey = isLocalHost && configuredPublishableKey?.startsWith("pk_live_")
+    ? undefined
+    : configuredPublishableKey;
+
   return (
     <html lang="en">
       <body className="font-body">
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
       </body>
     </html>
   );
