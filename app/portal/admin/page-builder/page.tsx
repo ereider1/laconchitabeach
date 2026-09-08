@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
@@ -9,8 +8,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Eye,
-  Settings,
   Upload,
   Image as ImageIcon,
   Check,
@@ -18,7 +15,6 @@ import {
   ChevronDown,
   X,
   Sparkles,
-  ExternalLink,
 } from "lucide-react";
 
 type Section = {
@@ -65,9 +61,14 @@ export default function PageBuilder() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper to proxy private Vercel Blob URLs so they can render in the browser
+  const getProxyUrl = (url?: string) => {
+    return url || "";
+  };
+
   // 1. Fetch sections & global toggle
-  async function loadData() {
-    setLoading(true);
+  async function loadData(showLoading = false) {
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch("/api/admin/page-builder");
       const data = await res.json();
@@ -83,7 +84,9 @@ export default function PageBuilder() {
   }
 
   useEffect(() => {
-    loadData();
+    Promise.resolve().then(() => {
+      loadData(false);
+    });
   }, []);
 
   // 2. Toggle master active
@@ -156,7 +159,7 @@ export default function PageBuilder() {
 
     try {
       const blob = await upload(file.name, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/documents/upload", // Reusing established admin-authorized upload endpoint
         onUploadProgress: ({ percentage }) => {
           setUploadProgress(percentage);
@@ -216,7 +219,7 @@ export default function PageBuilder() {
 
       showSuccess(`Section "${formName}" saved successfully.`);
       setView("list");
-      loadData();
+      loadData(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -235,7 +238,7 @@ export default function PageBuilder() {
       if (!res.ok) throw new Error(data.error ?? "Failed to delete section");
 
       showSuccess(`Section "${name}" deleted.`);
-      loadData();
+      loadData(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -267,7 +270,7 @@ export default function PageBuilder() {
         body: JSON.stringify({ reorder: payload }),
       });
       if (!res.ok) throw new Error("Failed to reorder sections");
-      loadData();
+      loadData(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reordering failed");
     }
@@ -366,7 +369,7 @@ export default function PageBuilder() {
                           {/* Image preview thumbnail */}
                           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand-dark relative flex items-center justify-center">
                             {sec.imageUrl ? (
-                              <img src={sec.imageUrl} alt="" className="h-full w-full object-cover" />
+                              <img src={getProxyUrl(sec.imageUrl)} alt="" className="h-full w-full object-cover" />
                             ) : (
                               <ImageIcon className="h-5 w-5 text-ink/30" />
                             )}
