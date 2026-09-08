@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
   ArrowRight,
@@ -148,31 +149,27 @@ export default function PageBuilder() {
     setView("edit");
   }
 
-  // 6. Handle image upload to Vercel Blob via server-side endpoint
+  // 6. Handle image upload directly to Vercel Blob from the client
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(0);
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      setUploadProgress(50);
-
-      const res = await fetch("/api/admin/page-builder/upload", {
-        method: "POST",
-        body: formData,
+      // Direct browser-to-cloud upload bypasses Vercel Serverless payload limits (4.5MB)
+      // and timeouts, making it extremely reliable for high-resolution images.
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/documents/upload", // Authorized endpoint generated token
+        onUploadProgress: ({ percentage }) => {
+          setUploadProgress(percentage);
+        },
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Image upload failed");
-
-      setUploadProgress(100);
-      setFormImageUrl(data.url);
+      setFormImageUrl(blob.url);
       showSuccess("Image uploaded successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed");
