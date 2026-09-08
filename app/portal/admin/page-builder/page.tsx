@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
   ArrowRight,
@@ -149,24 +148,31 @@ export default function PageBuilder() {
     setView("edit");
   }
 
-  // 6. Handle image upload to Vercel Blob
+  // 6. Handle image upload to Vercel Blob via server-side endpoint
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(20);
     setError(null);
 
     try {
-      const blob = await upload(file.name, file, {
-        access: "private",
-        handleUploadUrl: "/api/documents/upload", // Reusing established admin-authorized upload endpoint
-        onUploadProgress: ({ percentage }) => {
-          setUploadProgress(percentage);
-        },
+      const formData = new FormData();
+      formData.append("file", file);
+
+      setUploadProgress(50);
+
+      const res = await fetch("/api/admin/page-builder/upload", {
+        method: "POST",
+        body: formData,
       });
-      setFormImageUrl(blob.url);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Image upload failed");
+
+      setUploadProgress(100);
+      setFormImageUrl(data.url);
       showSuccess("Image uploaded successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed");
