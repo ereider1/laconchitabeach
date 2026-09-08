@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
+import CustomPageSections from "@/components/CustomPageSections";
 import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react";
 
 
@@ -95,9 +96,7 @@ export default function HomePage() {
           </div>
         </section>
 
-
-
-
+        <CustomPageSections slot="below-hero" />
 
         <section className="bg-white px-6 py-20 sm:px-10">
           <div className="mx-auto max-w-6xl">
@@ -131,10 +130,7 @@ export default function HomePage() {
           </div>
         </section>
 
-
-
-
-
+        <CustomPageSections slot="below-services" />
 
         <section className="preparedness-section px-6 py-20 sm:px-10" aria-labelledby="preparedness-heading">
           <div className="mx-auto max-w-6xl">
@@ -237,6 +233,7 @@ export default function HomePage() {
 		  
         </section>
 
+        <CustomPageSections slot="above-footer" />
 
       </main>
 

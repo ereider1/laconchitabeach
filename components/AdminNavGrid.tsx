@@ -9,6 +9,7 @@ import {
   Megaphone,
   MessageCircle,
   Users,
+  LayoutTemplate,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const tiles: Array<{
   { href: "/portal/admin/profiles", label: "Profiles", icon: Users, bg: "bg-dune" },
   { href: "/portal/admin/documents", label: "Documents", icon: FileText, bg: "bg-ink" },
   { href: "/portal/admin/community-corner", label: "Community Corner", icon: MessageCircle, bg: "bg-marina-light" },
+  { href: "/portal/admin/page-builder", label: "Page Builder", icon: LayoutTemplate, bg: "bg-dune" },
 ];
 
 export default function AdminNavGrid() {
