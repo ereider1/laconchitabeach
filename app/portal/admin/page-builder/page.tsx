@@ -443,7 +443,7 @@ export default function PageBuilder() {
                           <div>
                             <h4 className="text-sm font-bold text-ink leading-tight">{sec.name}</h4>
                             <p className="text-xxs uppercase font-semibold text-marina tracking-wider mt-1">
-                              Layout: {sec.layout} | Status: {sec.isActive ? "Active" : "Draft"}
+                              Layout: {sec.layout} | Status: {sec.isActive ? "LIVE" : "Inactive"}
                             </p>
                           </div>
                         </div>
@@ -467,17 +467,26 @@ export default function PageBuilder() {
                             <ChevronDown className="h-4 w-4" />
                           </button>
 
-                          <button
-                            onClick={() => toggleSectionActive(sec)}
-                            className={`ml-2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full transition border ${
-                              sec.isActive
-                                ? "bg-marina/15 border-marina/30 text-marina hover:bg-marina/25"
-                                : "bg-ink/5 border-ink/15 text-ink/65 hover:bg-ink/10"
-                            }`}
-                            title={sec.isActive ? "Click to set as Draft" : "Click to set as Active"}
-                          >
-                            {sec.isActive ? "Active" : "Draft"}
-                          </button>
+                          <div className="flex items-center gap-2 ml-2">
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                              sec.isActive ? "text-marina font-extrabold" : "text-ink/40"
+                            }`}>
+                              {sec.isActive ? "LIVE" : "Inactive"}
+                            </span>
+                            <button
+                              onClick={() => toggleSectionActive(sec)}
+                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                                sec.isActive ? "bg-marina" : "bg-ink/20"
+                              }`}
+                              title={sec.isActive ? "Click to set as Inactive" : "Click to set as LIVE"}
+                            >
+                              <span
+                                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                  sec.isActive ? "translate-x-5" : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                          </div>
 
                           <div className="h-5 w-px bg-ink/10 mx-1" />
 
@@ -994,23 +1003,30 @@ export default function PageBuilder() {
                 <div className="flex items-center justify-between pt-4 border-t border-marina/10 mt-4">
                   <div>
                     <label className="block text-sm font-bold text-ink leading-tight">
-                      Publish Directly
+                      Set Section Status
                     </label>
-                    <p className="text-[10px] text-ink/50 mt-1">If enabled, it will instantly render for public visitors.</p>
+                    <p className="text-[10px] text-ink/50 mt-1">If set to LIVE, it will instantly render for public visitors.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormIsActive(!formIsActive)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      formIsActive ? "bg-marina" : "bg-ink/20"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formIsActive ? "translate-x-6" : "translate-x-1"
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                      formIsActive ? "text-marina font-extrabold" : "text-ink/40"
+                    }`}>
+                      {formIsActive ? "LIVE" : "Inactive"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormIsActive(!formIsActive)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        formIsActive ? "bg-marina" : "bg-ink/20"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          formIsActive ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
 
