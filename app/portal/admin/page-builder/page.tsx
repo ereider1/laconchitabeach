@@ -15,6 +15,7 @@ import {
   ChevronDown,
   X,
   Sparkles,
+  Copy,
 } from "lucide-react";
 
 type Section = {
@@ -276,11 +277,70 @@ export default function PageBuilder() {
     }
   }
 
-  // Group sections by slot for display
+  // 10. Inline toggle section active/draft
+  async function toggleSectionActive(sec: Section) {
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sec._id, isActive: !sec.isActive }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to toggle status");
+      showSuccess(`Section "${sec.name}" ${!sec.isActive ? "activated" : "deactivated"}.`);
+      loadData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Toggling status failed");
+    }
+  }
+
+  // 11. Clone section (saves as draft)
+  async function cloneSection(sec: Section) {
+    setError(null);
+    setLoading(true);
+    try {
+      const payload = {
+        name: `${sec.name} (Clone)`,
+        slot: sec.slot,
+        layout: sec.layout,
+        eyebrow: sec.eyebrow,
+        title: sec.title,
+        content: sec.content,
+        imageUrl: sec.imageUrl,
+        buttonText: sec.buttonText,
+        buttonLink: sec.buttonLink,
+        isActive: false, // Clone starts as draft for safety
+      };
+      const res = await fetch("/api/admin/page-builder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to clone section");
+      showSuccess(`Section "${sec.name}" cloned successfully.`);
+      loadData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cloning failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Group and sort sections (Active first, then by order)
+  const sortActiveFirst = (list: Section[]) => {
+    return [...list].sort((a, b) => {
+      if (a.isActive && !b.isActive) return -1;
+      if (!a.isActive && b.isActive) return 1;
+      return a.order - b.order;
+    });
+  };
+
   const sectionsBySlot = {
-    "below-hero": sections.filter((s) => s.slot === "below-hero"),
-    "below-services": sections.filter((s) => s.slot === "below-services"),
-    "above-footer": sections.filter((s) => s.slot === "above-footer"),
+    "below-hero": sortActiveFirst(sections.filter((s) => s.slot === "below-hero")),
+    "below-services": sortActiveFirst(sections.filter((s) => s.slot === "below-services")),
+    "above-footer": sortActiveFirst(sections.filter((s) => s.slot === "above-footer")),
   };
 
   return (
@@ -401,7 +461,27 @@ export default function PageBuilder() {
                             <ChevronDown className="h-4 w-4" />
                           </button>
 
+                          <button
+                            onClick={() => toggleSectionActive(sec)}
+                            className={`ml-2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full transition border ${
+                              sec.isActive
+                                ? "bg-marina/15 border-marina/30 text-marina hover:bg-marina/25"
+                                : "bg-ink/5 border-ink/15 text-ink/65 hover:bg-ink/10"
+                            }`}
+                            title={sec.isActive ? "Click to set as Draft" : "Click to set as Active"}
+                          >
+                            {sec.isActive ? "Active" : "Draft"}
+                          </button>
+
                           <div className="h-5 w-px bg-ink/10 mx-1" />
+
+                          <button
+                            onClick={() => cloneSection(sec)}
+                            className="p-1.5 text-ink/60 hover:text-marina hover:bg-sand rounded-lg transition"
+                            title="Clone Section"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
 
                           <button
                             onClick={() => openEdit(sec)}
