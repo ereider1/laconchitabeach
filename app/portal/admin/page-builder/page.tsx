@@ -16,6 +16,7 @@ import {
   X,
   Sparkles,
   Copy,
+  FileText,
 } from "lucide-react";
 
 type Section = {
@@ -61,6 +62,91 @@ export default function PageBuilder() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Document Selector state
+  const [docSelectorOpen, setDocSelectorOpen] = useState(false);
+  const [docSelectorTarget, setDocSelectorTarget] = useState<"image" | "link">("image");
+  const [availableDocs, setAvailableDocs] = useState<Array<{ _id: string; title: string; category: string; fileUrl: string }>>([]);
+  const [docSearchQuery, setDocSelectorSearchQuery] = useState("");
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Open Document Selector modal and fetch items
+  async function openDocumentSelector(target: "image" | "link") {
+    setDocSelectorTarget(target);
+    setDocSelectorOpen(true);
+    setLoadingDocs(true);
+    setDocSelectorSearchQuery("");
+    try {
+      const res = await fetch("/api/admin/documents");
+      const data = await res.json();
+      if (res.ok) {
+        setAvailableDocs(data.documents || []);
+      }
+    } catch (err) {
+      console.error("Failed to load documents:", err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  }
+
+  // Handle choosing a document
+  function selectDocument(doc: { _id: string; fileUrl: string }) {
+    if (docSelectorTarget === "image") {
+      setFormImageUrl(doc.fileUrl);
+    } else {
+      setFormButtonLink(`/api/documents/${doc._id}`);
+    }
+    setDocSelectorOpen(false);
+  }
+
+  // Drag and Drop state & handlers
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  async function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // Validate that dropped file is an image
+    if (!file.type.startsWith("image/")) {
+      setError("Please drop an image file (PNG, JPG, WEBP, etc.).");
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    setError(null);
+
+    try {
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/documents/upload",
+        onUploadProgress: ({ percentage }) => {
+          setUploadProgress(percentage);
+        },
+      });
+
+      setFormImageUrl(blob.url);
+      showSuccess("Image uploaded successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  }
 
   // Helper to proxy private Vercel Blob URLs so they can render in the browser
   const getProxyUrl = (url?: string) => {
@@ -732,7 +818,16 @@ export default function PageBuilder() {
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
                     Section Image {formLayout !== "full-width" && <span className="text-coral">*</span>}
                   </label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-sand/20 rounded-2xl p-4 border border-marina/10">
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`flex flex-col sm:flex-row items-center gap-4 bg-sand/20 rounded-2xl p-4 border transition-all duration-200 ${
+                      isDragging
+                        ? "border-2 border-dashed border-marina bg-sand-dark/40 scale-[1.01]"
+                        : "border border-marina/10"
+                    }`}
+                  >
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15">
                       {formImageUrl ? (
                         <img src={formImageUrl} alt="Upload preview" className="h-full w-full object-cover" />
@@ -741,14 +836,21 @@ export default function PageBuilder() {
                       )}
                     </div>
                     <div className="flex-1 w-full">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <input
                           type="text"
                           value={formImageUrl}
                           onChange={(e) => setFormImageUrl(e.target.value)}
-                          placeholder="Paste image URL or click Upload"
-                          className="flex-1 rounded-xl border border-marina/20 px-3 py-1.5 text-xs text-ink focus:border-marina outline-none"
+                          placeholder="Paste image URL or choose file"
+                          className="flex-1 min-w-[150px] rounded-xl border border-marina/20 px-3 py-1.5 text-xs text-ink focus:border-marina outline-none"
                         />
+                        <button
+                          type="button"
+                          onClick={() => openDocumentSelector("image")}
+                          className="flex items-center gap-1 rounded-lg border border-marina/30 hover:bg-sand/35 px-3 py-1.5 text-xs font-bold text-marina transition whitespace-nowrap"
+                        >
+                          Choose Document
+                        </button>
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
@@ -765,13 +867,17 @@ export default function PageBuilder() {
                         onChange={handleImageUpload}
                         className="hidden"
                       />
-                      {uploadProgress !== null && (
+                      {uploadProgress !== null ? (
                         <div className="mt-2 w-full bg-sand-dark rounded-full h-1.5">
                           <div
                             className="bg-marina h-1.5 rounded-full transition-all duration-300"
                             style={{ width: `${uploadProgress}%` }}
                           />
                         </div>
+                      ) : (
+                        <p className="text-[10px] text-ink/40 mt-2">
+                          Tip: You can also drag and drop your image file directly into this box.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -794,9 +900,18 @@ export default function PageBuilder() {
 
                   {/* Button Link */}
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
-                      Button Destination Link (Optional)
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-ink">
+                        Button Destination Link (Optional)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => openDocumentSelector("link")}
+                        className="text-[10px] font-bold text-marina hover:underline uppercase tracking-wider"
+                      >
+                        Link to Document
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formButtonLink}
@@ -1047,6 +1162,85 @@ export default function PageBuilder() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Document Selector Modal */}
+      {docSelectorOpen && (
+        <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full border border-marina/20 shadow-2xl flex flex-col max-h-[85vh] animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-marina/10 pb-4 mb-4">
+              <h3 className="text-lg font-bold text-ink">
+                Choose from Portal Documents
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDocSelectorOpen(false)}
+                className="text-ink/40 hover:text-ink transition p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative mb-4">
+              <input
+                type="text"
+                value={docSearchQuery}
+                onChange={(e) => setDocSelectorSearchQuery(e.target.value)}
+                placeholder="Search documents by title..."
+                className="w-full rounded-xl border border-marina/20 px-4 py-2 text-sm text-ink focus:border-marina outline-none"
+              />
+            </div>
+
+            {/* Documents List */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[250px]">
+              {loadingDocs ? (
+                <p className="text-center text-xs text-ink/50 py-12">Loading documents...</p>
+              ) : availableDocs.length === 0 ? (
+                <p className="text-center text-xs text-ink/40 py-12 italic">No documents found in the portal.</p>
+              ) : (
+                (() => {
+                  const filtered = availableDocs.filter((d) =>
+                    d.title.toLowerCase().includes(docSearchQuery.toLowerCase())
+                  );
+                  if (filtered.length === 0) {
+                    return <p className="text-center text-xs text-ink/40 py-12 italic">No matches found for your search.</p>;
+                  }
+                  return filtered.map((doc) => (
+                    <div
+                      key={doc._id}
+                      onClick={() => selectDocument(doc)}
+                      className="flex items-center justify-between p-3 rounded-xl border border-marina/10 hover:border-marina/40 hover:bg-sand/20 cursor-pointer transition"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 shrink-0 bg-sand rounded-lg flex items-center justify-center text-marina">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-ink truncate leading-snug">{doc.title}</h4>
+                          <p className="text-[10px] uppercase font-bold text-marina tracking-wider mt-0.5">{doc.category}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-marina shrink-0 px-2 py-1 bg-sand rounded-full">
+                        Select
+                      </span>
+                    </div>
+                  ));
+                })()
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-marina/10 text-right">
+              <button
+                type="button"
+                onClick={() => setDocSelectorOpen(false)}
+                className="rounded-full border border-marina/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand/20 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
