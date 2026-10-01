@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
+import WeatherForecast from "@/components/WeatherForecast";
 import CustomPageSections from "@/components/CustomPageSections";
 import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react";
 
@@ -70,7 +71,10 @@ export default function HomePage() {
               </div>
             </div>
             <div className="mt-12 w-full max-w-4xl">
+              <WeatherForecast />
+              <div className="mt-3">
               <HarborBoard />
+              </div>
             </div>
           </div>
           <div className="hero-wave-divider pt-10" aria-hidden="true">
