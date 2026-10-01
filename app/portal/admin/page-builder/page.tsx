@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { upload } from "@vercel/blob/client";
 import {
   ArrowLeft,
   ArrowRight,
@@ -59,7 +58,6 @@ export default function PageBuilder() {
   const [formIsActive, setFormIsActive] = useState(true);
 
   // Upload state
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +100,23 @@ export default function PageBuilder() {
   // Drag and Drop state & handlers
   const [isDragging, setIsDragging] = useState(false);
 
+  async function uploadHomepageImage(file: File) {
+    if (file.size > 4 * 1024 * 1024) {
+      throw new Error("Image must be 4 MB or smaller");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/admin/page-builder/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error ?? "Image upload failed");
+    return result.url as string;
+  }
+
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragging(true);
@@ -126,31 +141,25 @@ export default function PageBuilder() {
     }
 
     setUploading(true);
-    setUploadProgress(0);
     setError(null);
 
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/documents/upload",
-        onUploadProgress: ({ percentage }) => {
-          setUploadProgress(percentage);
-        },
-      });
-
-      setFormImageUrl(blob.url);
+      setFormImageUrl(await uploadHomepageImage(file));
       showSuccess("Image uploaded successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed");
     } finally {
       setUploading(false);
-      setUploadProgress(null);
     }
   }
 
   // Helper to proxy private Vercel Blob URLs so they can render in the browser
   const getProxyUrl = (url?: string) => {
-    return url || "";
+    if (!url) return "";
+    if (url.includes("blob.vercel-storage.com") && url.includes("private.")) {
+      return `/api/homepage-media?url=${encodeURIComponent(url)}`;
+    }
+    return url;
   };
 
   // 1. Fetch sections & global toggle
@@ -241,27 +250,15 @@ export default function PageBuilder() {
     if (!file) return;
 
     setUploading(true);
-    setUploadProgress(0);
     setError(null);
 
     try {
-      // Direct browser-to-cloud upload bypasses Vercel Serverless payload limits (4.5MB)
-      // and timeouts, making it extremely reliable for high-resolution images.
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/documents/upload", // Authorized endpoint generated token
-        onUploadProgress: ({ percentage }) => {
-          setUploadProgress(percentage);
-        },
-      });
-
-      setFormImageUrl(blob.url);
+      setFormImageUrl(await uploadHomepageImage(file));
       showSuccess("Image uploaded successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed");
     } finally {
       setUploading(false);
-      setUploadProgress(null);
     }
   }
 
@@ -830,7 +827,7 @@ export default function PageBuilder() {
                   >
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15">
                       {formImageUrl ? (
-                        <img src={formImageUrl} alt="Upload preview" className="h-full w-full object-cover" />
+                        <img src={getProxyUrl(formImageUrl)} alt="Upload preview" className="h-full w-full object-cover" />
                       ) : (
                         <ImageIcon className="h-6 w-6 text-ink/30" />
                       )}
@@ -867,18 +864,9 @@ export default function PageBuilder() {
                         onChange={handleImageUpload}
                         className="hidden"
                       />
-                      {uploadProgress !== null ? (
-                        <div className="mt-2 w-full bg-sand-dark rounded-full h-1.5">
-                          <div
-                            className="bg-marina h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-ink/40 mt-2">
-                          Tip: You can also drag and drop your image file directly into this box.
-                        </p>
-                      )}
+                      <p className="text-[10px] text-ink/40 mt-2">
+                        Images must be 4 MB or smaller. You can also drag and drop an image here.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -976,7 +964,7 @@ export default function PageBuilder() {
                     <section className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
                       <div
                         className="min-h-[360px] bg-cover bg-center"
-                        style={formImageUrl ? { backgroundImage: `url(${formImageUrl})` } : { backgroundColor: "#cbd5e1" }}
+                        style={formImageUrl ? { backgroundImage: `url(${getProxyUrl(formImageUrl)})` } : { backgroundColor: "#cbd5e1" }}
                       />
                       <div className="flex items-center px-8 py-16 sm:px-14">
                         <div className="max-w-lg">
@@ -1025,7 +1013,7 @@ export default function PageBuilder() {
                       </div>
                       <div
                         className="min-h-[360px] bg-cover bg-center"
-                        style={formImageUrl ? { backgroundImage: `url(${formImageUrl})` } : { backgroundColor: "#cbd5e1" }}
+                        style={formImageUrl ? { backgroundImage: `url(${getProxyUrl(formImageUrl)})` } : { backgroundColor: "#cbd5e1" }}
                       />
                     </section>
                   )}
@@ -1045,7 +1033,7 @@ export default function PageBuilder() {
                         {formImageUrl && (
                           <div className="mt-8 max-w-2xl w-full h-[300px] relative overflow-hidden rounded-2xl">
                             <img
-                              src={formImageUrl}
+                              src={getProxyUrl(formImageUrl)}
                               alt=""
                               className="w-full h-full object-cover"
                             />
