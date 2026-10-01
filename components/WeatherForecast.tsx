@@ -24,6 +24,7 @@ type WeatherResponse = {
 
 const forecastUrl =
   "https://api.open-meteo.com/v1/forecast?latitude=34.36&longitude=-119.45&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=6";
+const californiaTimeZone = "America/Los_Angeles";
 
 function getWeather(code: number): { label: string; Icon: LucideIcon } {
   if (code === 0) return { label: "Clear", Icon: Sun };
@@ -63,10 +64,14 @@ async function getForecast() {
 
 function formatDay(date: string, index: number) {
   if (index === 0) return "Today";
+
+  const [year, month, day] = date.split("-").map(Number);
+  const noonPacific = new Date(Date.UTC(year, month - 1, day, 12));
+
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
-    timeZone: "UTC",
-  }).format(new Date(`${date}T12:00:00Z`));
+    timeZone: californiaTimeZone,
+  }).format(noonPacific);
 }
 
 export default async function WeatherForecast() {
