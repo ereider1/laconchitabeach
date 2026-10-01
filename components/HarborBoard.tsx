@@ -110,11 +110,11 @@ export default async function HarborBoard() {
         <span className="text-xs font-bold uppercase tracking-[0.18em] text-marina">Today at La Conchita</span>
         <span className="h-2 w-2 rounded-full bg-marina-light" aria-hidden />
       </div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5 items-center">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5 items-top">
         {conditions.map((c) => (
           <div key={c.label} className="min-w-0">
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-dune">{c.label}</dt>
-            <dd className="mt-1 text-lg font-bold text-ink">
+            <dt className="text-[10px] font-semibold uppercase text-dune">{c.label}</dt>
+            <dd className="mt-1 font-bold text-ink">
               {c.value}
               {c.note && <span className="ml-1 text-xs font-body font-normal text-dune">{c.note}</span>}
             </dd>

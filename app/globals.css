@@ -109,8 +109,12 @@ select:focus-visible {
     ),
     url("/beach-hero-bg.jpg") center / cover;
   isolation: isolate;
+}/*
+.hero-beach dd, .hero-beach dd span {
+  font-size:10px !important;
+  font-weight:500 !important;
 }
-
+*/
 .hero-wave-divider {
   position: absolute;
   bottom: -1px;
