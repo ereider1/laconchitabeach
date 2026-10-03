@@ -44,7 +44,7 @@ export default async function RootLayout({
     : configuredPublishableKey;
 
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className="font-body">
         <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
       </body>
