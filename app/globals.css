@@ -96,7 +96,12 @@ select:focus-visible {
   content: "";
   background: rgba(255, 255, 255, 0.28);
 }
-
+#surf-button {
+  background-color:#079ec4;
+}
+#surf-button:hover {
+  background-color:#0b3040;
+}
 .hero-beach {
   position: relative;
   min-height: 620px;
@@ -109,12 +114,8 @@ select:focus-visible {
     ),
     url("/beach-hero-bg.jpg") center / cover;
   isolation: isolate;
-}/*
-.hero-beach dd, .hero-beach dd span {
-  font-size:10px !important;
-  font-weight:500 !important;
 }
-*/
+
 .hero-wave-divider {
   position: absolute;
   bottom: -1px;
