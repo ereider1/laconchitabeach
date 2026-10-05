@@ -39,7 +39,12 @@ export default async function PortalDashboard() {
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-dune">
-        {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+        {new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          timeZone: "America/Los_Angeles",
+        })}
       </p>
       <h1 className="mt-2 font-display text-3xl text-ink">Welcome back, {firstName}.</h1>
 
