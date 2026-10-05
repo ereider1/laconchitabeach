@@ -173,7 +173,7 @@ export default function AdminEvents() {
               checked={newEvent.isPublic}
               onChange={(e) => setNewEvent({ ...newEvent, isPublic: e.target.checked })}
             />
-            Visible to the public site
+            Make this event public
           </label>
         </div>
         <textarea
@@ -228,7 +228,7 @@ export default function AdminEvents() {
                           checked={draft.isPublic}
                           onChange={(ev) => setDraft({ ...draft, isPublic: ev.target.checked })}
                         />
-                        Visible to the public site
+                        Make this event public
                       </label>
                     </div>
                     <textarea
