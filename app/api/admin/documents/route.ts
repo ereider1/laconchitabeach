@@ -5,8 +5,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import Document from "@/lib/models/Document";
 import { isAdmin } from "@/lib/isAdmin";
 
-// Full document list, admin-only (the resident-facing /portal/documents page
-// queries the model directly instead of this route).
+// Full document list, admin-only.
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

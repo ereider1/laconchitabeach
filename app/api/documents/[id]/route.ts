@@ -3,13 +3,15 @@ import { auth } from "@clerk/nextjs/server";
 import { get } from "@vercel/blob";
 import { connectToDatabase } from "@/lib/mongodb";
 import Document from "@/lib/models/Document";
+import { isAdmin } from "@/lib/isAdmin";
 
-// Streams a private document to any signed-in resident. The blob itself
+// Streams a private document to admins only. The blob itself
 // isn't publicly fetchable — this route is the only way to read it, and it
 // checks auth before ever touching Blob storage.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const { id } = await params;
   await connectToDatabase();

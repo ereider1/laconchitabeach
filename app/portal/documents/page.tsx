@@ -1,5 +1,8 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
 import Document from "@/lib/models/Document";
+import { isAdmin } from "@/lib/isAdmin";
 
 async function getDocuments() {
   await connectToDatabase();
@@ -16,6 +19,9 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default async function DocumentsPage() {
+  const { userId } = await auth();
+  if (!(await isAdmin(userId))) redirect("/portal");
+
   let documents: Array<{ _id: string; title: string; description?: string; category: string; fileUrl: string }> = [];
   let dbError = false;
 

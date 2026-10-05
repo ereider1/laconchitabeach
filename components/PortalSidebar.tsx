@@ -35,9 +35,10 @@ const links: Array<{
 
 export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
-  const navLinks = isAdmin
-    ? [...links, { href: "/portal/admin", label: "Admin", icon: ShieldCheck }]
-    : links;
+  const navLinks = [
+    ...links.filter((link) => link.href !== "/portal/documents" || isAdmin),
+    ...(isAdmin ? [{ href: "/portal/admin", label: "Admin", icon: ShieldCheck }] : []),
+  ];
 
   return (
     <aside className="flex w-full shrink-0 flex-col justify-between bg-ink px-5 py-6 text-white md:w-64">
