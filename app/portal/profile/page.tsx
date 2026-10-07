@@ -18,6 +18,7 @@ export default async function ProfilePage() {
     firstName: initialResident?.firstName ?? user?.firstName ?? initialResident?.fullName?.split(" ")[0] ?? "",
     lastName: initialResident?.lastName ?? user?.lastName ?? initialResident?.fullName?.split(" ").slice(1).join(" ") ?? "",
     address: initialResident?.address ?? "",
+    alternateAddress: initialResident?.alternateAddress ?? "",
     email: initialResident?.email ?? user?.primaryEmailAddress?.emailAddress ?? "",
     phone: initialResident?.phone ?? "",
     moveInYear: initialResident?.moveInYear ? String(initialResident.moveInYear) : "",

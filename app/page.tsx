@@ -69,7 +69,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="mt-12 w-full max-w-5xl">
+            <div className="mt-12 mb-12 w-full max-w-5xl">
               <HarborBoard />
             </div>
           </div>

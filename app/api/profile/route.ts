@@ -14,7 +14,7 @@ export async function GET() {
 }
 
 // Self-service create/update of the signed-in resident's own profile.
-// Body: { firstName, lastName, fullName?, address, email, phone?, moveInYear?, listedInDirectory }
+// Body: { firstName, lastName, fullName?, address, alternateAddress?, email, phone?, moveInYear?, listedInDirectory }
 export async function PUT(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,6 +38,10 @@ export async function PUT(req: NextRequest) {
     lastName: lastName || undefined,
     fullName,
     address: body.address,
+    alternateAddress:
+      typeof body.alternateAddress === "string"
+        ? body.alternateAddress.trim() || undefined
+        : undefined,
     email: body.email,
     phone: body.phone || undefined,
     moveInYear: body.moveInYear || undefined,

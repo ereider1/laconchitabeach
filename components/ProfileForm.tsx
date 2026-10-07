@@ -7,6 +7,7 @@ type Defaults = {
   firstName: string;
   lastName: string;
   address: string;
+  alternateAddress: string;
   email: string;
   phone: string;
   moveInYear: string;
@@ -89,6 +90,17 @@ export default function ProfileForm({
           value={form.address}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium uppercase tracking-wider text-ink/60">
+          Alternate Address (optional)
+        </label>
+        <input
+          className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+          value={form.alternateAddress}
+          onChange={(e) => setForm({ ...form, alternateAddress: e.target.value })}
         />
       </div>
 

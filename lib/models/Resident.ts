@@ -6,6 +6,7 @@ export interface IResident {
   lastName?: string;
   fullName: string;
   address: string;
+  alternateAddress?: string;
   email: string;
   phone?: string;
   householdMembers?: string[];
@@ -25,6 +26,7 @@ const ResidentSchema = new Schema<IResident>(
     lastName: { type: String },
     fullName: { type: String, required: true },
     address: { type: String, required: true },
+    alternateAddress: { type: String },
     email: { type: String, required: true },
     phone: { type: String },
     householdMembers: [{ type: String }],
