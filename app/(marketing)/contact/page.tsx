@@ -1,8 +1,12 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 import { Clock3, Mail, MapPin } from "lucide-react";
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { userId } = await auth();
+
   return (
     <div className="site-frame">
       <SiteHeader />
@@ -28,13 +32,29 @@ export default function ContactPage() {
               </dt>
               <dd className="mt-2 text-sm leading-6 text-ink/75">La Conchita, California 93001</dd>
             </div>
-            <div className="rounded-2xl bg-sand/55 p-5">
-              <dt className="eyebrow flex items-center gap-2 text-marina">
-                <Mail className="h-4 w-4" aria-hidden="true" />
-                Email
-              </dt>
-              <dd className="mt-2 text-sm leading-6 text-ink/75">Jerome.Nesnadny@gmail.com</dd>
-            </div>
+            {userId ? (
+              <div className="rounded-2xl bg-sand/55 p-5">
+                <dt className="eyebrow flex items-center gap-2 text-marina">
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Email
+                </dt>
+                <dd className="mt-2 text-sm leading-6 text-ink/75">
+                  Jerome.Nesnadny@gmail.com
+                </dd>
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-sand/55 p-5">
+                <dt className="eyebrow flex items-center gap-2 text-marina">
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Resident email
+                </dt>
+                <dd className="mt-2 text-sm leading-6 text-ink/75">
+                  <Link href="/sign-in" className="text-marina underline underline-offset-4">
+                    Sign in to view the community email address.
+                  </Link>
+                </dd>
+              </div>
+            )}
             <div className="rounded-2xl bg-sand/55 p-5 sm:col-span-2">
               <dt className="eyebrow flex items-center gap-2 text-marina">
                 <Clock3 className="h-4 w-4" aria-hidden="true" />
