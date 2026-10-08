@@ -55,7 +55,15 @@ export default function SiteHeader() {
             >
               Go to Intranet
             </Link>
-            <UserButton />
+            <UserButton
+              userProfileProps={{
+                appearance: {
+                  elements: {
+                    navbarButton__apiKeys: { display: "none" },
+                  },
+                },
+              }}
+            />
           </Show>
         </div>
       </div>

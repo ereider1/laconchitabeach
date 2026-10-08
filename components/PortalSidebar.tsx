@@ -103,7 +103,15 @@ export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }
         </nav>
 
         <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
-          <UserButton />
+          <UserButton
+            userProfileProps={{
+              appearance: {
+                elements: {
+                  navbarButton__apiKeys: { display: "none" },
+                },
+              },
+            }}
+          />
           <span className="text-xs text-white/50">Signed in</span>
         </div>
       </div>
