@@ -46,7 +46,16 @@ export default async function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-body">
-        <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>
+        <ClerkProvider
+          publishableKey={publishableKey}
+          appearance={{
+            elements: {
+              userButtonPopoverFooter: { display: "none" },
+            },
+          }}
+        >
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
