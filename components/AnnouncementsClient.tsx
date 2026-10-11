@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
 type Announcement = {
   _id: string;
@@ -127,7 +128,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
             <h3 className="mt-1 font-display text-xl text-ink">{a.title}</h3>
             <p className="mt-2 text-sm text-ink/70">{a.body}</p>
             <p className="mt-3 text-xs text-ink/40">
-              {a.authorName} &middot; {new Date(a.createdAt).toLocaleDateString()}
+              {getAnnouncementAuthorName(a.authorName)} &middot; {new Date(a.createdAt).toLocaleDateString()}
             </p>
           </div>
         ))}

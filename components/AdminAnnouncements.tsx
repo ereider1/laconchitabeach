@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
 type Announcement = {
   _id: string;
@@ -238,7 +239,7 @@ export default function AdminAnnouncements() {
                           {a.title}
                         </p>
                         <p className="mt-1 text-xs uppercase tracking-wider text-dune">
-                          {a.category} · {a.authorName}
+                          {a.category} · {getAnnouncementAuthorName(a.authorName)}
                         </p>
                       </div>
                       <div className="flex shrink-0 gap-3">

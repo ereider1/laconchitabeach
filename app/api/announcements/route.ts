@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Announcement from "@/lib/models/Announcement";
 import { isAdmin } from "@/lib/isAdmin";
+import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
 export async function GET() {
   const { userId } = await auth();
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     body: body.body,
     category: body.category ?? "general",
     pinned: !!body.pinned,
-    authorName: user?.fullName ?? user?.username ?? "Board member",
+    authorName: getAnnouncementAuthorName(user?.fullName ?? user?.username ?? "Board member"),
     authorClerkId: userId,
   });
 
