@@ -430,39 +430,43 @@ export default function PageBuilder() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-xl shadow-deep-ocean/5 border border-marina/15">
+    <div className="min-w-0 rounded-2xl border border-marina/15 bg-white p-4 shadow-xl shadow-deep-ocean/5 sm:rounded-3xl sm:p-6">
       {/* Header with Title & Master Toggle */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-marina/10 pb-5">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-ink flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-marina" />
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink sm:text-xl">
+            <Sparkles className="h-5 w-5 shrink-0 text-marina" />
             Homepage Section Builder
           </h2>
-          <p className="text-xs text-ink/60 mt-0.5">
+          <p className="mt-0.5 text-xs leading-relaxed text-ink/60">
             Add custom elements, announcements, or clean text-image layouts directly into the public homepage.
           </p>
         </div>
 
         {view === "list" && (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-sand px-3 py-1.5 rounded-full border border-marina/20">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex items-center justify-between gap-3 rounded-full border border-marina/20 bg-sand px-3 py-1.5 sm:justify-start">
               <span className="text-xs font-semibold text-ink">Module Active:</span>
               <button
+                type="button"
                 onClick={toggleMasterActive}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                aria-label={masterActive ? "Deactivate page builder module" : "Activate page builder module"}
+                aria-pressed={masterActive}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
                   masterActive ? "bg-marina" : "bg-ink/20"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    masterActive ? "translate-x-6" : "translate-x-1"
+                    masterActive ? "translate-x-7" : "translate-x-1"
                   }`}
                 />
               </button>
             </div>
             <button
+              type="button"
               onClick={openCreate}
-              className="flex items-center gap-1.5 rounded-full bg-marina hover:bg-marina-light px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-md transition"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-marina px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-marina-light sm:min-h-10"
             >
               <Plus className="h-4 w-4" /> New Section
             </button>
@@ -472,9 +476,9 @@ export default function PageBuilder() {
 
       {/* Message banners */}
       {error && (
-        <div className="mt-4 p-4 rounded-2xl bg-coral/10 border border-coral text-sm text-ink flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-ink/60 hover:text-ink"><X className="h-4 w-4" /></button>
+        <div className="mt-4 flex items-start justify-between gap-3 rounded-2xl border border-coral bg-coral/10 p-4 text-sm text-ink">
+          <span className="min-w-0 break-words">{error}</span>
+          <button type="button" aria-label="Dismiss error" onClick={() => setError(null)} className="shrink-0 p-1 text-ink/60 hover:text-ink"><X className="h-4 w-4" /></button>
         </div>
       )}
 
@@ -492,12 +496,12 @@ export default function PageBuilder() {
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (
             Object.entries(sectionsBySlot).map(([slotName, slotSections]) => (
-              <div key={slotName} className="bg-sand/30 rounded-2xl p-5 border border-sand-dark">
-                <div className="flex items-center justify-between border-b border-marina/10 pb-3 mb-4">
-                  <span className="text-sm font-bold uppercase tracking-wider text-marina">
+              <div key={slotName} className="rounded-2xl border border-sand-dark bg-sand/30 p-3 sm:p-5">
+                <div className="mb-4 flex flex-col gap-1 border-b border-marina/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs font-bold uppercase leading-relaxed tracking-wider text-marina sm:text-sm">
                     Slot: {slotName === "below-hero" ? "Below Hero Wave" : slotName === "below-services" ? "Below Resident Services" : "Above Footer"}
                   </span>
-                  <span className="text-xs text-ink/65 font-medium">{slotSections.length} sections</span>
+                  <span className="text-xs font-medium text-ink/65">{slotSections.length} sections</span>
                 </div>
 
                 {slotSections.length === 0 ? (
@@ -507,11 +511,11 @@ export default function PageBuilder() {
                     {slotSections.map((sec, idx) => (
                       <div
                         key={sec._id}
-                        className={`flex items-center justify-between bg-white rounded-xl p-4 border transition ${
+                        className={`flex min-w-0 flex-col gap-3 rounded-xl border bg-white p-3 transition sm:flex-row sm:items-center sm:justify-between sm:p-4 ${
                           sec.isActive ? "border-marina/10" : "border-ink/10 opacity-60"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
                           {/* Image preview thumbnail */}
                           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand-dark relative flex items-center justify-center">
                             {sec.imageUrl ? (
@@ -520,74 +524,87 @@ export default function PageBuilder() {
                               <ImageIcon className="h-5 w-5 text-ink/30" />
                             )}
                           </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-ink leading-tight">{sec.name}</h4>
-                            <p className="text-xxs uppercase font-semibold text-marina tracking-wider mt-1">
-                              Layout: {sec.layout} | Status: {sec.isActive ? "LIVE" : "Inactive"}
+                          <div className="min-w-0">
+                            <h4 className="break-words text-sm font-bold leading-tight text-ink">{sec.name}</h4>
+                            <p className="mt-1 text-[10px] font-semibold uppercase leading-relaxed tracking-wider text-marina">
+                              {sec.layout.replaceAll("-", " ")} <span aria-hidden="true">·</span> {sec.isActive ? "LIVE" : "Inactive"}
                             </p>
                           </div>
                         </div>
 
                         {/* Controls */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-ink/5 pt-2 sm:w-auto sm:flex-nowrap sm:justify-end sm:border-0 sm:pt-0">
                           <button
+                            type="button"
                             onClick={() => moveOrder(idx, "up", slotSections)}
                             disabled={idx === 0}
-                            className="p-1.5 text-ink/60 hover:text-ink disabled:opacity-30 transition"
+                            aria-label={`Move ${sec.name} up`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-ink/60 transition hover:bg-sand hover:text-ink disabled:opacity-30"
                             title="Move Up"
                           >
                             <ChevronUp className="h-4 w-4" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => moveOrder(idx, "down", slotSections)}
                             disabled={idx === slotSections.length - 1}
-                            className="p-1.5 text-ink/60 hover:text-ink disabled:opacity-30 transition"
+                            aria-label={`Move ${sec.name} down`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-ink/60 transition hover:bg-sand hover:text-ink disabled:opacity-30"
                             title="Move Down"
                           >
                             <ChevronDown className="h-4 w-4" />
                           </button>
 
-                          <div className="flex items-center gap-2 ml-2">
+                          <div className="ml-1 flex items-center gap-2 sm:ml-2">
                             <span className={`text-[10px] font-bold uppercase tracking-wider ${
                               sec.isActive ? "text-marina font-extrabold" : "text-ink/40"
                             }`}>
                               {sec.isActive ? "LIVE" : "Inactive"}
                             </span>
                             <button
+                              type="button"
                               onClick={() => toggleSectionActive(sec)}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                              aria-label={sec.isActive ? `Deactivate ${sec.name}` : `Activate ${sec.name}`}
+                              aria-pressed={sec.isActive}
+                              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
                                 sec.isActive ? "bg-marina" : "bg-ink/20"
                               }`}
                               title={sec.isActive ? "Click to set as Inactive" : "Click to set as LIVE"}
                             >
                               <span
                                 className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                  sec.isActive ? "translate-x-5" : "translate-x-1"
+                                  sec.isActive ? "translate-x-7" : "translate-x-1"
                                 }`}
                               />
                             </button>
                           </div>
 
-                          <div className="h-5 w-px bg-ink/10 mx-1" />
+                          <div className="mx-1 hidden h-5 w-px bg-ink/10 sm:block" />
 
                           <button
+                            type="button"
                             onClick={() => cloneSection(sec)}
-                            className="p-1.5 text-ink/60 hover:text-marina hover:bg-sand rounded-lg transition"
+                            aria-label={`Clone ${sec.name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-ink/60 transition hover:bg-sand hover:text-marina"
                             title="Clone Section"
                           >
                             <Copy className="h-4 w-4" />
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => openEdit(sec)}
-                            className="p-1.5 text-marina hover:bg-sand rounded-lg transition"
+                            aria-label={`Edit ${sec.name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-marina transition hover:bg-sand"
                             title="Edit"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => deleteSection(sec._id, sec.name)}
-                            className="p-1.5 text-coral hover:bg-coral/10 rounded-lg transition"
+                            aria-label={`Delete ${sec.name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-coral transition hover:bg-coral/10"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -607,7 +624,7 @@ export default function PageBuilder() {
       {(view === "create" || view === "edit") && (
         <div className="mt-6">
           {/* Breadcrumb / Step Indicator */}
-          <div className="flex items-center gap-2 text-xs font-semibold text-ink/65 mb-6">
+          <div className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-ink/65">
             <button
               onClick={() => setView("list")}
               className="flex items-center gap-1 text-marina hover:underline"
@@ -615,7 +632,7 @@ export default function PageBuilder() {
               <ArrowLeft className="h-3 w-3" /> Back to Dashboard
             </button>
             <span>/</span>
-            <span className="text-ink">
+            <span className="min-w-0 break-words text-ink">
               {view === "create" ? "Add Custom Section" : `Editing: ${formName}`}
             </span>
           </div>
@@ -623,12 +640,13 @@ export default function PageBuilder() {
           {/* Stepper bar */}
           <div className="relative mb-8">
             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-sand-dark -translate-y-1/2 -z-10" />
-            <div className="flex justify-between max-w-lg mx-auto">
+            <div className="mx-auto grid max-w-lg grid-cols-4 justify-items-center">
               {[1, 2, 3, 4].map((step) => (
                 <button
                   key={step}
                   onClick={() => step < wizardStep && setWizardStep(step)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition ${
+                  aria-label={`Step ${step}: ${["Layout", "Content", "Preview", "Insertion"][step - 1]}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold transition ${
                     wizardStep === step
                       ? "border-marina bg-marina text-white scale-110"
                       : wizardStep > step
@@ -641,7 +659,7 @@ export default function PageBuilder() {
                 </button>
               ))}
             </div>
-            <div className="flex justify-between max-w-lg mx-auto text-[10px] uppercase font-bold tracking-wider text-ink/65 mt-2">
+            <div className="mx-auto mt-2 grid max-w-lg grid-cols-4 justify-items-center gap-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-ink/65 sm:text-[10px] sm:tracking-wider">
               <span className={wizardStep === 1 ? "text-marina" : ""}>1. Layout</span>
               <span className={wizardStep === 2 ? "text-marina" : ""}>2. Content</span>
               <span className={wizardStep === 3 ? "text-marina" : ""}>3. Preview</span>
@@ -659,11 +677,11 @@ export default function PageBuilder() {
                 </p>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-3 max-w-3xl mx-auto">
+              <div className="mx-auto grid max-w-3xl gap-3 sm:grid-cols-3 sm:gap-5">
                 {/* Option 1: Full-Width */}
                 <button
                   onClick={() => setFormLayout("full-width")}
-                  className={`border-2 rounded-2xl p-5 flex flex-col items-center text-center transition ${
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
                     formLayout === "full-width"
                       ? "border-marina bg-sand/35"
                       : "border-marina/10 bg-white hover:border-marina/30"
@@ -683,7 +701,7 @@ export default function PageBuilder() {
                 {/* Option 2: Image Left, Text Right */}
                 <button
                   onClick={() => setFormLayout("two-col-img-left")}
-                  className={`border-2 rounded-2xl p-5 flex flex-col items-center text-center transition ${
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
                     formLayout === "two-col-img-left"
                       ? "border-marina bg-sand/35"
                       : "border-marina/10 bg-white hover:border-marina/30"
@@ -706,7 +724,7 @@ export default function PageBuilder() {
                 {/* Option 3: Text Left, Image Right */}
                 <button
                   onClick={() => setFormLayout("two-col-img-right")}
-                  className={`border-2 rounded-2xl p-5 flex flex-col items-center text-center transition ${
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
                     formLayout === "two-col-img-right"
                       ? "border-marina bg-sand/35"
                       : "border-marina/10 bg-white hover:border-marina/30"
@@ -727,10 +745,11 @@ export default function PageBuilder() {
                 </button>
               </div>
 
-              <div className="flex justify-end max-w-3xl mx-auto pt-6 border-t border-marina/10 mt-8">
+              <div className="mx-auto mt-8 flex max-w-3xl justify-end border-t border-marina/10 pt-6">
                 <button
+                  type="button"
                   onClick={() => setWizardStep(2)}
-                  className="flex items-center gap-1 rounded-full bg-marina hover:bg-marina-light px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition shadow"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full bg-marina px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light sm:min-h-10 sm:w-auto"
                 >
                   Next Step <ArrowRight className="h-4 w-4" />
                 </button>
@@ -888,14 +907,14 @@ export default function PageBuilder() {
 
                   {/* Button Link */}
                   <div>
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="mb-1 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <label className="block text-xs font-bold uppercase tracking-wider text-ink">
                         Button Destination Link (Optional)
                       </label>
                       <button
                         type="button"
                         onClick={() => openDocumentSelector("link")}
-                        className="text-[10px] font-bold text-marina hover:underline uppercase tracking-wider"
+                        className="inline-flex min-h-10 items-center text-[10px] font-bold uppercase tracking-wider text-marina hover:underline"
                       >
                         Link to Document
                       </button>
@@ -912,11 +931,11 @@ export default function PageBuilder() {
               </div>
 
               {/* Navigation buttons */}
-              <div className="flex justify-between pt-6 border-t border-marina/10 mt-8">
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-marina/10 pt-6 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setWizardStep(1)}
-                  className="flex items-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand/20 transition"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina transition hover:bg-sand/20 sm:min-h-10 sm:w-auto"
                 >
                   <ArrowLeft className="h-4 w-4" /> Previous Style
                 </button>
@@ -934,7 +953,7 @@ export default function PageBuilder() {
                     setError(null);
                     setWizardStep(3);
                   }}
-                  className="flex items-center gap-1 rounded-full bg-marina hover:bg-marina-light px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition shadow"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full bg-marina px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light sm:min-h-10 sm:w-auto"
                 >
                   Preview Layout <ArrowRight className="h-4 w-4" />
                 </button>
@@ -963,10 +982,10 @@ export default function PageBuilder() {
                   {formLayout === "two-col-img-left" && (
                     <section className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
                       <div
-                        className="min-h-[360px] bg-cover bg-center"
+                        className="min-h-[220px] bg-cover bg-center sm:min-h-[360px]"
                         style={formImageUrl ? { backgroundImage: `url(${getProxyUrl(formImageUrl)})` } : { backgroundColor: "#cbd5e1" }}
                       />
-                      <div className="flex items-center px-8 py-16 sm:px-14">
+                      <div className="flex items-center px-5 py-10 sm:px-8 sm:py-16 md:px-14">
                         <div className="max-w-lg">
                           {formEyebrow && <p className="eyebrow text-marina">{formEyebrow}</p>}
                           {formTitle && (
@@ -991,7 +1010,7 @@ export default function PageBuilder() {
 
                   {formLayout === "two-col-img-right" && (
                     <section className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
-                      <div className="flex items-center px-8 py-16 sm:px-14 order-last md:order-first">
+                      <div className="order-last flex items-center px-5 py-10 sm:px-8 sm:py-16 md:order-first md:px-14">
                         <div className="max-w-lg">
                           {formEyebrow && <p className="eyebrow text-marina">{formEyebrow}</p>}
                           {formTitle && (
@@ -1012,14 +1031,14 @@ export default function PageBuilder() {
                         </div>
                       </div>
                       <div
-                        className="min-h-[360px] bg-cover bg-center"
+                        className="min-h-[220px] bg-cover bg-center sm:min-h-[360px]"
                         style={formImageUrl ? { backgroundImage: `url(${getProxyUrl(formImageUrl)})` } : { backgroundColor: "#cbd5e1" }}
                       />
                     </section>
                   )}
 
                   {formLayout === "full-width" && (
-                    <section className="bg-white px-6 py-20 sm:px-10 border-t border-b border-sand/30">
+                    <section className="border-y border-sand/30 bg-white px-4 py-12 sm:px-10 sm:py-20">
                       <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
                         {formEyebrow && <p className="eyebrow text-marina">{formEyebrow}</p>}
                         {formTitle && (
@@ -1053,18 +1072,18 @@ export default function PageBuilder() {
               </div>
 
               {/* Navigation buttons */}
-              <div className="flex justify-between pt-6 border-t border-marina/10 mt-8">
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-marina/10 pt-6 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setWizardStep(2)}
-                  className="flex items-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand/20 transition"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina transition hover:bg-sand/20 sm:min-h-10 sm:w-auto"
                 >
                   <ArrowLeft className="h-4 w-4" /> Edit Content
                 </button>
                 <button
                   type="button"
                   onClick={() => setWizardStep(4)}
-                  className="flex items-center gap-1 rounded-full bg-marina hover:bg-marina-light px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition shadow"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full bg-marina px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light sm:min-h-10 sm:w-auto"
                 >
                   Set Placement <ArrowRight className="h-4 w-4" />
                 </button>
@@ -1082,7 +1101,7 @@ export default function PageBuilder() {
                 </p>
               </div>
 
-              <div className="space-y-4 bg-sand/20 rounded-2xl p-6 border border-marina/15">
+              <div className="space-y-4 rounded-2xl border border-marina/15 bg-sand/20 p-4 sm:p-6">
                 {/* Slot Selection */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-2">
@@ -1100,8 +1119,8 @@ export default function PageBuilder() {
                 </div>
 
                 {/* Active Status Checkbox */}
-                <div className="flex items-center justify-between pt-4 border-t border-marina/10 mt-4">
-                  <div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-marina/10 pt-4">
+                  <div className="min-w-0 flex-1">
                     <label className="block text-sm font-bold text-ink leading-tight">
                       Set Section Status
                     </label>
@@ -1116,13 +1135,15 @@ export default function PageBuilder() {
                     <button
                       type="button"
                       onClick={() => setFormIsActive(!formIsActive)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      aria-label={formIsActive ? "Set section inactive" : "Set section live"}
+                      aria-pressed={formIsActive}
+                      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
                         formIsActive ? "bg-marina" : "bg-ink/20"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          formIsActive ? "translate-x-6" : "translate-x-1"
+                          formIsActive ? "translate-x-7" : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -1131,11 +1152,11 @@ export default function PageBuilder() {
               </div>
 
               {/* Navigation buttons */}
-              <div className="flex justify-between pt-6 border-t border-marina/10 mt-8">
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-marina/10 pt-6 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setWizardStep(3)}
-                  className="flex items-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand/20 transition"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full border border-marina/40 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-marina transition hover:bg-sand/20 sm:min-h-10 sm:w-auto"
                 >
                   <ArrowLeft className="h-4 w-4" /> Live Preview
                 </button>
@@ -1143,7 +1164,7 @@ export default function PageBuilder() {
                   type="button"
                   onClick={saveSection}
                   disabled={loading}
-                  className="flex items-center gap-1 rounded-full bg-marina hover:bg-marina-light px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition shadow-md disabled:opacity-50"
+                  className="flex min-h-11 w-full items-center justify-center gap-1 rounded-full bg-marina px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-marina-light disabled:opacity-50 sm:min-h-10 sm:w-auto"
                 >
                   <Check className="h-4 w-4" /> {view === "edit" ? "Save Section" : "Publish Section"}
                 </button>
@@ -1155,16 +1176,17 @@ export default function PageBuilder() {
 
       {/* Document Selector Modal */}
       {docSelectorOpen && (
-        <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full border border-marina/20 shadow-2xl flex flex-col max-h-[85vh] animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-3 backdrop-blur-sm sm:p-4">
+          <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-marina/20 bg-white p-4 shadow-2xl animate-fadeIn sm:rounded-3xl sm:p-6">
             <div className="flex items-center justify-between border-b border-marina/10 pb-4 mb-4">
-              <h3 className="text-lg font-bold text-ink">
+              <h3 className="min-w-0 text-base font-bold text-ink sm:text-lg">
                 Choose from Portal Documents
               </h3>
               <button
                 type="button"
                 onClick={() => setDocSelectorOpen(false)}
-                className="text-ink/40 hover:text-ink transition p-1"
+                aria-label="Close document selector"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-1 text-ink/40 transition hover:bg-sand hover:text-ink"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1182,7 +1204,7 @@ export default function PageBuilder() {
             </div>
 
             {/* Documents List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[250px]">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
               {loadingDocs ? (
                 <p className="text-center text-xs text-ink/50 py-12">Loading documents...</p>
               ) : availableDocs.length === 0 ? (
@@ -1199,9 +1221,9 @@ export default function PageBuilder() {
                     <div
                       key={doc._id}
                       onClick={() => selectDocument(doc)}
-                      className="flex items-center justify-between p-3 rounded-xl border border-marina/10 hover:border-marina/40 hover:bg-sand/20 cursor-pointer transition"
+                      className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-marina/10 p-3 transition hover:border-marina/40 hover:bg-sand/20"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex min-w-0 items-center gap-3">
                         <div className="h-8 w-8 shrink-0 bg-sand rounded-lg flex items-center justify-center text-marina">
                           <FileText className="h-4 w-4" />
                         </div>
@@ -1210,9 +1232,13 @@ export default function PageBuilder() {
                           <p className="text-[10px] uppercase font-bold text-marina tracking-wider mt-0.5">{doc.category}</p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-marina shrink-0 px-2 py-1 bg-sand rounded-full">
+                      <button
+                        type="button"
+                        onClick={() => selectDocument(doc)}
+                        className="min-h-10 shrink-0 rounded-full bg-sand px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-marina"
+                      >
                         Select
-                      </span>
+                      </button>
                     </div>
                   ));
                 })()
