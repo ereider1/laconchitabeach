@@ -45,7 +45,7 @@ export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }
   ];
 
   return (
-    <aside className="flex w-full shrink-0 flex-col justify-between bg-ink px-5 py-4 text-white md:w-64 md:py-6">
+    <aside className="flex w-full shrink-0 flex-col bg-ink px-5 py-4 text-white md:w-64 md:py-6">
       <div className="flex items-center justify-between md:block">
         <Link href="/" className="flex items-center gap-3 text-white">
           <span className="grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-white/10">
