@@ -67,10 +67,19 @@ export default async function PortalDashboard() {
               <p className="text-sm text-ink/60">Nothing posted yet.</p>
             )}
             {announcements.map((a) => (
-              <div key={a._id} className="rounded-lg border border-ink/10 p-4">
-                <p className="font-medium text-ink">{a.title}</p>
-                <p className="mt-1 line-clamp-2 text-sm text-ink/60">{a.body}</p>
-              </div>
+              <details key={a._id} className="group rounded-lg border border-ink/10 p-4">
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <span className="block font-medium text-ink">{a.title}</span>
+                  <span className="mt-1 line-clamp-2 block text-sm text-ink/60 group-open:hidden">{a.body}</span>
+                  <span className="mt-2 inline-block text-xs font-semibold text-marina underline underline-offset-4 group-open:hidden">
+                    Read full announcement
+                  </span>
+                  <span className="mt-2 hidden text-xs font-semibold text-marina underline underline-offset-4 group-open:inline-block">
+                    Show less
+                  </span>
+                </summary>
+                <p className="mt-3 border-t border-ink/10 pt-3 text-sm text-ink/70">{a.body}</p>
+              </details>
             ))}
           </div>
         </section>
