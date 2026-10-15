@@ -57,7 +57,7 @@ export default function HomePage() {
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/sign-up"
-                  className="rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-marina shadow-lg transition hover:-translate-y-0.5"
+                  className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
                 >
                   Join the community
                 </Link>
