@@ -7,7 +7,7 @@ type Resident = {
   _id: string;
   fullName: string;
   address: string;
-  email: string;
+  email?: string;
   phone?: string;
   moveInYear?: number;
 };
@@ -17,11 +17,13 @@ export default function DirectoryPage() {
   const [result, setResult] = useState<{
     query: string;
     residents: Resident[];
+    isAdmin: boolean;
     error: string | null;
   } | null>(null);
   const currentResult = result?.query === q ? result : null;
   const loading = currentResult === null;
   const residents = currentResult?.residents ?? [];
+  const isAdmin = currentResult?.isAdmin ?? false;
   const error = currentResult?.error ?? null;
 
   useEffect(() => {
@@ -30,13 +32,19 @@ export default function DirectoryPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
-        setResult({ query: q, residents: data.residents ?? [], error: null });
+        setResult({
+          query: q,
+          residents: data.residents ?? [],
+          isAdmin: data.isAdmin === true,
+          error: null,
+        });
       })
       .catch((err) => {
         if (err.name !== "AbortError") {
           setResult({
             query: q,
             residents: [],
+            isAdmin: false,
             error: err.message ?? "Failed to load directory",
           });
         }
@@ -115,24 +123,28 @@ export default function DirectoryPage() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 text-sm">
-                  <a
-                    href={`mailto:${r.email}`}
-                    className="flex min-w-0 items-start gap-2 rounded-lg py-1 text-marina underline decoration-marina/30 underline-offset-4"
-                  >
-                    <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="break-all">{r.email}</span>
-                  </a>
-                  {r.phone && (
-                    <a
-                      href={`tel:${r.phone}`}
-                      className="flex min-w-0 items-center gap-2 rounded-lg py-1 text-ink/70"
-                    >
-                      <Phone className="h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
-                      <span>{r.phone}</span>
-                    </a>
-                  )}
-                </div>
+                {isAdmin && (
+                  <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 text-sm">
+                    {r.email && (
+                      <a
+                        href={`mailto:${r.email}`}
+                        className="flex min-w-0 items-start gap-2 rounded-lg py-1 text-marina underline decoration-marina/30 underline-offset-4"
+                      >
+                        <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="break-all">{r.email}</span>
+                      </a>
+                    )}
+                    {r.phone && (
+                      <a
+                        href={`tel:${r.phone}`}
+                        className="flex min-w-0 items-center gap-2 rounded-lg py-1 text-ink/70"
+                      >
+                        <Phone className="h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
+                        <span>{r.phone}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -141,10 +153,14 @@ export default function DirectoryPage() {
             <table className="w-full table-fixed text-left text-sm">
               <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
                 <tr>
-                  <th className="w-[22%] px-4 py-3">Name</th>
-                  <th className="w-[24%] px-4 py-3">Address</th>
-                  <th className="w-[32%] px-4 py-3">Email</th>
-                  <th className="w-[22%] px-4 py-3">Phone</th>
+                  <th className={`px-4 py-3 ${isAdmin ? "w-[22%]" : "w-[40%]"}`}>Name</th>
+                  <th className={`px-4 py-3 ${isAdmin ? "w-[24%]" : "w-[60%]"}`}>Address</th>
+                  {isAdmin && (
+                    <>
+                      <th className="w-[32%] px-4 py-3">Email</th>
+                      <th className="w-[22%] px-4 py-3">Phone</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -152,8 +168,16 @@ export default function DirectoryPage() {
                   <tr key={r._id} className="border-t border-ink/10">
                     <td className="break-words px-4 py-3 font-medium text-ink">{r.fullName}</td>
                     <td className="break-words px-4 py-3 text-ink/70">{r.address}</td>
-                    <td className="break-all px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
-                    <td className="break-words px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
+                    {isAdmin && (
+                      <>
+                        <td className="break-all px-4 py-3 font-mono text-xs text-ink/60">
+                          {r.email ?? ""}
+                        </td>
+                        <td className="break-words px-4 py-3 font-mono text-xs text-ink/60">
+                          {r.phone ?? ""}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
