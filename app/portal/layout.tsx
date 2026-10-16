@@ -14,7 +14,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <div className="portal-shell flex flex-col md:flex-row">
       <PortalSidebar isAdmin={admin} />
-      <main className="portal-main flex-1 overflow-y-auto px-5 py-8 sm:px-8 md:px-12 md:py-12">
+      <main className="portal-main flex-1 overflow-y-auto px-5 py-8 sm:px-8 md:ml-64 md:px-12 md:py-12">
         <div className="mx-auto max-w-4xl">{children}</div>
       </main>
     </div>
