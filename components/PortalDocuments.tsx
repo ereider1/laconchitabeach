@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { Copy, FileText, Grid2X2, List, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Copy, FileText, Grid2X2, List, Trash2, X } from "lucide-react";
 
 type DocumentItem = {
   _id: string;
@@ -62,10 +62,11 @@ function Thumbnail({ document, large = false }: { document: DocumentItem; large?
 }
 
 export default function PortalDocuments({ documents }: { documents: DocumentItem[] }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const visibleDocuments = documents.filter((document) => !deletedIds.includes(document._id));
   const grouped = visibleDocuments.reduce<Record<string, DocumentItem[]>>((groups, document) => {
@@ -79,17 +80,29 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
       if (!navigator.clipboard) throw new Error("Clipboard access is unavailable.");
       const link = new URL(`/api/documents/${document._id}`, window.location.origin);
       await navigator.clipboard.writeText(link.toString());
-      setMessage(`Link copied for ${document.title}.`);
+      setMessage({ text: `Link copied for ${document.title}.`, type: "success" });
+      setCopied(true);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not copy the document link.");
+      setMessage({
+        text: error instanceof Error ? error.message : "Could not copy the document link.",
+        type: "error",
+      });
+      setCopied(false);
     }
   }
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
 
   async function deleteDocument(document: DocumentItem) {
     if (!window.confirm(`Delete "${document.title}"? This cannot be undone.`)) return;
 
     setBusyId(document._id);
     setMessage(null);
+    setCopied(false);
     try {
       const response = await fetch(`/api/admin/documents?id=${encodeURIComponent(document._id)}`, {
         method: "DELETE",
@@ -98,9 +111,12 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
       if (!response.ok) throw new Error(data.error ?? "Failed to delete the document.");
 
       setDeletedIds((ids) => [...ids, document._id]);
-      setMessage(`${document.title} was deleted.`);
+      setMessage({ text: `${document.title} was deleted.`, type: "success" });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not delete the document.");
+      setMessage({
+        text: error instanceof Error ? error.message : "Could not delete the document.",
+        type: "error",
+      });
     } finally {
       setBusyId(null);
     }
@@ -135,9 +151,34 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
       </div>
 
       {message && (
-        <p className="mt-3 text-sm text-ink/70" role="status">
-          {message}
+        <p
+          className="mt-3 text-sm text-ink/70"
+          role={message.type === "success" ? "status" : "alert"}
+        >
+          {message.text}
         </p>
+      )}
+
+      {copied && (
+        <div
+          role="status"
+          className="fixed right-4 top-4 z-50 flex items-center gap-3 rounded-lg bg-emerald-600 px-4 py-3 text-fog shadow-lg"
+        >
+          <Check
+            aria-hidden="true"
+            className="h-5 w-5 rounded-full bg-fog p-0.5 text-emerald-600"
+          />
+          <span className="text-sm font-medium">Link copied to clipboard</span>
+          <span aria-hidden="true" className="h-7 w-px bg-fog/25" />
+          <button
+            type="button"
+            aria-label="Dismiss copied message"
+            onClick={() => setCopied(false)}
+            className="text-fog/90 transition hover:text-fog"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
       )}
 
       <div className="mt-6 space-y-8">
