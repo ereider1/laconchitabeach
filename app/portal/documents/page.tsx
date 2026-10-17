@@ -3,19 +3,30 @@ import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
 import Document from "@/lib/models/Document";
 import { isAdmin } from "@/lib/isAdmin";
+import { normalizeDocumentCategory } from "@/lib/documentCategories";
 import PortalDocuments from "@/components/PortalDocuments";
 
 async function getDocuments() {
   await connectToDatabase();
   const docs = await Document.find().sort({ category: 1, title: 1 }).lean();
-  return JSON.parse(JSON.stringify(docs));
+  return JSON.parse(JSON.stringify(docs.map((document) => ({
+    ...document,
+    category: normalizeDocumentCategory(document.category),
+  }))));
 }
 
 export default async function DocumentsPage() {
   const { userId } = await auth();
   if (!(await isAdmin(userId))) redirect("/portal");
 
-  let documents: Array<{ _id: string; title: string; description?: string; category: string; fileUrl: string }> = [];
+  let documents: Array<{
+    _id: string;
+    title: string;
+    description?: string;
+    category: string;
+    fileUrl: string;
+    createdAt: string;
+  }> = [];
   let dbError = false;
 
   try {

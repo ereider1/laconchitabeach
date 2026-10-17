@@ -3,23 +3,23 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Check, Copy, FileText, Grid2X2, List, Trash2, X } from "lucide-react";
+import {
+  DOCUMENT_CATEGORY_LABELS,
+  DOCUMENT_SORT_OPTIONS,
+  normalizeDocumentCategory,
+  sortDocuments,
+  type DocumentSortOrder,
+} from "@/lib/documentCategories";
 
 type DocumentItem = {
   _id: string;
   title: string;
   description?: string;
   category: string;
+  createdAt?: string;
 };
 
 type ViewMode = "grid" | "list";
-
-const categoryLabels: Record<string, string> = {
-  governing: "Governing documents",
-  minutes: "Meeting minutes",
-  financial: "Financials & budgets",
-  forms: "Forms",
-  other: "Other",
-};
 
 function isImage(document: DocumentItem) {
   return /\.(avif|gif|jpe?g|png|webp)$/i.test(document.title);
@@ -63,16 +63,21 @@ function Thumbnail({ document, large = false }: { document: DocumentItem; large?
 
 export default function PortalDocuments({ documents }: { documents: DocumentItem[] }) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("category");
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const visibleDocuments = documents.filter((document) => !deletedIds.includes(document._id));
-  const grouped = visibleDocuments.reduce<Record<string, DocumentItem[]>>((groups, document) => {
-    (groups[document.category] ??= []).push(document);
-    return groups;
-  }, {});
+  const sortedDocuments = sortDocuments(visibleDocuments, sortOrder);
+  const groupedDocuments = sortOrder === "category"
+    ? Object.entries(sortedDocuments.reduce<Record<string, DocumentItem[]>>((groups, document) => {
+        const category = normalizeDocumentCategory(document.category);
+        (groups[category] ??= []).push(document);
+        return groups;
+      }, {}))
+    : [["all", sortedDocuments] as [string, DocumentItem[]]];
 
   async function copyLink(document: DocumentItem) {
     setMessage(null);
@@ -128,25 +133,42 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
         <p className="text-sm text-ink/60">
           {visibleDocuments.length} {visibleDocuments.length === 1 ? "document" : "documents"}
         </p>
-        <div className="flex rounded-full border border-ink/15 p-1" aria-label="Document view mode">
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            aria-label="Grid view"
-            aria-pressed={viewMode === "grid"}
-            className={`rounded-full p-2 ${viewMode === "grid" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
-          >
-            <Grid2X2 className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("list")}
-            aria-label="List view"
-            aria-pressed={viewMode === "list"}
-            className={`rounded-full p-2 ${viewMode === "list" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
-          >
-            <List className="h-4 w-4" aria-hidden="true" />
-          </button>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <label className="flex items-center gap-2 text-sm text-ink/70">
+            Sort by
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as DocumentSortOrder)}
+              aria-label="Sort documents"
+              className="rounded-full border border-ink/15 px-3 py-2 text-sm"
+            >
+              {DOCUMENT_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex rounded-full border border-ink/15 p-1" aria-label="Document view mode">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              className={`rounded-full p-2 ${viewMode === "grid" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
+            >
+              <Grid2X2 className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+              className={`rounded-full p-2 ${viewMode === "list" ? "bg-marina text-fog" : "text-ink/50 hover:text-ink"}`}
+            >
+              <List className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -182,10 +204,12 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
       )}
 
       <div className="mt-6 space-y-8">
-        {Object.entries(grouped).map(([category, categoryDocuments]) => (
+        {groupedDocuments.map(([category, categoryDocuments]) => (
           <section key={category}>
             <h2 className="font-display text-lg text-marina">
-              {categoryLabels[category] ?? category}
+              {sortOrder === "category"
+                ? DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(category)]
+                : "All documents"}
             </h2>
 
             {viewMode === "grid" ? (
@@ -205,6 +229,11 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
                       {document.description && (
                         <p className="mt-1 line-clamp-2 text-sm text-ink/60">
                           {document.description}
+                        </p>
+                      )}
+                      {sortOrder !== "category" && (
+                        <p className="mt-2 text-xs uppercase tracking-wider text-ink/50">
+                          {DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(document.category)]}
                         </p>
                       )}
                       <DocumentActions
@@ -232,6 +261,11 @@ export default function PortalDocuments({ documents }: { documents: DocumentItem
                       {document.description && (
                         <p className="mt-1 line-clamp-1 text-sm text-ink/60">
                           {document.description}
+                        </p>
+                      )}
+                      {sortOrder !== "category" && (
+                        <p className="mt-1 text-xs uppercase tracking-wider text-ink/50">
+                          {DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(document.category)]}
                         </p>
                       )}
                     </div>

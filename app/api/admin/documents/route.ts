@@ -4,6 +4,7 @@ import { del } from "@vercel/blob";
 import { connectToDatabase } from "@/lib/mongodb";
 import Document from "@/lib/models/Document";
 import { isAdmin } from "@/lib/isAdmin";
+import { isDocumentCategory, normalizeDocumentCategory } from "@/lib/documentCategories";
 
 // Full document list, admin-only.
 export async function GET() {
@@ -13,7 +14,12 @@ export async function GET() {
 
   await connectToDatabase();
   const documents = await Document.find().sort({ category: 1, title: 1 }).lean();
-  return NextResponse.json({ documents });
+  return NextResponse.json({
+    documents: documents.map((document) => ({
+      ...document,
+      category: normalizeDocumentCategory(document.category),
+    })),
+  });
 }
 
 // Creates the metadata row after the file has already been uploaded to Blob
@@ -26,6 +32,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   if (!body.title || !body.fileUrl) {
     return NextResponse.json({ error: "Title and fileUrl are required" }, { status: 400 });
+  }
+  if (body.category !== undefined && !isDocumentCategory(body.category)) {
+    return NextResponse.json({ error: "Invalid document category" }, { status: 400 });
   }
 
   const user = await currentUser();
@@ -50,6 +59,9 @@ export async function PATCH(req: NextRequest) {
 
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  if ("category" in updates && !isDocumentCategory(updates.category)) {
+    return NextResponse.json({ error: "Invalid document category" }, { status: 400 });
+  }
 
   const allowed = ["title", "description", "category"];
   const fields: Record<string, unknown> = {};

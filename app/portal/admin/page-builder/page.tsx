@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
+  DOCUMENT_CATEGORY_LABELS,
+  normalizeDocumentCategory,
+} from "@/lib/documentCategories";
+import {
   ArrowLeft,
   ArrowRight,
   Plus,
@@ -1229,7 +1233,9 @@ export default function PageBuilder() {
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-xs font-bold text-ink truncate leading-snug">{doc.title}</h4>
-                          <p className="text-[10px] uppercase font-bold text-marina tracking-wider mt-0.5">{doc.category}</p>
+                          <p className="text-[10px] uppercase font-bold text-marina tracking-wider mt-0.5">
+                            {DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(doc.category)]}
+                          </p>
                         </div>
                       </div>
                       <button

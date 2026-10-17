@@ -3,14 +3,35 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
-import { Download, FileText, Grid2X2, List, Search, Upload, X } from "lucide-react";
+import {
+  Download,
+  Eye,
+  FileText,
+  Grid2X2,
+  List,
+  Pencil,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import {
+  DOCUMENT_CATEGORIES,
+  DOCUMENT_CATEGORY_LABELS,
+  DOCUMENT_SORT_OPTIONS,
+  normalizeDocumentCategory,
+  sortDocuments,
+  type DocumentCategory,
+  type DocumentSortOrder,
+} from "@/lib/documentCategories";
 
 type Doc = {
   _id: string;
   title: string;
   description?: string;
-  category: "governing" | "minutes" | "financial" | "forms" | "other";
+  category: DocumentCategory;
   fileUrl: string;
+  createdAt: string;
 };
 
 type ViewMode = "list" | "grid";
@@ -20,16 +41,19 @@ type EditableFields = { title: string; description: string; category: Doc["categ
 type UploadItem = {
   id: string;
   file: File;
+  category: DocumentCategory;
   progress: number;
   status: "uploading" | "completed" | "error";
   error?: string;
   controller: AbortController;
 };
 
-const categories: Doc["category"][] = ["governing", "minutes", "financial", "forms", "other"];
-
 function toEditableFields(d: Doc): EditableFields {
-  return { title: d.title, description: d.description ?? "", category: d.category };
+  return {
+    title: d.title,
+    description: d.description ?? "",
+    category: normalizeDocumentCategory(d.category),
+  };
 }
 
 export default function AdminDocuments() {
@@ -42,15 +66,18 @@ export default function AdminDocuments() {
 
   const [uploading, setUploading] = useState(false);
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const [uploadCategory, setUploadCategory] = useState<DocumentCategory>("other");
   const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("category");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filteredDocs = docs.filter((doc) => {
+  const filteredDocs = sortDocuments(docs.filter((doc) => {
     const query = search.trim().toLowerCase();
-    return !query || `${doc.title} ${doc.description ?? ""} ${doc.category}`.toLowerCase().includes(query);
-  });
+    const categoryLabel = DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(doc.category)];
+    return !query || `${doc.title} ${doc.description ?? ""} ${categoryLabel}`.toLowerCase().includes(query);
+  }), sortOrder);
 
   async function load() {
     setLoading(true);
@@ -136,7 +163,7 @@ export default function AdminDocuments() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: item.file.name,
-          category: "other",
+          category: item.category,
           fileUrl: blob.url,
         }),
       });
@@ -159,6 +186,7 @@ export default function AdminDocuments() {
     const items = selected.map((file, index) => ({
       id: `${file.name}-${file.lastModified}-${index}-${Date.now()}`,
       file,
+      category: uploadCategory,
       progress: 0,
       status: "uploading" as const,
       controller: new AbortController(),
@@ -204,7 +232,7 @@ export default function AdminDocuments() {
     <div>
       <h2 className="font-display text-xl text-ink">Documents</h2>
       <p className="mt-1 text-sm text-ink/60">
-        Upload governing documents, meeting minutes, financials, and forms.
+        Upload governing documents, minutes, emails, emergency awareness materials, flyers, and forms.
       </p>
 
       <section className="mt-6 rounded-xl border border-ink/10 p-5">
@@ -235,6 +263,20 @@ export default function AdminDocuments() {
                 event.currentTarget.value = "";
               }}
             />
+            <label className="mt-4 block text-sm font-medium text-ink">
+              Category for new uploads
+              <select
+                value={uploadCategory}
+                onChange={(event) => setUploadCategory(event.target.value as DocumentCategory)}
+                className="mt-1 block w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+              >
+                {DOCUMENT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {DOCUMENT_CATEGORY_LABELS[category]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -305,6 +347,21 @@ export default function AdminDocuments() {
             aria-label="Search documents"
             className="w-full rounded-full border border-ink/15 py-2 pl-9 pr-4 text-sm outline-none ring-marina/30 focus:ring-2"
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ink/70">
+          Sort by
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value as DocumentSortOrder)}
+            aria-label="Sort documents"
+            className="rounded-full border border-ink/15 px-3 py-2 text-sm"
+          >
+            {DOCUMENT_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="flex rounded-full border border-ink/15 p-1" aria-label="Document view mode">
           <button
@@ -378,8 +435,10 @@ export default function AdminDocuments() {
                             value={draft.category}
                             onChange={(e) => setDraft({ ...draft, category: e.target.value as Doc["category"] })}
                           >
-                            {categories.map((c) => (
-                              <option key={c} value={c}>{c}</option>
+                            {DOCUMENT_CATEGORIES.map((category) => (
+                              <option key={category} value={category}>
+                                {DOCUMENT_CATEGORY_LABELS[category]}
+                              </option>
                             ))}
                           </select>
                         </td>
@@ -411,28 +470,49 @@ export default function AdminDocuments() {
                           <p className="font-medium text-ink">{d.title}</p>
                           {d.description && <p className="text-xs text-ink/60">{d.description}</p>}
                         </td>
-                        <td className="px-4 py-3 text-ink/70">{d.category}</td>
+                        <td className="px-4 py-3 text-ink/70">
+                          {DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(d.category)]}
+                        </td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <button type="button" onClick={() => setPreviewDoc(d)} className="text-xs font-medium text-marina underline underline-offset-4">View</button>
-                            <a href={`/api/documents/${d._id}?download=1`} className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4">
-                              <Download className="h-3 w-3" aria-hidden="true" /> Download
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc(d)}
+                              className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                              aria-label={`View ${d.title}`}
+                              title="View"
+                            >
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                            <a
+                              href={`/api/documents/${d._id}?download=1`}
+                              className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                              aria-label={`Download ${d.title}`}
+                              title="Download"
+                            >
+                              <Download className="h-4 w-4" aria-hidden="true" />
                             </a>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-3">
+                          <div className="flex items-center gap-1">
                             <button
+                              type="button"
                               onClick={() => startEdit(d)}
-                              className="text-xs font-medium text-marina underline underline-offset-4"
+                              className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                              aria-label={`Edit ${d.title}`}
+                              title="Edit"
                             >
-                              Edit
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => remove(d._id)}
-                              className="text-xs font-medium text-coral underline underline-offset-4"
+                              className="grid h-8 w-8 place-items-center rounded-lg text-coral transition hover:bg-coral/10"
+                              aria-label={`Delete ${d.title}`}
+                              title="Delete"
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </button>
                           </div>
                         </td>
@@ -453,14 +533,45 @@ export default function AdminDocuments() {
               <div className="p-4">
                 <p className="truncate font-medium text-ink" title={d.title}>{d.title}</p>
                 {d.description && <p className="mt-1 line-clamp-2 text-xs text-ink/60">{d.description}</p>}
-                <p className="mt-2 text-xs uppercase tracking-wider text-ink/50">{d.category}</p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button type="button" onClick={() => setPreviewDoc(d)} className="text-xs font-medium text-marina underline underline-offset-4">View</button>
-                  <a href={`/api/documents/${d._id}?download=1`} className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4">
-                    <Download className="h-3 w-3" aria-hidden="true" /> Download
+                <p className="mt-2 text-xs uppercase tracking-wider text-ink/50">
+                  {DOCUMENT_CATEGORY_LABELS[normalizeDocumentCategory(d.category)]}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(d)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                    aria-label={`View ${d.title}`}
+                    title="View"
+                  >
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <a
+                    href={`/api/documents/${d._id}?download=1`}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                    aria-label={`Download ${d.title}`}
+                    title="Download"
+                  >
+                    <Download className="h-4 w-4" aria-hidden="true" />
                   </a>
-                  <button type="button" onClick={() => startEdit(d)} className="text-xs font-medium text-marina underline underline-offset-4">Edit</button>
-                  <button type="button" onClick={() => remove(d._id)} className="text-xs font-medium text-coral underline underline-offset-4">Delete</button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(d)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                    aria-label={`Edit ${d.title}`}
+                    title="Edit"
+                  >
+                    <Pencil className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(d._id)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-coral transition hover:bg-coral/10"
+                    aria-label={`Delete ${d.title}`}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
                 </div>
               </div>
             </article>
@@ -474,8 +585,13 @@ export default function AdminDocuments() {
             <div className="flex items-center justify-between gap-4 border-b border-ink/10 px-5 py-3">
               <h3 className="truncate font-display text-lg text-ink">{previewDoc.title}</h3>
               <div className="flex items-center gap-3">
-                <a href={`/api/documents/${previewDoc._id}?download=1`} className="inline-flex items-center gap-1 text-sm font-medium text-marina">
-                  <Download className="h-4 w-4" aria-hidden="true" /> Download
+                <a
+                  href={`/api/documents/${previewDoc._id}?download=1`}
+                  className="grid h-9 w-9 place-items-center rounded-lg text-marina transition hover:bg-sand"
+                  aria-label={`Download ${previewDoc.title}`}
+                  title="Download"
+                >
+                  <Download className="h-5 w-5" aria-hidden="true" />
                 </a>
                 <button type="button" onClick={() => setPreviewDoc(null)} className="rounded p-1 text-ink/60 hover:bg-sand" aria-label="Close preview">
                   <X className="h-5 w-5" aria-hidden="true" />

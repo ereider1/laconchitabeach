@@ -1,9 +1,10 @@
 import mongoose, { Schema, models, model } from "mongoose";
+import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/documentCategories";
 
 export interface IDocument {
   title: string;
   description?: string;
-  category: "governing" | "minutes" | "financial" | "forms" | "other";
+  category: DocumentCategory;
   fileUrl: string;
   uploadedByName: string;
   uploadedByClerkId: string;
@@ -17,7 +18,7 @@ const DocumentSchema = new Schema<IDocument>(
     description: { type: String },
     category: {
       type: String,
-      enum: ["governing", "minutes", "financial", "forms", "other"],
+      enum: DOCUMENT_CATEGORIES,
       default: "other",
     },
     fileUrl: { type: String, required: true },
