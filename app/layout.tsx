@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const title = "La Conchita Beach | California Coastal Community";
@@ -71,6 +72,7 @@ export default async function RootLayout({
         >
           {children}
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
