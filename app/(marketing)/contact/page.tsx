@@ -3,6 +3,7 @@ import SiteFooter from "@/components/SiteFooter";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Clock3, Mail, MapPin } from "lucide-react";
+import ContactForm from "@/components/ContactForm";
 
 export default async function ContactPage() {
   const { userId } = await auth();
@@ -24,6 +25,7 @@ export default async function ContactPage() {
             For anything account-related, sign in and use the resident portal —
             it reaches the right person faster. For general inquiries:
           </p>
+          <ContactForm />
           <dl className="mt-9 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-sand/55 p-5">
               <dt className="eyebrow flex items-center gap-2 text-marina">
@@ -39,7 +41,9 @@ export default async function ContactPage() {
                   Email
                 </dt>
                 <dd className="mt-2 text-sm leading-6 text-ink/75">
-                  Jerome.Nesnadny@gmail.com
+                  <a href="mailto:admin@laconchitabeach.com" className="underline underline-offset-4">
+                    admin@laconchitabeach.com
+                  </a>
                 </dd>
               </div>
             ) : (
