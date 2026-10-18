@@ -8,6 +8,7 @@ import {
   CloudSun,
   CalendarDays,
   ArrowRight,
+  ChevronDown,
   Sun,
   Thermometer,
   Waves,
@@ -275,7 +276,7 @@ export default async function HarborBoard() {
       aria-label="Today's weather and conditions for La Conchita"
       className="w-full rounded-2xl border border-marina/10 bg-white/95 px-5 py-5 text-left text-ink shadow-[0_22px_55px_rgba(4,54,75,0.16)] backdrop-blur-md sm:px-7 sm:py-6"
     >
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="text-base font-bold uppercase tracking-[0.16em] text-marina sm:text-lg">
           Today at La Conchita
         </h2>
@@ -322,89 +323,100 @@ export default async function HarborBoard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 divide-y divide-marina/10 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
-        <article className="py-4 first:pt-0 last:pb-0 lg:px-5 lg:py-0 lg:first:pl-0 lg:last:pr-0">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Weather</h3>
-          <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
-            <Icon className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-label={label} />
-            {weather ? (
-              <div className="min-w-0 lg:text-center">
-                <p className="whitespace-nowrap text-2xl font-bold tabular-nums text-ink sm:text-3xl">
-                  {Math.round(weather.high)}° <span className="font-normal text-dune">/ {Math.round(weather.low)}°F</span>
-                </p>
-                <p className="mt-1 text-sm text-ink/75">{label}</p>
-                <p className="mt-0.5 text-sm text-ocean">{weather.precipitation}% chance of rain</p>
-              </div>
-            ) : <p className="text-sm text-dune">Unavailable</p>}
-          </div>
-          <a
-            href={openMeteoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm text-marina underline decoration-marina/40 underline-offset-2 hover:text-ink lg:justify-center"
-          >
-          </a>
-        </article>
+      <details className="weather-details group">
+        <summary className="mb-3 flex w-full cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-marina/10 bg-marina/[0.04] px-4 py-3 text-sm font-semibold text-marina transition-colors hover:bg-marina/[0.08] hover:text-ink [&::-webkit-details-marker]:hidden">
+          <span className="group-open:hidden">Show today&apos;s conditions</span>
+          <span className="hidden group-open:inline">Hide today&apos;s conditions</span>
+          <ChevronDown className="h-4 w-4 transition-transform duration-300 ease-out group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="weather-details-content">
+          <div className="min-h-0 overflow-hidden">
+            <div className="grid grid-cols-1 divide-y divide-marina/10 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
+              <article className="py-4 first:pt-0 last:pb-0 lg:px-5 lg:py-0 lg:first:pl-0 lg:last:pr-0">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Weather</h3>
+                <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
+                  <Icon className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-label={label} />
+                  {weather ? (
+                    <div className="min-w-0 lg:text-center">
+                      <p className="whitespace-nowrap text-2xl font-bold tabular-nums text-ink sm:text-3xl">
+                        {Math.round(weather.high)}° <span className="font-normal text-dune">/ {Math.round(weather.low)}°F</span>
+                      </p>
+                      <p className="mt-1 text-sm text-ink/75">{label}</p>
+                      <p className="mt-0.5 text-sm text-ocean">{weather.precipitation}% chance of rain</p>
+                    </div>
+                  ) : <p className="text-sm text-dune">Unavailable</p>}
+                </div>
+                <a
+                  href={openMeteoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-marina underline decoration-marina/40 underline-offset-2 hover:text-ink lg:justify-center"
+                >
+                </a>
+              </article>
 
-        <article className="py-4 lg:px-5 lg:py-0">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Tides</h3>
-          <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
-            <Waves className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-hidden="true" />
-            <dl className="w-full space-y-2 lg:max-w-xs">
-              <TideRow label="High tide" tides={conditions?.highTides} />
-              <div className="border-t border-marina/10 pt-2">
-                <TideRow label="Low tide" tides={conditions?.lowTides} />
-              </div>
-            </dl>
-          </div>
-        </article>
+              <article className="py-4 lg:px-5 lg:py-0">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Tides</h3>
+                <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
+                  <Waves className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-hidden="true" />
+                  <dl className="w-full space-y-2 lg:max-w-xs">
+                    <TideRow label="High tide" tides={conditions?.highTides} />
+                    <div className="border-t border-marina/10 pt-2">
+                      <TideRow label="Low tide" tides={conditions?.lowTides} />
+                    </div>
+                  </dl>
+                </div>
+              </article>
 
-        <article className="py-4 lg:px-5 lg:py-0">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Sun</h3>
-          <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
-            <Sun className="h-14 w-14 shrink-0 text-amber-400 lg:h-16 lg:w-16" aria-hidden="true" />
-            <dl className="w-full space-y-3 lg:text-center">
-              <div className="flex items-center justify-between gap-2 text-sm lg:flex-col lg:gap-0.5">
-                <dt className="text-ink/70">Sunrise</dt>
-                <dd className="whitespace-nowrap font-bold text-ink">
-                  {conditions ? formatSunTime(conditions.sunrise) : "Unavailable"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-2 text-sm lg:flex-col lg:gap-0.5">
-                <dt className="text-ink/70">Sunset</dt>
-                <dd className="whitespace-nowrap font-bold text-ink">
-                  {conditions ? formatSunTime(conditions.sunset) : "Unavailable"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </article>
+              <article className="py-4 lg:px-5 lg:py-0">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Sun</h3>
+                <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
+                  <Sun className="h-14 w-14 shrink-0 text-amber-400 lg:h-16 lg:w-16" aria-hidden="true" />
+                  <dl className="w-full space-y-3 lg:text-center">
+                    <div className="flex items-center justify-between gap-2 text-sm lg:flex-col lg:gap-0.5">
+                      <dt className="text-ink/70">Sunrise</dt>
+                      <dd className="whitespace-nowrap font-bold text-ink">
+                        {conditions ? formatSunTime(conditions.sunrise) : "Unavailable"}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-sm lg:flex-col lg:gap-0.5">
+                      <dt className="text-ink/70">Sunset</dt>
+                      <dd className="whitespace-nowrap font-bold text-ink">
+                        {conditions ? formatSunTime(conditions.sunset) : "Unavailable"}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </article>
 
-        <article className="py-4 lg:px-5 lg:py-0">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Ocean temp</h3>
-          <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
-            <Thermometer className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-hidden="true" />
-            <p className="text-3xl font-bold tabular-nums text-ink">{oceanTemperature.value}</p>
+              <article className="py-4 lg:px-5 lg:py-0">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ocean">Ocean temp</h3>
+                <div className="mt-3 flex items-center gap-5 lg:flex-col lg:gap-2">
+                  <Thermometer className="h-14 w-14 shrink-0 text-marina lg:h-16 lg:w-16" aria-hidden="true" />
+                  <p className="text-3xl font-bold tabular-nums text-ink">{oceanTemperature.value}</p>
+                </div>
+                {oceanTemperature.available && (
+                  <a
+                    href={marineApiDocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-block text-sm text-marina underline decoration-marina/40 underline-offset-2 hover:text-ink"
+                  >
+                  </a>
+                )}
+                <a id="surf-button"
+                  href="/surf-forecast"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-full bg-ocean px-5 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition hover:scale-[1.02] hover:bg-ink active:scale-[0.98] lg:mt-5"
+                >
+                  <Waves className="h-5 w-5" aria-hidden="true" />
+                  Surf Forecast
+                  <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                </a>
+              </article>
+            </div>
           </div>
-          {oceanTemperature.available && (
-            <a
-              href={marineApiDocsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-block text-sm text-marina underline decoration-marina/40 underline-offset-2 hover:text-ink"
-            >
-            </a>
-          )}
-          <a id="surf-button"
-            href="/surf-forecast"
-            className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-full bg-ocean px-5 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition hover:scale-[1.02] hover:bg-ink active:scale-[0.98] lg:mt-5"
-          >
-            <Waves className="h-5 w-5" aria-hidden="true" />
-            Surf Forecast
-            <ArrowRight className="h-5 w-5" aria-hidden="true" />
-          </a>
-        </article>
-      </div>
+        </div>
+      </details>
     </section>
   );
 }
