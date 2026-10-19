@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { upload } from "@vercel/blob/client";
 
 type Req = {
   _id: string;
@@ -15,7 +14,7 @@ type Req = {
   createdAt: string;
 };
 
-const MAX_PHOTO_SIZE = 8 * 1024 * 1024;
+const MAX_PHOTO_SIZE = 4 * 1024 * 1024;
 const PHOTO_TYPES: Record<string, string> = {
   "image/avif": "avif",
   "image/gif": "gif",
@@ -82,18 +81,20 @@ export default function MaintenancePage() {
       if (photo) {
         const extension = PHOTO_TYPES[photo.type];
         if (!extension || photo.size > MAX_PHOTO_SIZE) {
-          throw new Error("Choose a JPG, PNG, GIF, WebP, or AVIF image up to 8 MB.");
+          throw new Error("Choose a JPG, PNG, GIF, WebP, or AVIF image up to 4 MB.");
         }
 
-        const blob = await upload(
-          `community-corner/${crypto.randomUUID()}.${extension}`,
-          photo,
-          {
-            access: "public",
-            handleUploadUrl: "/api/maintenance/upload",
-          }
-        );
-        photoUrl = blob.url;
+        const uploadForm = new FormData();
+        uploadForm.append("photo", photo, `${crypto.randomUUID()}.${extension}`);
+        const uploadResponse = await fetch("/api/maintenance/upload", {
+          method: "POST",
+          body: uploadForm,
+        });
+        const uploadData: { url?: string; error?: string } = await uploadResponse.json();
+        if (!uploadResponse.ok || !uploadData.url) {
+          throw new Error(uploadData.error ?? "Photo upload failed");
+        }
+        photoUrl = uploadData.url;
       }
 
       const res = await fetch("/api/maintenance", {
@@ -192,7 +193,7 @@ export default function MaintenancePage() {
               </button>
             </div>
           )}
-          <p className="text-xs text-ink/50">JPG, PNG, GIF, WebP, or AVIF, up to 8 MB.</p>
+          <p className="text-xs text-ink/50">JPG, PNG, GIF, WebP, or AVIF, up to 4 MB.</p>
         </div>
         <button
           type="submit"
