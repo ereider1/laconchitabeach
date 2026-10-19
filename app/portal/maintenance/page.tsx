@@ -127,7 +127,13 @@ export default function MaintenancePage() {
               <p className="font-medium text-ink">{r.address}</p>
               <p className="text-sm text-ink/70">{r.description}</p>
               <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
-              <p className="mt-1 text-xs text-ink/50">Posted by {r.submittedByName}</p>
+              <p className="mt-1 text-xs text-ink/50">
+                Posted by {r.submittedByName} on {new Date(r.createdAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
             </div>
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor[r.status]}`}>
               {r.status}

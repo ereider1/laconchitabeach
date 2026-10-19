@@ -18,6 +18,7 @@ type Post = {
     | "other";
   description: string;
   status: "open" | "in-progress" | "resolved";
+  createdAt: string;
 };
 
 type EditableFields = {
@@ -191,7 +192,13 @@ export default function AdminCommunityCorner() {
                         <p className="text-xs uppercase tracking-wider text-dune">
                           {p.category} · {p.address}
                         </p>
-                        <p className="mt-1 text-sm text-ink/50">Posted by {p.submittedByName}</p>
+                        <p className="mt-1 text-sm text-ink/50">
+                          Posted by {p.submittedByName} on {new Date(p.createdAt).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
                         <span
