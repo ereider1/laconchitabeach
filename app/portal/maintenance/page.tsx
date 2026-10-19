@@ -34,6 +34,7 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPostForm, setShowPostForm] = useState(false);
   const [form, setForm] = useState({ address: "", category: "other", description: "" });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export default function MaintenancePage() {
       if (!res.ok) throw new Error(data.error ?? "Failed to submit");
       setForm({ address: "", category: "other", description: "" });
       clearPhoto();
+      setShowPostForm(false);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -127,8 +129,18 @@ export default function MaintenancePage() {
         Browse posts from neighbors and share maintenance requests, lost &amp; found, and local listings.
       </p>
 
-      <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
-        <p className="font-display text-lg text-marina">New Post</p>
+      {showPostForm ? (
+        <form id="new-community-post" onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-display text-lg text-marina">New Post</p>
+            <button
+              type="button"
+              onClick={() => setShowPostForm(false)}
+              className="text-sm font-medium text-marina underline underline-offset-4"
+            >
+              Close
+            </button>
+          </div>
         <input
           className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
           placeholder="Address or location (e.g. Beach path near Stair 3)"
@@ -208,7 +220,18 @@ export default function MaintenancePage() {
         >
           {submitting ? "Submitting…" : "Submit post"}
         </button>
-      </form>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowPostForm(true)}
+          aria-expanded={false}
+          aria-controls="new-community-post"
+          className="mt-8 rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog"
+        >
+          Create New Post
+        </button>
+      )}
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
