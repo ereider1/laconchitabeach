@@ -66,6 +66,18 @@ export default function MaintenancePage() {
   }, []);
 
   useEffect(() => {
+    if (window.location.hash !== "#new-community-post") return;
+    const frame = window.requestAnimationFrame(() => setShowPostForm(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (showPostForm && window.location.hash === "#new-community-post") {
+      document.getElementById("new-community-post")?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [showPostForm]);
+
+  useEffect(() => {
     if (!loading && window.location.hash.startsWith("#post-")) {
       document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
     }

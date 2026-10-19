@@ -71,7 +71,7 @@ export default async function PortalDashboard() {
 
       <div className="mt-10">
         <section className="mb-10">
-          <h2 className="mb-3 font-display text-lg text-marina">My Posts</h2>
+          <h2 className="mb-3 font-display text-lg text-marina">My Community Corner Posts</h2>
           {dbError ? (
             <p className="text-sm text-ink/60">Could not load your posts right now.</p>
           ) : (

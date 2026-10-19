@@ -112,10 +112,16 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-xl border border-ink/10 p-4">
-        <p className="text-sm text-ink/60">You haven’t shared any posts yet.</p>
-        <Link href="/portal/maintenance" className="mt-2 inline-block text-sm font-medium text-marina underline underline-offset-4">
-          Visit Community Corner
+      <div className="flex flex-col gap-4 rounded-xl border border-ink/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-ink/60">You haven’t shared any posts yet.</p>
+
+        </div>
+        <Link
+          href="/portal/maintenance#new-community-post"
+          className="inline-flex shrink-0 items-center justify-center rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog"
+        >
+          Create New Post
         </Link>
       </div>
     );
