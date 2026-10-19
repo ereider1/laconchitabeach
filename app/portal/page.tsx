@@ -3,20 +3,23 @@ import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Announcement from "@/lib/models/Announcement";
+import Event from "@/lib/models/Event";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import Resident from "@/lib/models/Resident";
 import MyCommunityPosts from "@/components/MyCommunityPosts";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
-  const [hasProfile, announcements, myPosts] = await Promise.all([
+  const [hasProfile, announcements, events, myPosts] = await Promise.all([
     Resident.exists({ clerkUserId }),
-    Announcement.find().sort({ createdAt: -1 }).limit(3).lean(),
+    Announcement.find().sort({ createdAt: -1 }).limit(2).lean(),
+    Event.find({ startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).lean(),
     MaintenanceRequest.find({ submittedByClerkId: clerkUserId }).sort({ createdAt: -1 }).lean(),
   ]);
   return {
     hasProfile: !!hasProfile,
     announcements: JSON.parse(JSON.stringify(announcements)),
+    events: JSON.parse(JSON.stringify(events)),
     myPosts: JSON.parse(JSON.stringify(myPosts)),
   };
 }
@@ -33,6 +36,7 @@ export default async function PortalDashboard() {
     category: string;
     createdAt: string;
   }> = [];
+  let events: Array<{ _id: string; title: string }> = [];
   let myPosts: Array<{
     _id: string;
     address: string;
@@ -49,6 +53,7 @@ export default async function PortalDashboard() {
     const data = await getDashboardData(userId ?? "");
     hasProfile = data.hasProfile;
     announcements = data.announcements;
+    events = data.events;
     myPosts = data.myPosts;
   } catch {
     dbError = true;
@@ -108,6 +113,28 @@ export default async function PortalDashboard() {
                 </summary>
                 <p className="mt-3 border-t border-ink/10 pt-3 text-sm text-ink/70">{a.body}</p>
               </details>
+            ))}
+          </div>
+        </section>
+        <section className="mt-10">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg text-marina">Upcoming events</h2>
+            <Link href="/portal/events" className="text-sm text-marina underline underline-offset-4">
+              View all
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {events.length === 0 && !dbError && (
+              <p className="text-sm text-ink/60">No upcoming events.</p>
+            )}
+            {events.map((event) => (
+              <Link
+                key={event._id}
+                href={`/portal/events#event-${event._id}`}
+                className="block rounded-lg border border-ink/10 p-4 font-medium text-ink transition hover:border-marina/30 hover:text-marina"
+              >
+                {event.title}
+              </Link>
             ))}
           </div>
         </section>
