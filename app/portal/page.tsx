@@ -1,34 +1,49 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Announcement from "@/lib/models/Announcement";
+import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import Resident from "@/lib/models/Resident";
+import MyCommunityPosts from "@/components/MyCommunityPosts";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
-  const [hasProfile, announcements] = await Promise.all([
+  const [hasProfile, announcements, myPosts] = await Promise.all([
     Resident.exists({ clerkUserId }),
     Announcement.find().sort({ pinned: -1, createdAt: -1 }).limit(3).lean(),
+    MaintenanceRequest.find({ submittedByClerkId: clerkUserId }).sort({ createdAt: -1 }).lean(),
   ]);
   return {
     hasProfile: !!hasProfile,
     announcements: JSON.parse(JSON.stringify(announcements)),
+    myPosts: JSON.parse(JSON.stringify(myPosts)),
   };
 }
 
 export default async function PortalDashboard() {
+  const { userId } = await auth();
   const user = await currentUser();
   const firstName = user?.firstName ?? "neighbor";
 
   let announcements: Array<{ _id: string; title: string; body: string; category: string }> = [];
+  let myPosts: Array<{
+    _id: string;
+    address: string;
+    category: string;
+    description: string;
+    status: "open" | "in-progress" | "resolved";
+    photoUrl?: string;
+    createdAt: string;
+  }> = [];
   let dbError = false;
   let hasProfile = true;
 
   try {
-    const data = await getDashboardData(user?.id ?? "");
+    const data = await getDashboardData(userId ?? "");
     hasProfile = data.hasProfile;
     announcements = data.announcements;
+    myPosts = data.myPosts;
   } catch {
     dbError = true;
   }
@@ -55,6 +70,14 @@ export default async function PortalDashboard() {
       )}
 
       <div className="mt-10">
+        <section className="mb-10">
+          <h2 className="mb-3 font-display text-lg text-marina">My Posts</h2>
+          {dbError ? (
+            <p className="text-sm text-ink/60">Could not load your posts right now.</p>
+          ) : (
+            <MyCommunityPosts posts={myPosts} />
+          )}
+        </section>
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-lg text-marina">Latest announcements</h2>

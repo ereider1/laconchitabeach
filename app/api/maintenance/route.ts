@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import { isAdmin } from "@/lib/isAdmin";
+import mongoose from "mongoose";
 
 // Community Corner is a shared bulletin board for all signed-in residents.
 export async function GET() {
@@ -45,37 +46,45 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await isAdmin(userId))) {
-    return NextResponse.json({ error: "Only board members can update posts" }, { status: 403 });
-  }
+  const admin = await isAdmin(userId);
 
   const { id, ...updates } = await req.json();
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  if (!id || !mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "A valid post id is required" }, { status: 400 });
+  }
 
-  const allowed = ["address", "category", "description", "status"];
+  const allowed = admin
+    ? ["address", "category", "description", "status"]
+    : ["address", "category", "description"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];
   }
 
   await connectToDatabase();
-  const updated = await MaintenanceRequest.findByIdAndUpdate(id, fields, { new: true });
+  const filter = admin ? { _id: id } : { _id: id, submittedByClerkId: userId };
+  const updated = await MaintenanceRequest.findOneAndUpdate(filter, fields, {
+    new: true,
+    runValidators: true,
+  });
   if (!updated) return NextResponse.json({ error: "Post not found" }, { status: 404 });
   return NextResponse.json({ request: updated });
 }
 
-// Admin-only delete. Query: ?id=<requestId>
+// Owners and admins can delete posts. Query: ?id=<requestId>
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await isAdmin(userId))) {
-    return NextResponse.json({ error: "Only board members can delete posts" }, { status: 403 });
-  }
+  const admin = await isAdmin(userId);
 
   const id = req.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  if (!id || !mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "A valid post id is required" }, { status: 400 });
+  }
 
   await connectToDatabase();
-  await MaintenanceRequest.findByIdAndDelete(id);
+  const filter = admin ? { _id: id } : { _id: id, submittedByClerkId: userId };
+  const deleted = await MaintenanceRequest.findOneAndDelete(filter);
+  if (!deleted) return NextResponse.json({ error: "Post not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

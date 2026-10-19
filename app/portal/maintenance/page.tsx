@@ -64,6 +64,12 @@ export default function MaintenancePage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!loading && window.location.hash.startsWith("#post-")) {
+      document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [loading, requests]);
+
   function clearPhoto() {
     if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
     photoPreviewRef.current = null;
@@ -212,7 +218,7 @@ export default function MaintenancePage() {
           <p className="text-sm text-ink/60">No posts yet.</p>
         )}
         {requests.map((r) => (
-          <div key={r._id} className="flex items-start justify-between gap-4 rounded-xl border border-ink/10 p-4">
+          <div id={`post-${r._id}`} key={r._id} className="flex items-start justify-between gap-4 rounded-xl border border-ink/10 p-4">
             <div className="flex min-w-0 items-start gap-4">
               {r.photoUrl && (
                 <Image
