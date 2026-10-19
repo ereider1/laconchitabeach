@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 type EventItem = {
@@ -290,6 +291,12 @@ export default function PortalCalendarPage() {
             <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-ink/80">
               {selectedEvent.description}
             </p>
+            <Link
+              href={`/portal/events#event-${encodeURIComponent(selectedEvent._id)}`}
+              className="mt-6 inline-flex rounded-full bg-marina px-4 py-2 text-sm font-semibold text-fog transition hover:bg-marina-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marina"
+            >
+              View full event
+            </Link>
           </div>
         )}
       </dialog>

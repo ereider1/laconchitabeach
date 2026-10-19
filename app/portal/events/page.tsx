@@ -38,6 +38,15 @@ export default function PortalEventsPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (loading) return;
+
+    const eventId = window.location.hash.slice(1);
+    if (!eventId) return;
+
+    document.getElementById(eventId)?.scrollIntoView({ block: "center" });
+  }, [events, loading]);
+
   async function toggleRsvp(eventId: string) {
     setPending(eventId);
     try {
@@ -71,7 +80,11 @@ export default function PortalEventsPage() {
         {events.map((e) => {
           const going = e.rsvps.some((r) => r.clerkUserId === user?.id);
           return (
-            <div key={e._id} className="rounded-xl border border-ink/10 p-5">
+            <div
+              key={e._id}
+              id={`event-${e._id}`}
+              className="scroll-mt-8 rounded-xl border border-ink/10 p-5"
+            >
               <p className="font-mono text-xs uppercase tracking-wider text-dune">
                 {new Date(e.startsAt).toLocaleString("en-US", {
                   weekday: "short",
