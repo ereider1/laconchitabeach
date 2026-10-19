@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type Defaults = {
@@ -21,11 +20,11 @@ export default function ProfileForm({
   defaults: Defaults;
   isNewProfile: boolean;
 }) {
-  const router = useRouter();
   const [form, setForm] = useState(defaults);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,13 +42,28 @@ export default function ProfileForm({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save profile");
+      if (isNewProfile) {
+        setSubmitted(true);
+        return;
+      }
       setSaved(true);
-      if (isNewProfile) router.push("/portal");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSaving(false);
     }
+  }
+
+  if (isNewProfile && submitted) {
+    return (
+      <p
+        role="status"
+        className="rounded-xl border border-ink/10 bg-white p-5 text-sm leading-6 text-ink/70"
+      >
+        Your request is being reviewed. You will receive an email confirmation if your
+        registration request is accepted.
+      </p>
+    );
   }
 
   return (

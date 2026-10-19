@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import Resident from "@/lib/models/Resident";
 import { isAdmin } from "@/lib/isAdmin";
 import { normalizeEmail, parseResidentCsv } from "@/lib/residentCsv";
+import { Resend } from "resend";
 
 async function ensureSparseClerkUserIndex() {
   const indexes = await Resident.collection.indexes();
@@ -145,11 +146,58 @@ export async function PATCH(req: NextRequest) {
   }
 
   await connectToDatabase();
-  const resident = await Resident.findByIdAndUpdate(id, fields, {
-    new: true,
-    runValidators: true,
-  });
+  const resident = await Resident.findById(id);
   if (!resident) return NextResponse.json({ error: "Resident not found" }, { status: 404 });
+
+  if (fields.registrationStatus === "approved" && resident.registrationStatus === "pending") {
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM_EMAIL;
+    if (!apiKey || !from) {
+      console.error(
+        "Registration approval email is not configured; set RESEND_API_KEY and RESEND_FROM_EMAIL."
+      );
+      return NextResponse.json(
+        { error: "Unable to send the approval email. Please try again later." },
+        { status: 503 }
+      );
+    }
+
+    const resend = new Resend(apiKey);
+    let result;
+    try {
+      result = await resend.emails.send({
+        from,
+        to: [resident.email],
+        subject: "Your La Conchita Beach registration is approved",
+        text: [
+          `Hello ${resident.firstName || resident.fullName},`,
+          "",
+          "Your resident registration request has been approved. You can now sign in and access the La Conchita Beach resident portal.",
+          "",
+          `${req.nextUrl.origin}/sign-in`,
+          "",
+          "Welcome to the community portal.",
+        ].join("\n"),
+      });
+    } catch (error) {
+      console.error("Unable to reach Resend while sending a registration approval email.", error);
+      return NextResponse.json(
+        { error: "Unable to send the approval email. Please try again later." },
+        { status: 502 }
+      );
+    }
+
+    if (result.error) {
+      console.error("Resend rejected a registration approval email.", result.error);
+      return NextResponse.json(
+        { error: "Unable to send the approval email. Please try again later." },
+        { status: 502 }
+      );
+    }
+  }
+
+  Object.assign(resident, fields);
+  await resident.save();
   return NextResponse.json({ resident });
 }
 
