@@ -4,11 +4,15 @@ import { connectToDatabase } from "@/lib/mongodb";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import { isAdmin } from "@/lib/isAdmin";
 import mongoose from "mongoose";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 // Community Corner is a shared bulletin board for all signed-in residents.
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const requests = await MaintenanceRequest.find().sort({ createdAt: -1 }).lean();
@@ -18,6 +22,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
 
   const body = await req.json();
   if (!body.address || !body.description) {
@@ -46,6 +53,9 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
   const admin = await isAdmin(userId);
 
   const { id, ...updates } = await req.json();
@@ -75,6 +85,9 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
   const admin = await isAdmin(userId);
 
   const id = req.nextUrl.searchParams.get("id");

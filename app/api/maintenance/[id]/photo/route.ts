@@ -4,6 +4,7 @@ import { get } from "@vercel/blob";
 import { connectToDatabase } from "@/lib/mongodb";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import mongoose from "mongoose";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 export async function GET(
   _request: Request,
@@ -12,6 +13,9 @@ export async function GET(
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
   }
 
   const { id } = await params;

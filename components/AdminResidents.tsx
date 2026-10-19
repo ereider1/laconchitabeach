@@ -14,6 +14,7 @@ type Resident = {
   listedInDirectory: boolean;
   isAdmin: boolean;
   clerkUserId: string;
+  registrationStatus: "pending" | "approved" | "denied";
 };
 
 type ResidentApiResponse = {
@@ -152,6 +153,22 @@ export default function AdminResidents() {
     }
   }
 
+  async function reviewRegistration(id: string, registrationStatus: "approved" | "denied") {
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/residents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, registrationStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to update registration");
+      setResidents((prev) => prev.map((r) => (r._id === id ? data.resident : r)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   async function remove(id: string) {
     if (!confirm("Delete this resident's record? This cannot be undone.")) return;
     setError(null);
@@ -252,7 +269,61 @@ export default function AdminResidents() {
   });
 
   const adminResidents = filtered.filter((r) => r.isAdmin);
-  const regularResidents = filtered.filter((r) => !r.isAdmin);
+  const pendingRegistrations = filtered.filter((r) => r.registrationStatus === "pending");
+  const regularResidents = filtered.filter(
+    (r) => !r.isAdmin && r.registrationStatus !== "pending"
+  );
+
+  function renderPendingRegistrations() {
+    return (
+      <section className="mt-6 overflow-hidden rounded-xl border border-dune/30">
+        <div className="border-b border-dune/20 bg-sand/50 px-4 py-3">
+          <h3 className="font-display text-lg text-marina">Registration requests</h3>
+          <p className="text-xs text-ink/50">
+            {pendingRegistrations.length} request{pendingRegistrations.length === 1 ? "" : "s"} awaiting review
+          </p>
+        </div>
+        {loading ? (
+          <p className="px-4 py-4 text-sm text-ink/50">Loading…</p>
+        ) : pendingRegistrations.length === 0 ? (
+          <p className="px-4 py-4 text-sm text-ink/50">No registration requests need review.</p>
+        ) : (
+          <ul className="divide-y divide-ink/10">
+            {pendingRegistrations.map((resident) => (
+              <li
+                key={resident._id}
+                className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 text-sm">
+                  <p className="font-semibold text-ink">{resident.fullName}</p>
+                  <p className="mt-1 text-ink/65">{resident.address}</p>
+                  <p className="mt-1 break-all font-mono text-xs text-ink/55">
+                    {resident.email}{resident.phone ? ` · ${resident.phone}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void reviewRegistration(resident._id, "approved")}
+                    className="rounded-full bg-marina px-4 py-2 text-xs font-semibold text-fog"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void reviewRegistration(resident._id, "denied")}
+                    className="rounded-full border border-coral/40 px-4 py-2 text-xs font-semibold text-coral"
+                  >
+                    Deny
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  }
 
   function renderResidentRows(rows: Resident[]) {
     return rows.map((r) => {
@@ -282,6 +353,9 @@ export default function AdminResidents() {
                   value={draft.email}
                   onChange={(e) => setDraft({ ...draft, email: e.target.value })}
                 />
+              </td>
+              <td className="px-4 py-3 text-xs text-ink/60">
+                {r.registrationStatus === "denied" ? "Denied" : "Approved"}
               </td>
               <td className="px-4 py-3">
                 <input
@@ -342,6 +416,17 @@ export default function AdminResidents() {
               <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
               <td className="px-4 py-3 text-ink/70">{r.address}</td>
               <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`rounded-full px-2 py-1 text-xs font-medium ${
+                    r.registrationStatus === "denied"
+                      ? "bg-coral/10 text-coral"
+                      : "bg-marina/10 text-marina"
+                  }`}
+                >
+                  {r.registrationStatus === "denied" ? "Denied" : "Approved"}
+                </span>
+              </td>
               <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.phone ?? ""}</td>
               <td className="px-4 py-3">
                 <span
@@ -379,12 +464,13 @@ export default function AdminResidents() {
           <p className="text-xs text-ink/50">{rows.length} resident{rows.length === 1 ? "" : "s"}</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[48rem] text-left text-sm">
+          <table className="w-full min-w-[56rem] text-left text-sm">
             <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Address</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Access</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Directory</th>
                 <th className="px-4 py-3" />
@@ -392,10 +478,10 @@ export default function AdminResidents() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>Loading…</td></tr>
+                <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>Loading…</td></tr>
               )}
               {!loading && rows.length === 0 && (
-                <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>{emptyMessage}</td></tr>
+                <tr><td className="px-4 py-4 text-ink/50" colSpan={7}>{emptyMessage}</td></tr>
               )}
               {!loading && renderResidentRows(rows)}
             </tbody>
@@ -508,6 +594,7 @@ export default function AdminResidents() {
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
+      {renderPendingRegistrations()}
       {renderResidentTable("Administrators", adminResidents, "No administrators match.")}
       {renderResidentTable("Residents", regularResidents, "No residents match.")}
     </div>

@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Event from "@/lib/models/Event";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const events = await Event.find().sort({ startsAt: 1 }).lean();
@@ -17,6 +21,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
 
   const { eventId, guests = 0 } = await req.json();
   if (!eventId) return NextResponse.json({ error: "eventId is required" }, { status: 400 });

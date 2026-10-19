@@ -2,6 +2,8 @@ import mongoose, { Schema, models, model } from "mongoose";
 
 export interface IResident {
   clerkUserId?: string;
+  registrationStatus: "pending" | "approved" | "denied";
+  adminNotifiedAt?: Date;
   firstName?: string;
   lastName?: string;
   fullName: string;
@@ -22,6 +24,12 @@ const ResidentSchema = new Schema<IResident>(
     // Admins can add a resident's directory info before that resident has
     // signed up (or ever will) — clerkUserId is filled in once/if they do.
     clerkUserId: { type: String, unique: true, sparse: true },
+    registrationStatus: {
+      type: String,
+      enum: ["pending", "approved", "denied"],
+      default: "approved",
+    },
+    adminNotifiedAt: { type: Date },
     firstName: { type: String },
     lastName: { type: String },
     fullName: { type: String, required: true },
@@ -32,8 +40,8 @@ const ResidentSchema = new Schema<IResident>(
     householdMembers: [{ type: String }],
     listedInDirectory: { type: Boolean, default: true },
     moveInYear: { type: Number },
-    // Grants admin access once this record's clerkUserId matches a signed-in
-    // user. Managed from Admin → Profiles. See lib/isAdmin.ts.
+    // Grants admin access to approved accounts once clerkUserId matches.
+    // Managed from Admin → Profiles. See lib/isAdmin.ts.
     isAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }

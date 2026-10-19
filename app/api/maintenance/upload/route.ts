@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { auth } from "@clerk/nextjs/server";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 const MAX_PHOTO_SIZE = 4 * 1024 * 1024;
 const PHOTO_TYPES: Record<string, string> = {
@@ -15,6 +16,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
   }
 
   const formData = await request.formData();

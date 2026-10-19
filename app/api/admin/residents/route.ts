@@ -123,14 +123,32 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const allowed = ["fullName", "address", "email", "phone", "moveInYear", "listedInDirectory", "isAdmin"];
+  const allowed = [
+    "fullName",
+    "address",
+    "email",
+    "phone",
+    "moveInYear",
+    "listedInDirectory",
+    "isAdmin",
+    "registrationStatus",
+  ];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];
   }
+  if (
+    "registrationStatus" in fields &&
+    !["pending", "approved", "denied"].includes(String(fields.registrationStatus))
+  ) {
+    return NextResponse.json({ error: "Invalid registration status" }, { status: 400 });
+  }
 
   await connectToDatabase();
-  const resident = await Resident.findByIdAndUpdate(id, fields, { new: true });
+  const resident = await Resident.findByIdAndUpdate(id, fields, {
+    new: true,
+    runValidators: true,
+  });
   if (!resident) return NextResponse.json({ error: "Resident not found" }, { status: 404 });
   return NextResponse.json({ resident });
 }

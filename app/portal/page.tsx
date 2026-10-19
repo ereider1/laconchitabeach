@@ -7,6 +7,7 @@ import Event from "@/lib/models/Event";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import Resident from "@/lib/models/Resident";
 import MyCommunityPosts from "@/components/MyCommunityPosts";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
@@ -26,6 +27,7 @@ async function getDashboardData(clerkUserId: string) {
 
 export default async function PortalDashboard() {
   const { userId } = await auth();
+  if (userId && !(await hasApprovedResidentAccess(userId))) return null;
   const user = await currentUser();
   const firstName = user?.firstName ?? "neighbor";
 

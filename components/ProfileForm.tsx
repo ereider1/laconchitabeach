@@ -167,7 +167,13 @@ export default function ProfileForm({
         disabled={saving}
         className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
       >
-        {saving ? "Saving…" : isNewProfile ? "Save and continue" : "Save changes"}
+        {saving
+          ? isNewProfile
+            ? "Submitting…"
+            : "Saving…"
+          : isNewProfile
+            ? "Submit registration request"
+            : "Save changes"}
       </button>
     </form>
   );

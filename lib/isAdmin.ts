@@ -19,6 +19,11 @@ export async function isAdmin(clerkUserId: string | null | undefined): Promise<b
   if (envAdmins.includes(clerkUserId)) return true;
 
   await connectToDatabase();
-  const resident = await Resident.findOne({ clerkUserId }).select("isAdmin").lean();
-  return !!resident?.isAdmin;
+  const resident = await Resident.findOne({ clerkUserId })
+    .select("isAdmin registrationStatus")
+    .lean();
+  return (
+    !!resident?.isAdmin &&
+    (resident.registrationStatus == null || resident.registrationStatus === "approved")
+  );
 }

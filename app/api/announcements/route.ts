@@ -3,11 +3,15 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Announcement from "@/lib/models/Announcement";
 import { isAdmin } from "@/lib/isAdmin";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await hasApprovedResidentAccess(userId))) {
+    return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
+  }
 
   await connectToDatabase();
   const announcements = await Announcement.find().sort({ pinned: -1, createdAt: -1 }).lean();
