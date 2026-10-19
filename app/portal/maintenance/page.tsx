@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 type Req = {
   _id: string;
+  submittedByName: string;
   address: string;
   description: string;
   category: string;
@@ -67,7 +68,7 @@ export default function MaintenancePage() {
     <div>
       <h1 className="font-display text-3xl text-ink">Community Corner</h1>
       <p className="mt-2 text-ink/60">
-        Report an issue with common areas, the beach path, or lighting.
+        Browse posts from neighbors and share maintenance requests, lost &amp; found, and local listings.
       </p>
 
       <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
@@ -87,6 +88,8 @@ export default function MaintenancePage() {
           >
             <option value="common-area">Common area</option>
             <option value="beach-access">Beach access</option>
+            <option value="landscaping">Landscaping</option>
+            <option value="lighting">Lighting</option>
             <option value="Lost & Found">Lost & Found</option>
             <option value="for sale">For Sale</option>
             <option value="looking for">Looking For</option>
@@ -96,7 +99,7 @@ export default function MaintenancePage() {
         </div>
         <textarea
           className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-          placeholder="Describe the issue"
+          placeholder="Describe your post"
           rows={3}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -107,7 +110,7 @@ export default function MaintenancePage() {
           disabled={submitting}
           className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
         >
-          {submitting ? "Submitting…" : "Submit request"}
+          {submitting ? "Submitting…" : "Submit post"}
         </button>
       </form>
 
@@ -116,7 +119,7 @@ export default function MaintenancePage() {
       <div className="mt-8 space-y-3">
         {loading && <p className="text-sm text-ink/60">Loading…</p>}
         {!loading && requests.length === 0 && !error && (
-          <p className="text-sm text-ink/60">No requests yet.</p>
+          <p className="text-sm text-ink/60">No posts yet.</p>
         )}
         {requests.map((r) => (
           <div key={r._id} className="flex items-start justify-between rounded-xl border border-ink/10 p-4">
@@ -124,6 +127,7 @@ export default function MaintenancePage() {
               <p className="font-medium text-ink">{r.address}</p>
               <p className="text-sm text-ink/70">{r.description}</p>
               <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
+              <p className="mt-1 text-xs text-ink/50">Posted by {r.submittedByName}</p>
             </div>
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor[r.status]}`}>
               {r.status}

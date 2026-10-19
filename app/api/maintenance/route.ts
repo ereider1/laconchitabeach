@@ -4,14 +4,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import { isAdmin } from "@/lib/isAdmin";
 
-// Residents see only their own requests; admins see everything.
+// Community Corner is a shared bulletin board for all signed-in residents.
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectToDatabase();
-  const filter = (await isAdmin(userId)) ? {} : { submittedByClerkId: userId };
-  const requests = await MaintenanceRequest.find(filter).sort({ createdAt: -1 }).lean();
+  const requests = await MaintenanceRequest.find().sort({ createdAt: -1 }).lean();
   return NextResponse.json({ requests });
 }
 
