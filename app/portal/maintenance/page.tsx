@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { upload } from "@vercel/blob/client";
 
 type Req = {
   _id: string;
@@ -9,7 +11,17 @@ type Req = {
   description: string;
   category: string;
   status: "open" | "in-progress" | "resolved";
+  photoUrl?: string;
   createdAt: string;
+};
+
+const MAX_PHOTO_SIZE = 8 * 1024 * 1024;
+const PHOTO_TYPES: Record<string, string> = {
+  "image/avif": "avif",
+  "image/gif": "gif",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
 };
 
 const statusColor: Record<Req["status"], string> = {
@@ -24,6 +36,16 @@ export default function MaintenancePage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ address: "", category: "other", description: "" });
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoPreviewRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
+    };
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -43,19 +65,46 @@ export default function MaintenancePage() {
     load();
   }, []);
 
+  function clearPhoto() {
+    if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
+    photoPreviewRef.current = null;
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
+      let photoUrl: string | undefined;
+      if (photo) {
+        const extension = PHOTO_TYPES[photo.type];
+        if (!extension || photo.size > MAX_PHOTO_SIZE) {
+          throw new Error("Choose a JPG, PNG, GIF, WebP, or AVIF image up to 8 MB.");
+        }
+
+        const blob = await upload(
+          `community-corner/${crypto.randomUUID()}.${extension}`,
+          photo,
+          {
+            access: "public",
+            handleUploadUrl: "/api/maintenance/upload",
+          }
+        );
+        photoUrl = blob.url;
+      }
+
       const res = await fetch("/api/maintenance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, photoUrl }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to submit");
       setForm({ address: "", category: "other", description: "" });
+      clearPhoto();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -105,6 +154,46 @@ export default function MaintenancePage() {
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           required
         />
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-ink" htmlFor="community-photo">
+            Add a photo (optional)
+          </label>
+          <input
+            id="community-photo"
+            ref={photoInputRef}
+            type="file"
+            accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+            className="block w-full text-sm text-ink/70 file:mr-3 file:rounded-full file:border-0 file:bg-marina/10 file:px-4 file:py-2 file:font-medium file:text-marina"
+            onChange={(e) => {
+              if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
+              const selected = e.target.files?.[0] ?? null;
+              const preview = selected ? URL.createObjectURL(selected) : null;
+              photoPreviewRef.current = preview;
+              setPhoto(selected);
+              setPhotoPreview(preview);
+            }}
+          />
+          {photoPreview && (
+            <div className="flex items-start gap-3">
+              <Image
+                src={photoPreview}
+                alt="Selected photo preview"
+                width={128}
+                height={96}
+                unoptimized
+                className="h-24 w-32 rounded-lg object-cover"
+              />
+              <button
+                type="button"
+                onClick={clearPhoto}
+                className="text-sm font-medium text-coral underline underline-offset-4"
+              >
+                Remove photo
+              </button>
+            </div>
+          )}
+          <p className="text-xs text-ink/50">JPG, PNG, GIF, WebP, or AVIF, up to 8 MB.</p>
+        </div>
         <button
           type="submit"
           disabled={submitting}
@@ -126,6 +215,16 @@ export default function MaintenancePage() {
             <div>
               <p className="font-medium text-ink">{r.address}</p>
               <p className="text-sm text-ink/70">{r.description}</p>
+              {r.photoUrl && (
+                <Image
+                  src={r.photoUrl}
+                  alt={`Photo attached to post about ${r.address}`}
+                  width={160}
+                  height={128}
+                  unoptimized
+                  className="mt-3 h-32 w-40 rounded-lg object-cover"
+                />
+              )}
               <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
               <p className="mt-1 text-xs text-ink/50">
                 Posted by {r.submittedByName} on {new Date(r.createdAt).toLocaleDateString(undefined, {

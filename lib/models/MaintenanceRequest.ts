@@ -15,6 +15,7 @@ export interface IMaintenanceRequest {
     | "free"
     | "other";
   description: string;
+  photoUrl?: string;
   status: "open" | "in-progress" | "resolved";
   createdAt: Date;
   updatedAt: Date;
@@ -41,6 +42,7 @@ const MaintenanceRequestSchema = new Schema<IMaintenanceRequest>(
       default: "other",
     },
     description: { type: String, required: true },
+    photoUrl: { type: String },
     status: {
       type: String,
       enum: ["open", "in-progress", "resolved"],

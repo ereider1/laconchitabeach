@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type Post = {
   _id: string;
@@ -18,6 +19,7 @@ type Post = {
     | "other";
   description: string;
   status: "open" | "in-progress" | "resolved";
+  photoUrl?: string;
   createdAt: string;
 };
 
@@ -227,6 +229,16 @@ export default function AdminCommunityCorner() {
                       </div>
                     </div>
                     <p className="mt-3 text-sm text-ink/70">{p.description}</p>
+                    {p.photoUrl && (
+                      <Image
+                        src={p.photoUrl}
+                        alt={`Photo attached to post about ${p.address}`}
+                        width={160}
+                        height={128}
+                        unoptimized
+                        className="mt-3 h-32 w-40 rounded-lg object-cover"
+                      />
+                    )}
                   </>
                 )}
               </div>

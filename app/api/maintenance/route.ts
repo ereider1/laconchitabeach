@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       address: body.address,
       description: body.description,
       category: body.category ?? "other",
+      photoUrl: body.photoUrl,
       submittedByName: user?.fullName ?? user?.username ?? "Resident",
       submittedByClerkId: userId,
     });
