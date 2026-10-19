@@ -69,15 +69,7 @@ export default async function PortalDashboard() {
         </p>
       )}
 
-      <div className="mt-10">
-        <section className="mb-10">
-          <h2 className="mb-3 font-display text-lg text-marina">My Community Corner Posts</h2>
-          {dbError ? (
-            <p className="text-sm text-ink/60">Could not load your posts right now.</p>
-          ) : (
-            <MyCommunityPosts posts={myPosts} />
-          )}
-        </section>
+      <div className="mt-5">
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-lg text-marina">Latest announcements</h2>
@@ -105,6 +97,14 @@ export default async function PortalDashboard() {
               </details>
             ))}
           </div>
+        </section>
+        <section className="mt-10">
+          <h2 className="mb-3 font-display text-lg text-marina">My Community Corner Posts</h2>
+          {dbError ? (
+            <p className="text-sm text-ink/60">Could not load your posts right now.</p>
+          ) : (
+            <MyCommunityPosts posts={myPosts} />
+          )}
         </section>
       </div>
     </div>
