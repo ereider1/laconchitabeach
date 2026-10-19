@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       from,
       to: [to],
       replyTo: submission.email,
-      subject: `Website inquiry: ${submission.subject}`,
+      subject: `Message from La Conchita Beach Website: ${submission.subject}`,
       text: `Name: ${submission.name}\nEmail: ${submission.email}\n\n${submission.message}`,
     });
   } catch (error) {

@@ -8,12 +8,12 @@ import {
   CloudSun,
   CalendarDays,
   ArrowRight,
-  ChevronDown,
   Sun,
   Thermometer,
   Waves,
   type LucideIcon,
 } from "lucide-react";
+import WeatherDisclosure from "@/components/WeatherDisclosure";
 
 type SurfForecastTide = {
   timestamp: number;
@@ -274,62 +274,55 @@ export default async function HarborBoard() {
   return (
     <section
       aria-label="Today's weather and conditions for La Conchita"
-      className="w-full rounded-2xl border border-marina/10 bg-white/95 px-5 py-5 text-left text-ink shadow-[0_22px_55px_rgba(4,54,75,0.16)] backdrop-blur-md sm:px-7 sm:py-6"
+      className="grid w-full grid-cols-1 gap-y-2 rounded-2xl border border-marina/10 bg-white/95 px-5 py-5 text-left text-ink shadow-[0_22px_55px_rgba(4,54,75,0.16)] backdrop-blur-md sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-center sm:gap-x-4 sm:gap-y-3 sm:px-7 sm:py-6"
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 className="text-base font-bold uppercase tracking-[0.16em] text-marina sm:text-lg">
-          Today at La Conchita
-        </h2>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm">
-          <p className="inline-flex items-center gap-2 text-ink/70">
-            <CalendarDays className="h-4 w-4 text-marina" aria-hidden="true" />
-            {today}
-          </p>
-          {weather?.forecast.length ? (
-            <details className="group relative">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-2 font-medium text-marina hover:text-ink [&::-webkit-details-marker]:hidden">
-                View 7-Day Forecast
-                <ArrowRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden="true" />
-              </summary>
-              <div className="absolute right-0 top-full z-20 mt-3 grid w-[min(88vw,34rem)] grid-cols-4 gap-2 rounded-2xl border border-marina/10 bg-white p-3 text-ink shadow-xl sm:grid-cols-7">
-                {weather.forecast.map((day, index) => {
-                  const { Icon: DayIcon, label: dayLabel } = getWeather(day.code);
-                  return (
-                    <div key={day.date} className="flex flex-col items-center gap-1 rounded-xl bg-marina/[0.04] px-1.5 py-2 text-center">
-                      <span className="text-[10px] font-semibold text-ink/70">
-                        {formatForecastDay(day.date, index)}
-                      </span>
-                      <DayIcon className="h-5 w-5 text-marina" aria-label={dayLabel} />
-                      <span className="whitespace-nowrap text-xs font-bold tabular-nums">
-                        {Math.round(day.high)}° <span className="font-normal text-dune">{Math.round(day.low)}°</span>
-                      </span>
-                      <span className="text-[9px] text-ocean">{day.precipitation}% rain</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </details>
-          ) : (
-            <a
-              href={openMeteoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 font-medium text-marina hover:text-ink"
-            >
+      <h2 className="col-start-1 row-start-1 text-base font-bold uppercase tracking-[0.16em] text-marina sm:text-lg">
+        Today at La Conchita
+      </h2>
+      <div className="col-start-1 row-start-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:col-start-3 sm:row-start-1 sm:text-sm">
+        <p className="inline-flex items-center gap-2 text-ink/70">
+          <CalendarDays className="h-4 w-4 text-marina" aria-hidden="true" />
+          {today}
+        </p>
+        {weather?.forecast.length ? (
+          <details className="group relative">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-2 font-medium text-marina hover:text-ink [&::-webkit-details-marker]:hidden">
               View 7-Day Forecast
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </a>
-          )}
-        </div>
+              <ArrowRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden="true" />
+            </summary>
+            <div className="absolute right-0 top-full z-20 mt-3 grid w-[min(88vw,34rem)] grid-cols-4 gap-2 rounded-2xl border border-marina/10 bg-white p-3 text-ink shadow-xl sm:grid-cols-7">
+              {weather.forecast.map((day, index) => {
+                const { Icon: DayIcon, label: dayLabel } = getWeather(day.code);
+                return (
+                  <div key={day.date} className="flex flex-col items-center gap-1 rounded-xl bg-marina/[0.04] px-1.5 py-2 text-center">
+                    <span className="text-[10px] font-semibold text-ink/70">
+                      {formatForecastDay(day.date, index)}
+                    </span>
+                    <DayIcon className="h-5 w-5 text-marina" aria-label={dayLabel} />
+                    <span className="whitespace-nowrap text-xs font-bold tabular-nums">
+                      {Math.round(day.high)}° <span className="font-normal text-dune">{Math.round(day.low)}°</span>
+                    </span>
+                    <span className="text-[9px] text-ocean">{day.precipitation}% rain</span>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        ) : (
+          <a
+            href={openMeteoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 font-medium text-marina hover:text-ink"
+          >
+            View 7-Day Forecast
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
+        )}
       </div>
 
-      <details className="weather-details group">
-        <summary className="mb-3 flex w-full cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-marina/10 bg-marina/[0.04] px-4 py-3 text-sm font-semibold text-marina transition-colors hover:bg-marina/[0.08] hover:text-ink [&::-webkit-details-marker]:hidden">
-          <span className="group-open:hidden">Show today&apos;s conditions</span>
-          <span className="hidden group-open:inline">Hide today&apos;s conditions</span>
-          <ChevronDown className="h-4 w-4 transition-transform duration-300 ease-out group-open:rotate-180" aria-hidden="true" />
-        </summary>
-        <div className="weather-details-content">
+      <WeatherDisclosure>
+        <>
           <div className="min-h-0 overflow-hidden">
             <div className="grid grid-cols-1 divide-y divide-marina/10 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
               <article className="py-4 first:pt-0 last:pb-0 lg:px-5 lg:py-0 lg:first:pl-0 lg:last:pr-0">
@@ -415,8 +408,8 @@ export default async function HarborBoard() {
               </article>
             </div>
           </div>
-        </div>
-      </details>
+        </>
+      </WeatherDisclosure>
     </section>
   );
 }

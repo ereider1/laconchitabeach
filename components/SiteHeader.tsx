@@ -41,12 +41,6 @@ export default function SiteHeader() {
             >
               Resident Login
             </Link>
-            <Link
-              href="/sign-up"
-              className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-marina transition hover:bg-sand"
-            >
-              Sign Up
-            </Link>
           </Show>
           <Show when="signed-in">
             <Link

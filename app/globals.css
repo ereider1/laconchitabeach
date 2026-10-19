@@ -70,7 +70,7 @@ select:focus-visible {
     visibility 0s linear 300ms;
 }
 
-.weather-details[open] > .weather-details-content {
+.weather-details-content[data-open="true"] {
   grid-template-rows: 1fr;
   visibility: visible;
   transition-delay: 0s;
