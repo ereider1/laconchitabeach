@@ -212,28 +212,30 @@ export default function MaintenancePage() {
           <p className="text-sm text-ink/60">No posts yet.</p>
         )}
         {requests.map((r) => (
-          <div key={r._id} className="flex items-start justify-between rounded-xl border border-ink/10 p-4">
-            <div>
-              <p className="font-medium text-ink">{r.address}</p>
-              <p className="text-sm text-ink/70">{r.description}</p>
+          <div key={r._id} className="flex items-start justify-between gap-4 rounded-xl border border-ink/10 p-4">
+            <div className="flex min-w-0 items-start gap-4">
               {r.photoUrl && (
                 <Image
-                  src={r.photoUrl}
+                  src={`/api/maintenance/${r._id}/photo`}
                   alt={`Photo attached to post about ${r.address}`}
-                  width={160}
-                  height={128}
+                  width={128}
+                  height={96}
                   unoptimized
-                  className="mt-3 h-32 w-40 rounded-lg object-cover"
+                  className="h-24 w-32 shrink-0 rounded-lg object-cover"
                 />
               )}
-              <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
-              <p className="mt-1 text-xs text-ink/50">
-                Posted by {r.submittedByName} on {new Date(r.createdAt).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
+              <div className="min-w-0">
+                <p className="font-medium text-ink">{r.address}</p>
+                <p className="text-sm text-ink/70">{r.description}</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
+                <p className="mt-1 text-xs text-ink/50">
+                  Posted by {r.submittedByName} on {new Date(r.createdAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
             </div>
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor[r.status]}`}>
               {r.status}

@@ -43,7 +43,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       `community-corner/${crypto.randomUUID()}.${extension}`,
       photo,
       {
-        access: "public",
+        access: "private",
         addRandomSuffix: true,
         contentType: photo.type,
       }

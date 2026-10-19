@@ -189,56 +189,60 @@ export default function AdminCommunityCorner() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-dune">
-                          {p.category} · {p.address}
-                        </p>
-                        <p className="mt-1 text-sm text-ink/50">
-                          Posted by {p.submittedByName} on {new Date(p.createdAt).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${
-                            p.status === "resolved"
-                              ? "bg-marina/10 text-marina"
-                              : p.status === "in-progress"
-                                ? "bg-coral/10 text-coral"
-                                : "bg-ink/5 text-ink/50"
-                          }`}
-                        >
-                          {p.status}
-                        </span>
-                        <button
-                          onClick={() => startEdit(p)}
-                          className="text-xs font-medium text-marina underline underline-offset-4"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => remove(p._id)}
-                          className="text-xs font-medium text-coral underline underline-offset-4"
-                        >
-                          Delete
-                        </button>
+                    <div className="flex items-start gap-4">
+                      {p.photoUrl && (
+                        <Image
+                          src={`/api/maintenance/${p._id}/photo`}
+                          alt={`Photo attached to post about ${p.address}`}
+                          width={128}
+                          height={96}
+                          unoptimized
+                          className="h-24 w-32 shrink-0 rounded-lg object-cover"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-wider text-dune">
+                              {p.category} · {p.address}
+                            </p>
+                            <p className="mt-1 text-sm text-ink/50">
+                              Posted by {p.submittedByName} on {new Date(p.createdAt).toLocaleDateString(undefined, {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span
+                              className={`rounded-full px-2 py-1 text-xs font-medium ${
+                                p.status === "resolved"
+                                  ? "bg-marina/10 text-marina"
+                                  : p.status === "in-progress"
+                                    ? "bg-coral/10 text-coral"
+                                    : "bg-ink/5 text-ink/50"
+                              }`}
+                            >
+                              {p.status}
+                            </span>
+                            <button
+                              onClick={() => startEdit(p)}
+                              className="text-xs font-medium text-marina underline underline-offset-4"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => remove(p._id)}
+                              className="text-xs font-medium text-coral underline underline-offset-4"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm text-ink/70">{p.description}</p>
                       </div>
                     </div>
-                    <p className="mt-3 text-sm text-ink/70">{p.description}</p>
-                    {p.photoUrl && (
-                      <Image
-                        src={p.photoUrl}
-                        alt={`Photo attached to post about ${p.address}`}
-                        width={160}
-                        height={128}
-                        unoptimized
-                        className="mt-3 h-32 w-40 rounded-lg object-cover"
-                      />
-                    )}
                   </>
                 )}
               </div>
