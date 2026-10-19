@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 
 type EventItem = {
   _id: string;
@@ -14,6 +14,24 @@ type EventItem = {
 
 function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function getCalendarWeeks(date: Date) {
+  const firstOfMonth = startOfMonth(date);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - firstOfMonth.getDay());
+
+  const days = Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(gridStart);
+    day.setDate(gridStart.getDate() + index);
+    return day;
+  });
+
+  const weeks: Date[][] = [];
+  for (let index = 0; index < days.length; index += 7) {
+    weeks.push(days.slice(index, index + 7));
+  }
+  return weeks;
 }
 
 function sameDay(a: Date, b: Date) {
@@ -29,6 +47,7 @@ export default function PortalCalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const eventDialogRef = useRef<HTMLDialogElement>(null);
@@ -56,38 +75,91 @@ export default function PortalCalendarPage() {
     load();
   }, []);
 
-  const weeks = useMemo(() => {
-    const firstOfMonth = startOfMonth(cursor);
-    const gridStart = new Date(firstOfMonth);
-    gridStart.setDate(gridStart.getDate() - firstOfMonth.getDay());
+  const filteredEvents = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    if (!query) return events;
+    return events.filter((event) =>
+      [event.title, event.description, event.location].some((value) =>
+        value.toLocaleLowerCase().includes(query),
+      ),
+    );
+  }, [events, search]);
 
-    const days: Date[] = [];
-    for (let i = 0; i < 42; i++) {
-      const day = new Date(gridStart);
-      day.setDate(gridStart.getDate() + i);
-      days.push(day);
-    }
-
-    const result: Date[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-      result.push(days.slice(i, i + 7));
-    }
-    return result;
-  }, [cursor]);
+  const weeks = useMemo(() => getCalendarWeeks(cursor), [cursor]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, EventItem[]>();
-    for (const e of events) {
+    for (const e of filteredEvents) {
       const key = new Date(e.startsAt).toDateString();
       const list = map.get(key) ?? [];
       list.push(e);
       map.set(key, list);
     }
     return map;
-  }, [events]);
+  }, [filteredEvents]);
 
   const selectedEvents = selected ? eventsByDay.get(selected.toDateString()) ?? [] : [];
   const today = new Date();
+
+  function renderDayCell(day: Date) {
+    const inMonth = day.getMonth() === cursor.getMonth();
+    const dayEvents = eventsByDay.get(day.toDateString()) ?? [];
+    const isToday = sameDay(day, today);
+    const isSelected = selected && sameDay(day, selected);
+    const dateLabel = day.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    return (
+      <div
+        key={day.toISOString()}
+        className={`flex min-h-24 min-w-0 flex-col items-start gap-1 border-b border-r border-ink/10 p-2 text-left transition last:border-r-0 hover:bg-ink/5 ${
+          inMonth ? "bg-white" : "bg-fog/40"
+        } ${isSelected ? "ring-2 ring-inset ring-marina" : ""}`}
+      >
+        <button
+          type="button"
+          onClick={() => setSelected(day)}
+          aria-label={`Select ${dateLabel}${dayEvents.length ? `, ${dayEvents.length} matching event${dayEvents.length === 1 ? "" : "s"}` : ""}`}
+          aria-pressed={Boolean(isSelected)}
+          className={`rounded-sm font-mono text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marina ${
+            isToday
+              ? "rounded-full bg-marina px-1.5 py-0.5 text-fog"
+              : inMonth
+                ? "text-ink/70"
+                : "text-ink/30"
+          }`}
+        >
+          {day.getDate()}
+        </button>
+        <div className="flex w-full flex-col gap-0.5">
+          {dayEvents.slice(0, 2).map((event) => (
+            <button
+              type="button"
+              key={event._id}
+              onClick={() => {
+                setSelected(day);
+                setSelectedEvent(event);
+              }}
+              aria-label={`View event details: ${event.title}`}
+              title={event.title}
+              className="w-full truncate rounded bg-sand px-1 py-0.5 text-left text-[11px] text-ink hover:bg-marina/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marina"
+            >
+              {event.title}
+            </button>
+          ))}
+          {dayEvents.length > 2 && (
+            <span className="text-[11px] text-ink/50">
+              +{dayEvents.length - 2} more
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -98,18 +170,45 @@ export default function PortalCalendarPage() {
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-6">
+        <div className="relative min-w-0 sm:max-w-xl">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            aria-label="Search calendar events"
+            className="w-full rounded-xl border border-ink/15 bg-white py-2.5 pl-11 pr-4 text-sm shadow-sm transition placeholder:text-ink/40 focus:border-marina focus:outline-none focus:ring-2 focus:ring-marina/20"
+            placeholder="Search events by title, location, or description"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+      </div>
+
+      {search.trim() && !loading && (
+        <p className="mt-3 text-sm text-ink/55" aria-live="polite">
+          {filteredEvents.length
+            ? `${filteredEvents.length} matching event${filteredEvents.length === 1 ? "" : "s"}`
+            : "No events match your search."}
+        </p>
+      )}
+
+      <div className="mt-6 flex items-center justify-between">
         <button
+          type="button"
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
           className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           Prev
         </button>
-        <h2 className="font-display text-xl text-ink">
+        <h2 className="font-display text-center text-xl text-ink">
           {cursor.toLocaleString("en-US", { month: "long", year: "numeric" })}
         </h2>
         <button
+          type="button"
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
           className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
         >
@@ -132,65 +231,9 @@ export default function PortalCalendarPage() {
               </div>
             ))}
           </div>
-          {weeks.map((week, wi) => (
-            <div key={wi} className="grid grid-cols-7">
-              {week.map((day) => {
-                const inMonth = day.getMonth() === cursor.getMonth();
-                const dayEvents = eventsByDay.get(day.toDateString()) ?? [];
-                const isToday = sameDay(day, today);
-                const isSelected = selected && sameDay(day, selected);
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={`flex min-h-24 flex-col items-start gap-1 border-b border-r border-ink/10 p-2 text-left transition last:border-r-0 hover:bg-ink/5 ${
-                      inMonth ? "bg-white" : "bg-fog/40"
-                    } ${isSelected ? "ring-2 ring-inset ring-marina" : ""}`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setSelected(day)}
-                      aria-label={`Select ${day.toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}`}
-                      aria-pressed={Boolean(isSelected)}
-                      className={`rounded-sm font-mono text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marina ${
-                        isToday
-                          ? "rounded-full bg-marina px-1.5 py-0.5 text-fog"
-                          : inMonth
-                          ? "text-ink/70"
-                          : "text-ink/30"
-                      }`}
-                    >
-                      {day.getDate()}
-                    </button>
-                    <div className="flex w-full flex-col gap-0.5">
-                      {dayEvents.slice(0, 2).map((e) => (
-                        <button
-                          type="button"
-                          key={e._id}
-                          onClick={() => {
-                            setSelected(day);
-                            setSelectedEvent(e);
-                          }}
-                          aria-label={`View event details: ${e.title}`}
-                          title={e.title}
-                          className="w-full truncate rounded bg-sand px-1 py-0.5 text-left text-[11px] text-ink hover:bg-marina/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marina"
-                        >
-                          {e.title}
-                        </button>
-                      ))}
-                      {dayEvents.length > 2 && (
-                        <span className="text-[11px] text-ink/50">
-                          +{dayEvents.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          {weeks.map((week) => (
+            <div key={week[0].toISOString()} className="grid grid-cols-7">
+              {week.map((day) => renderDayCell(day))}
             </div>
           ))}
         </div>
