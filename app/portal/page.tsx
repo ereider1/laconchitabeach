@@ -11,7 +11,7 @@ async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
   const [hasProfile, announcements, myPosts] = await Promise.all([
     Resident.exists({ clerkUserId }),
-    Announcement.find().sort({ pinned: -1, createdAt: -1 }).limit(3).lean(),
+    Announcement.find().sort({ createdAt: -1 }).limit(3).lean(),
     MaintenanceRequest.find({ submittedByClerkId: clerkUserId }).sort({ createdAt: -1 }).lean(),
   ]);
   return {
@@ -26,7 +26,13 @@ export default async function PortalDashboard() {
   const user = await currentUser();
   const firstName = user?.firstName ?? "neighbor";
 
-  let announcements: Array<{ _id: string; title: string; body: string; category: string }> = [];
+  let announcements: Array<{
+    _id: string;
+    title: string;
+    body: string;
+    category: string;
+    createdAt: string;
+  }> = [];
   let myPosts: Array<{
     _id: string;
     address: string;
@@ -85,6 +91,13 @@ export default async function PortalDashboard() {
               <details key={a._id} className="group rounded-lg border border-ink/10 p-4">
                 <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                   <span className="block font-medium text-ink">{a.title}</span>
+                  <span className="mt-1 block text-xs text-ink/50">
+                    Posted {new Date(a.createdAt).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
                   <span className="mt-1 hidden text-sm text-ink/60 group-open:hidden sm:line-clamp-2 sm:block">{a.body}</span>
                   <span className="mt-2 inline-block text-xs font-semibold text-marina underline underline-offset-4 group-open:hidden">
                     Read full announcement
