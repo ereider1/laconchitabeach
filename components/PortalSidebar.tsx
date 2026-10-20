@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Bell,
   CalendarDays,
   FileText,
   Gauge,
@@ -36,13 +37,49 @@ const links: Array<{
   { href: "/portal/profile", label: "My profile", icon: UserRound },
 ];
 
-export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function PortalSidebar({
+  isAdmin = false,
+  pendingRegistrationCount: initialPendingRegistrationCount = 0,
+}: {
+  isAdmin?: boolean;
+  pendingRegistrationCount?: number;
+}) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [pendingRegistrationCount, setPendingRegistrationCount] = useState(
+    initialPendingRegistrationCount,
+  );
   const navLinks = [
     ...links.filter((link) => link.href !== "/portal/documents" || isAdmin),
     ...(isAdmin ? [{ href: "/portal/admin", label: "Admin", icon: ShieldCheck }] : []),
   ];
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let isActive = true;
+    async function refreshPendingRegistrationCount() {
+      try {
+        const response = await fetch("/api/admin/residents/pending-count");
+        const result: { count?: number; error?: string } = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Failed to refresh registration requests");
+        if (typeof result.count !== "number") throw new Error("Invalid registration count response");
+        if (isActive) setPendingRegistrationCount(result.count);
+      } catch (error) {
+        console.error("Unable to refresh pending registration count.", error);
+      }
+    }
+
+    void refreshPendingRegistrationCount();
+    const intervalId = window.setInterval(() => void refreshPendingRegistrationCount(), 60_000);
+    window.addEventListener("focus", refreshPendingRegistrationCount);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshPendingRegistrationCount);
+    };
+  }, [isAdmin]);
 
   return (
     <aside className="flex w-full shrink-0 flex-col bg-ink px-5 py-4 text-white md:fixed md:inset-y-0 md:left-0 md:z-30 md:w-64 md:overflow-y-auto md:py-6">
@@ -97,6 +134,16 @@ export default function PortalSidebar({ isAdmin = false }: { isAdmin?: boolean }
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
                 {l.label}
+                {l.href === "/portal/admin" && pendingRegistrationCount > 0 && (
+                  <span
+                    className="ml-auto inline-flex min-w-5 items-center justify-center gap-1 rounded-full bg-coral px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                    aria-label={`${pendingRegistrationCount} pending registration${pendingRegistrationCount === 1 ? "" : "s"}`}
+                    title={`${pendingRegistrationCount} pending registration${pendingRegistrationCount === 1 ? "" : "s"}`}
+                  >
+                    <Bell className="h-3 w-3" aria-hidden="true" />
+                    {pendingRegistrationCount}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -8,21 +8,14 @@ type Resident = {
   lastName?: string;
   fullName: string;
   address: string;
+  alternateAddress?: string;
   email: string;
   phone?: string;
+  householdMembers?: string[];
   moveInYear?: number;
   listedInDirectory: boolean;
   isAdmin: boolean;
-  clerkUserId: string;
   registrationStatus: "pending" | "approved" | "denied";
-};
-
-type ResidentApiResponse = {
-  error?: string;
-  rows?: ImportRow[];
-  summary?: ImportSummary;
-  residents?: Resident[];
-  resident?: Resident;
 };
 
 type EditableFields = {
@@ -33,23 +26,6 @@ type EditableFields = {
   moveInYear: string;
   listedInDirectory: boolean;
   isAdmin: boolean;
-};
-
-type ImportRow = {
-  rowNumber: number;
-  fullName: string;
-  address: string;
-  email: string;
-  phone?: string;
-  status: "valid" | "existing" | "invalid";
-  errors: string[];
-};
-
-type ImportSummary = {
-  found: number;
-  added: number;
-  skippedExisting: number;
-  invalid: number;
 };
 
 function toEditableFields(r: Resident): EditableFields {
@@ -66,14 +42,40 @@ function toEditableFields(r: Resident): EditableFields {
 
 const emptyNewResident = { firstName: "", lastName: "", address: "", email: "", phone: "" };
 
-async function readJsonResponse(res: Response, fallback: string) {
-  const text = await res.text();
-  if (!text) throw new Error(`${fallback} (server returned no response)`);
-  try {
-    return JSON.parse(text) as ResidentApiResponse;
-  } catch {
-    throw new Error(`${fallback} (server returned an invalid response)`);
-  }
+function csvCell(value: string | number | boolean | undefined) {
+  let text = value === undefined ? "" : String(value);
+  if (typeof value === "string" && /^[\s]*[=+\-@]/.test(value)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function downloadResidentsCsv(residents: Resident[]) {
+  const columns: { header: string; value: (resident: Resident) => string | number | boolean | undefined }[] = [
+    { header: "First Name", value: (resident) => resident.firstName },
+    { header: "Last Name", value: (resident) => resident.lastName },
+    { header: "Full Name", value: (resident) => resident.fullName },
+    { header: "Address", value: (resident) => resident.address },
+    { header: "Alternate Address", value: (resident) => resident.alternateAddress },
+    { header: "Email", value: (resident) => resident.email },
+    { header: "Phone", value: (resident) => resident.phone },
+    { header: "Household Members", value: (resident) => resident.householdMembers?.join("; ") },
+    { header: "Move-in Year", value: (resident) => resident.moveInYear },
+    { header: "Listed in Directory", value: (resident) => resident.listedInDirectory },
+    { header: "Registration Status", value: (resident) => resident.registrationStatus },
+    { header: "Administrator", value: (resident) => resident.isAdmin },
+  ];
+  const rows = [
+    columns.map(({ header }) => csvCell(header)).join(","),
+    ...residents.map((resident) =>
+      columns.map(({ value }) => csvCell(value(resident))).join(","),
+    ),
+  ];
+  const blob = new Blob(["\uFEFF", rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `residents-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function AdminResidents() {
@@ -86,12 +88,6 @@ export default function AdminResidents() {
   const [saving, setSaving] = useState(false);
   const [newResident, setNewResident] = useState(emptyNewResident);
   const [adding, setAdding] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importCsv, setImportCsv] = useState<string | null>(null);
-  const [importFileName, setImportFileName] = useState("");
-  const [importRows, setImportRows] = useState<ImportRow[]>([]);
-  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
-  const [importComplete, setImportComplete] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -203,58 +199,6 @@ export default function AdminResidents() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setAdding(false);
-    }
-  }
-
-  async function previewImport(file: File) {
-    setImporting(true);
-    setError(null);
-    setImportComplete(false);
-    setImportSummary(null);
-    try {
-      const csv = await file.text();
-      const res = await fetch("/api/admin/residents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "preview", csv }),
-      });
-      const data = await readJsonResponse(res, "Failed to preview CSV");
-      if (!res.ok) throw new Error(data.error ?? "Failed to preview CSV");
-      if (!data.rows || !data.summary) throw new Error("Failed to preview CSV (incomplete server response)");
-      setImportCsv(csv);
-      setImportFileName(file.name);
-      setImportRows(data.rows);
-      setImportSummary(data.summary);
-    } catch (err) {
-      setImportCsv(null);
-      setImportRows([]);
-      setError(err instanceof Error ? err.message : "Unable to preview CSV");
-    } finally {
-      setImporting(false);
-    }
-  }
-
-  async function confirmImport() {
-    if (!importCsv) return;
-    setImporting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/residents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "import", csv: importCsv }),
-      });
-      const data = await readJsonResponse(res, "Failed to import residents");
-      if (!res.ok) throw new Error(data.error ?? "Failed to import residents");
-      if (!data.rows || !data.summary) throw new Error("Failed to import residents (incomplete server response)");
-      setImportRows(data.rows);
-      setImportSummary(data.summary);
-      setImportComplete(true);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to import residents");
-    } finally {
-      setImporting(false);
     }
   }
 
@@ -540,43 +484,19 @@ export default function AdminResidents() {
 
         <section className="space-y-3 rounded-xl border border-ink/10 p-5">
           <div>
-            <p className="font-display text-lg text-marina">Import residents</p>
-            <p className="mt-1 text-sm text-ink/60">Upload a WordPress member export to preview before adding anyone.</p>
+            <p className="font-display text-lg text-marina">Export Residents</p>
+            <p className="mt-1 text-sm text-ink/60">
+              Download the full resident roster as a CSV file.
+            </p>
           </div>
-          <label className="block cursor-pointer rounded-lg border border-dashed border-ink/20 px-4 py-4 text-sm text-ink/70 hover:border-marina">
-            <span>{importFileName || "Choose a CSV file"}</span>
-            <input type="file" accept=".csv,text/csv" className="sr-only" disabled={importing} onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void previewImport(file);
-              e.currentTarget.value = "";
-            }} />
-          </label>
-          {importSummary && (
-            <div className="space-y-3 text-sm">
-              <p className="text-ink/70">{importComplete ? "Import complete." : "Preview ready."} {importSummary.found} record{importSummary.found === 1 ? "" : "s"} found.</p>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <span className="rounded-lg bg-marina/10 px-2 py-2 text-marina">{importComplete ? "Added" : "Ready"}: {importSummary.added}</span>
-                <span className="rounded-lg bg-sand px-2 py-2 text-ink/70">Skipped (existing): {importSummary.skippedExisting}</span>
-                <span className="rounded-lg bg-coral/10 px-2 py-2 text-coral">Invalid/errors: {importSummary.invalid}</span>
-              </div>
-              <div className="max-h-52 overflow-auto rounded-lg border border-ink/10 text-xs">
-                {importRows.map((row) => (
-                  <div key={row.rowNumber} className="border-b border-ink/10 px-3 py-2 last:border-0">
-                    <span className="mr-2 text-ink/40">Row {row.rowNumber}</span>
-                    <span className="font-medium">{row.fullName || "Unnamed resident"}</span>
-                    <span className="ml-2 text-ink/60">{row.email || "No email"}</span>
-                    {row.address && <p className="mt-1 text-ink/60">{row.address}{row.phone ? ` · ${row.phone}` : ""}</p>}
-                    {row.errors.length > 0 && <p className="mt-1 text-coral">{row.errors.join("; ")}</p>}
-                  </div>
-                ))}
-              </div>
-              {!importComplete && importSummary.added > 0 && (
-                <button type="button" onClick={() => void confirmImport()} disabled={importing} className="rounded-full bg-marina px-5 py-2 font-semibold text-fog disabled:opacity-50">
-                  {importing ? "Importing…" : `Add ${importSummary.added} resident${importSummary.added === 1 ? "" : "s"}`}
-                </button>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => downloadResidentsCsv(residents)}
+            disabled={loading || residents.length === 0}
+            className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Export Residents
+          </button>
         </section>
       </div>
 
