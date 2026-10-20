@@ -49,7 +49,7 @@ export function WeatherDisclosureButton() {
       onClick={toggle}
       className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
     >
-      {isOpen ? "Hide" : "Show"}{" "}today&apos;s conditions
+      WEATHER IN LA CONCHITA
       <ChevronDown
         className={`ml-2 inline h-4 w-4 transition-transform duration-300 ease-out ${isOpen ? "rotate-180" : ""}`}
         aria-hidden="true"

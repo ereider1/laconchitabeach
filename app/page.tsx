@@ -68,12 +68,6 @@ export default function HomePage() {
                   >
                     Discover La Conchita
                   </Link>
-                  <Link
-                    href="/donate"
-                    className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
-                  >
-                    Donate Now
-                  </Link>
                 </div>
               </div>
               <WeatherDisclosurePanel>
