@@ -31,6 +31,7 @@ CONTACT_TO_EMAIL=admin@laconchitabeach.com
 ```
 
 Use a sender address on a domain verified in Resend. Keep the API key out of source control.
+Contact form submissions are also saved in MongoDB and available under Admin → Emails.
 New resident registration requests are emailed to `CONTACT_TO_EMAIL` and can be approved or denied from Admin → Profiles.
 
 ## Learn More

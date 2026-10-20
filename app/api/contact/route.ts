@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { connectToDatabase } from "@/lib/mongodb";
+import ContactMessage from "@/lib/models/ContactMessage";
 
 const MAX_REQUEST_BYTES = 12_000;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
@@ -69,15 +71,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please check your contact details and message." }, { status: 400 });
   }
 
+  try {
+    await connectToDatabase();
+    await ContactMessage.create(submission);
+  } catch (error) {
+    console.error("Unable to save a contact inquiry.", error);
+    return NextResponse.json(
+      { error: "Unable to receive your message right now. Please try again later." },
+      { status: 503 },
+    );
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
   const to = process.env.CONTACT_TO_EMAIL;
   if (!apiKey || !from || !to) {
     console.error("Contact email is not configured; set RESEND_API_KEY, RESEND_FROM_EMAIL, and CONTACT_TO_EMAIL.");
-    return NextResponse.json(
-      { error: "The contact form is temporarily unavailable. Please try again later." },
-      { status: 503 },
-    );
+    return NextResponse.json({
+      message: "Your message has been received, but email notifications are temporarily unavailable.",
+    });
   }
 
   const resend = new Resend(apiKey);
@@ -92,18 +104,16 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Unable to reach Resend while sending a contact inquiry.", error);
-    return NextResponse.json(
-      { error: "Unable to send your message right now. Please try again later." },
-      { status: 502 },
-    );
+    return NextResponse.json({
+      message: "Your message has been received, but its email notification could not be sent.",
+    });
   }
 
   if (result.error) {
     console.error("Resend rejected a contact inquiry.", result.error);
-    return NextResponse.json(
-      { error: "Unable to send your message right now. Please try again later." },
-      { status: 502 },
-    );
+    return NextResponse.json({
+      message: "Your message has been received, but its email notification could not be sent.",
+    });
   }
 
   return NextResponse.json({ message: "Your message has been sent." });

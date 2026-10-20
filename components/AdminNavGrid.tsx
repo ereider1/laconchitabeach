@@ -6,6 +6,7 @@ import {
   BookOpen,
   CalendarDays,
   FileText,
+  Mail,
   Megaphone,
   MessageCircle,
   Users,
@@ -26,6 +27,7 @@ const tiles: Array<{
   { href: "/portal/admin/documents", label: "Documents", icon: FileText, bg: "bg-ink" },
   { href: "/portal/admin/community-corner", label: "Community Corner", icon: MessageCircle, bg: "bg-marina-light" },
   { href: "/portal/admin/page-builder", label: "Page Builder", icon: LayoutTemplate, bg: "bg-dune" },
+  { href: "/portal/admin/emails", label: "Emails", icon: Mail, bg: "bg-marina" },
 ];
 
 export default function AdminNavGrid() {
