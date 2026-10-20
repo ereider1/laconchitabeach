@@ -19,13 +19,47 @@ export default function AdminEmailMessages({
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function sendReply(message: AdminEmailMessage) {
+    const reply = replyText.trim();
+    if (!reply) {
+      setError("Write a response before sending.");
+      return;
+    }
+
+    setSendingId(message.id);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch("/api/admin/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: message.id, reply }),
+      });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Failed to send response.");
+
+      setReplyingId(null);
+      setReplyText("");
+      setSuccess(`Response sent to ${message.email}.`);
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : "Something went wrong.");
+    } finally {
+      setSendingId(null);
+    }
+  }
 
   async function removeMessage(id: string) {
     if (!confirm("Delete this message? This cannot be undone.")) return;
 
     setDeletingId(id);
     setError(null);
+    setSuccess(null);
     try {
       const response = await fetch(`/api/admin/emails?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
@@ -45,6 +79,7 @@ export default function AdminEmailMessages({
     return (
       <>
         {error && <p role="alert" className="mb-4 text-sm text-coral">{error}</p>}
+        {success && <p role="status" className="mb-4 text-sm text-marina">{success}</p>}
         <p className="rounded-2xl bg-sand/55 px-5 py-8 text-sm text-ink/60">
           No contact form messages yet.
         </p>
@@ -55,6 +90,7 @@ export default function AdminEmailMessages({
   return (
     <>
       {error && <p role="alert" className="mb-4 text-sm text-coral">{error}</p>}
+      {success && <p role="status" className="mb-4 text-sm text-marina">{success}</p>}
       <ul className="space-y-4">
         {messages.map((message) => (
           <li
@@ -74,10 +110,23 @@ export default function AdminEmailMessages({
                   </a>
                 </p>
               </div>
-              <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
+              <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
                 <time dateTime={message.dateTime} className="text-xs text-ink/50">
                   {message.createdAt}
                 </time>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setSuccess(null);
+                    setReplyText("");
+                    setReplyingId((currentId) => currentId === message.id ? null : message.id);
+                  }}
+                  disabled={sendingId !== null}
+                  className="rounded-full border border-marina/30 px-3 py-1.5 text-xs font-semibold text-marina transition hover:bg-sand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {replyingId === message.id ? "Cancel" : "Respond"}
+                </button>
                 <button
                   type="button"
                   onClick={() => removeMessage(message.id)}
@@ -91,6 +140,47 @@ export default function AdminEmailMessages({
             <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink/80">
               {message.message}
             </p>
+            {replyingId === message.id && (
+              <div className="mt-5 border-t border-ink/10 pt-4">
+                <label
+                  htmlFor={`reply-${message.id}`}
+                  className="mb-2 block text-sm font-semibold text-ink"
+                >
+                  Response to {message.name} ({message.email})
+                </label>
+                <textarea
+                  id={`reply-${message.id}`}
+                  rows={5}
+                  maxLength={10000}
+                  value={replyText}
+                  onChange={(event) => setReplyText(event.target.value)}
+                  placeholder="Write your response…"
+                  className="w-full resize-y rounded-xl border border-marina/20 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina"
+                  disabled={sendingId === message.id}
+                />
+                <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyingId(null);
+                      setReplyText("");
+                    }}
+                    disabled={sendingId === message.id}
+                    className="rounded-full border border-marina/30 px-4 py-2 text-xs font-semibold text-marina transition hover:bg-sand/50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendReply(message)}
+                    disabled={sendingId === message.id || !replyText.trim()}
+                    className="rounded-full bg-marina px-4 py-2 text-xs font-semibold text-white transition hover:bg-marina-light disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sendingId === message.id ? "Sending…" : "Send Response"}
+                  </button>
+                </div>
+              </div>
+            )}
           </li>
         ))}
       </ul>
