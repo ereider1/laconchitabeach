@@ -3,6 +3,11 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
 import CustomPageSections from "@/components/CustomPageSections";
+import {
+  WeatherDisclosureButton,
+  WeatherDisclosurePanel,
+  WeatherDisclosureProvider,
+} from "@/components/WeatherDisclosure";
 import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react";
 
 
@@ -42,54 +47,63 @@ export default function HomePage() {
       <SiteHeader />
 
       <main>
-        <section className="hero-beach">
-          <div className="mx-auto flex min-h-[620px] max-w-6xl flex-col items-center justify-center px-6 py-16 text-center text-white">
-            <div className="max-w-3xl">
-              <p className="eyebrow text-white/80">Welcome to the coast</p>
-              <h1 className="mt-4 text-5xl font-bold uppercase leading-[0.92] tracking-[-0.055em] drop-shadow-md sm:text-7xl md:text-8xl">
-                La Conchita
-                <span className="block text-white/95">Beach</span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-white/90 drop-shadow sm:text-lg">
-                A close-knit California beach community between the bluffs and the Pacific —
-                where neighbors share news, lend a hand, and meet at the water&apos;s edge.
-              </p>
-              <div className="mt-8 flex flex-wrap justify-center gap-3">
-               
-                <Link
-                  href="/about"
-                  className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
-                >
-                  Discover La Conchita
-                </Link>
+        <WeatherDisclosureProvider>
+          <section className="hero-beach">
+            <div className="mx-auto flex min-h-[620px] max-w-6xl flex-col items-center justify-center px-6 py-16 text-center text-white">
+              <div className="max-w-3xl">
+                <p className="eyebrow text-white/80">Welcome to the coast</p>
+                <h1 className="mt-4 text-5xl font-bold uppercase leading-[0.92] tracking-[-0.055em] drop-shadow-md sm:text-7xl md:text-8xl">
+                  La Conchita
+                  <span className="block text-white/95">Beach</span>
+                </h1>
+                <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-white/90 drop-shadow sm:text-lg">
+                  A close-knit California beach community between the bluffs and the Pacific —
+                  where neighbors share news, lend a hand, and meet at the water&apos;s edge.
+                </p>
+                <div className="mt-8 flex flex-wrap justify-center gap-3">
+                  <WeatherDisclosureButton />
+                  <Link
+                    href="/about"
+                    className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
+                  >
+                    Discover La Conchita
+                  </Link>
+                  <Link
+                    href="/donate"
+                    className="rounded-full border border-white/55 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur transition hover:bg-white/20"
+                  >
+                    Donate Now
+                  </Link>
+                </div>
               </div>
+              <WeatherDisclosurePanel>
+                <div className="mt-12 mb-12 w-full max-w-5xl">
+                  <HarborBoard />
+                </div>
+              </WeatherDisclosurePanel>
             </div>
-            <div className="mt-12 mb-12 w-full max-w-5xl">
-              <HarborBoard />
+            <div className="hero-wave-divider pt-10" aria-hidden="true">
+              <svg
+                viewBox="0 0 1440 150"
+                preserveAspectRatio="none"
+                focusable="false"
+              >
+                <path
+                  className="hero-wave-divider__back"
+                  d="M0 89C112 34 203 125 322 91C446 55 493 5 607 48C711 87 766 121 878 70C1001 14 1067 95 1178 78C1284 62 1340 23 1440 65V150H0Z"
+                />
+                <path
+                  className="hero-wave-divider__middle"
+                  d="M0 105C104 65 182 132 294 106C402 81 467 39 576 78C689 119 765 132 871 93C978 53 1041 50 1146 96C1250 142 1347 65 1440 92V150H0Z"
+                />
+                <path
+                  className="hero-wave-divider__front"
+                  d="M0 121C101 92 198 139 303 119C411 98 493 75 600 105C706 135 794 143 904 116C1013 89 1106 100 1210 124C1307 147 1376 107 1440 111V150H0Z"
+                />
+              </svg>
             </div>
-          </div>
-          <div className="hero-wave-divider pt-10" aria-hidden="true">
-            <svg
-            
-              viewBox="0 0 1440 150"
-              preserveAspectRatio="none"
-              focusable="false"
-            >
-              <path
-                className="hero-wave-divider__back"
-                d="M0 89C112 34 203 125 322 91C446 55 493 5 607 48C711 87 766 121 878 70C1001 14 1067 95 1178 78C1284 62 1340 23 1440 65V150H0Z"
-              />
-              <path
-                className="hero-wave-divider__middle"
-                d="M0 105C104 65 182 132 294 106C402 81 467 39 576 78C689 119 765 132 871 93C978 53 1041 50 1146 96C1250 142 1347 65 1440 92V150H0Z"
-              />
-              <path
-                className="hero-wave-divider__front"
-                d="M0 121C101 92 198 139 303 119C411 98 493 75 600 105C706 135 794 143 904 116C1013 89 1106 100 1210 124C1307 147 1376 107 1440 111V150H0Z"
-              />
-            </svg>
-          </div>
-        </section>
+          </section>
+        </WeatherDisclosureProvider>
 
         <CustomPageSections slot="below-hero" />
 

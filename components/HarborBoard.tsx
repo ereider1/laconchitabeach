@@ -13,7 +13,7 @@ import {
   Waves,
   type LucideIcon,
 } from "lucide-react";
-import WeatherDisclosure from "@/components/WeatherDisclosure";
+import { WeatherDisclosureContent } from "@/components/WeatherDisclosure";
 
 type SurfForecastTide = {
   timestamp: number;
@@ -321,7 +321,7 @@ export default async function HarborBoard() {
         )}
       </div>
 
-      <WeatherDisclosure>
+      <WeatherDisclosureContent>
         <>
           <div className="min-h-0 overflow-hidden">
             <div className="grid grid-cols-1 divide-y divide-marina/10 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
@@ -409,7 +409,7 @@ export default async function HarborBoard() {
             </div>
           </div>
         </>
-      </WeatherDisclosure>
+      </WeatherDisclosureContent>
     </section>
   );
 }
