@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { COMMUNITY_POST_CATEGORIES } from "@/lib/communityCategories";
 
 type Req = {
   _id: string;
@@ -166,15 +167,9 @@ export default function MaintenancePage() {
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           >
-            <option value="common-area">Common area</option>
-            <option value="beach-access">Beach access</option>
-            <option value="landscaping">Landscaping</option>
-            <option value="lighting">Lighting</option>
-            <option value="Lost & Found">Lost & Found</option>
-            <option value="for sale">For Sale</option>
-            <option value="looking for">Looking For</option>
-            <option value="free">Free</option>
-            <option value="other">Other</option>
+            {COMMUNITY_POST_CATEGORIES.map((category) => (
+              <option key={category.value} value={category.value}>{category.label}</option>
+            ))}
           </select>
         </div>
         <textarea

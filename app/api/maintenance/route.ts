@@ -5,6 +5,10 @@ import MaintenanceRequest from "@/lib/models/MaintenanceRequest";
 import { isAdmin } from "@/lib/isAdmin";
 import mongoose from "mongoose";
 import { hasApprovedResidentAccess } from "@/lib/registration";
+import {
+  isCommunityPostCategory,
+  isLegacyCommunityPostCategory,
+} from "@/lib/communityCategories";
 
 // Community Corner is a shared bulletin board for all signed-in residents.
 export async function GET() {
@@ -30,6 +34,10 @@ export async function POST(req: NextRequest) {
   if (!body.address || !body.description) {
     return NextResponse.json({ error: "Address and description are required" }, { status: 400 });
   }
+  const category = body.category ?? "other";
+  if (!isCommunityPostCategory(category)) {
+    return NextResponse.json({ error: "Invalid post category" }, { status: 400 });
+  }
 
   const user = await currentUser();
   await connectToDatabase();
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
     const request = await MaintenanceRequest.create({
       address: body.address,
       description: body.description,
-      category: body.category ?? "other",
+      category,
       photoUrl: body.photoUrl,
       submittedByName: user?.fullName ?? user?.username ?? "Resident",
       submittedByClerkId: userId,
@@ -73,6 +81,18 @@ export async function PATCH(req: NextRequest) {
 
   await connectToDatabase();
   const filter = admin ? { _id: id } : { _id: id, submittedByClerkId: userId };
+  if ("category" in fields && !isCommunityPostCategory(fields.category)) {
+    if (!isLegacyCommunityPostCategory(fields.category)) {
+      return NextResponse.json({ error: "Invalid post category" }, { status: 400 });
+    }
+
+    const existing = await MaintenanceRequest.findOne(filter).select("category").lean();
+    if (!existing) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    if (existing.category !== fields.category) {
+      return NextResponse.json({ error: "Invalid post category" }, { status: 400 });
+    }
+  }
+
   const updated = await MaintenanceRequest.findOneAndUpdate(filter, fields, {
     new: true,
     runValidators: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import { useState, useEffect, useRef } from "react";
 import {
   DOCUMENT_CATEGORY_LABELS,
@@ -26,7 +27,7 @@ type Section = {
   _id: string;
   name: string;
   slot: "below-hero" | "below-services" | "above-footer";
-  layout: "full-width" | "two-col-img-left" | "two-col-img-right";
+  layout: "full-width" | "two-col-img-left" | "two-col-img-right" | "single-image-flyer";
   eyebrow?: string;
   title?: string;
   content: string;
@@ -60,6 +61,7 @@ export default function PageBuilder() {
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formSlot, setFormSlot] = useState<Section["slot"]>("below-hero");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [flyerPreviewOpen, setFlyerPreviewOpen] = useState(false);
 
   // Upload state
   const [uploading, setUploading] = useState(false);
@@ -71,6 +73,17 @@ export default function PageBuilder() {
   const [availableDocs, setAvailableDocs] = useState<Array<{ _id: string; title: string; category: string; fileUrl: string }>>([]);
   const [docSearchQuery, setDocSelectorSearchQuery] = useState("");
   const [loadingDocs, setLoadingDocs] = useState(false);
+
+  useEffect(() => {
+    if (!flyerPreviewOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setFlyerPreviewOpen(false);
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [flyerPreviewOpen]);
 
   // Open Document Selector modal and fetch items
   async function openDocumentSelector(target: "image" | "link") {
@@ -217,6 +230,8 @@ export default function PageBuilder() {
   // 4. Open creator wizard
   function openCreate() {
     setEditingId(null);
+    setError(null);
+    setSuccess(null);
     setFormName("");
     setFormLayout("full-width");
     setFormEyebrow("");
@@ -234,6 +249,8 @@ export default function PageBuilder() {
   // 5. Open editing wizard
   function openEdit(sec: Section) {
     setEditingId(sec._id);
+    setError(null);
+    setSuccess(null);
     setFormName(sec.name);
     setFormLayout(sec.layout);
     setFormEyebrow(sec.eyebrow || "");
@@ -268,8 +285,17 @@ export default function PageBuilder() {
 
   // 7. Save / Update section
   async function saveSection() {
-    if (!formName.trim() || !formContent.trim()) {
-      setError("Reference Name and Content are required.");
+    const isFlyer = formLayout === "single-image-flyer";
+    if (!isFlyer && !formName.trim()) {
+      setError("Reference Name is required.");
+      return;
+    }
+    if (isFlyer ? !formImageUrl : !formContent.trim()) {
+      setError(
+        isFlyer
+          ? "Upload a flyer image before saving."
+          : "Section content is required."
+      );
       return;
     }
 
@@ -277,13 +303,13 @@ export default function PageBuilder() {
     setError(null);
 
     const payload = {
-      name: formName,
+      name: formName.trim() || "Single Image/Flyer",
       layout: formLayout,
-      eyebrow: formEyebrow,
-      title: formTitle,
-      content: formContent,
-      buttonText: formButtonText,
-      buttonLink: formButtonLink,
+      eyebrow: isFlyer ? "" : formEyebrow,
+      title: isFlyer ? "" : formTitle,
+      content: isFlyer ? "" : formContent,
+      buttonText: isFlyer ? "" : formButtonText,
+      buttonLink: isFlyer ? "" : formButtonLink,
       imageUrl: formImageUrl,
       slot: formSlot,
       isActive: formIsActive,
@@ -308,7 +334,7 @@ export default function PageBuilder() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save section");
 
-      showSuccess(`Section "${formName}" saved successfully.`);
+      showSuccess(`Section "${payload.name}" saved successfully.`);
       setView("list");
       loadData(true);
     } catch (err) {
@@ -432,6 +458,12 @@ export default function PageBuilder() {
     "below-services": sortActiveFirst(sections.filter((s) => s.slot === "below-services")),
     "above-footer": sortActiveFirst(sections.filter((s) => s.slot === "above-footer")),
   };
+  const stepLabels = [
+    "Layout",
+    formLayout === "single-image-flyer" ? "Image" : "Content",
+    "Preview",
+    "Insertion",
+  ];
 
   return (
     <div className="min-w-0 rounded-2xl border border-marina/15 bg-white p-4 shadow-xl shadow-deep-ocean/5 sm:rounded-3xl sm:p-6">
@@ -523,7 +555,14 @@ export default function PageBuilder() {
                           {/* Image preview thumbnail */}
                           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand-dark relative flex items-center justify-center">
                             {sec.imageUrl ? (
-                              <img src={getProxyUrl(sec.imageUrl)} alt="" className="h-full w-full object-cover" />
+                              <NextImage
+                                src={getProxyUrl(sec.imageUrl)}
+                                alt=""
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                                unoptimized
+                              />
                             ) : (
                               <ImageIcon className="h-5 w-5 text-ink/30" />
                             )}
@@ -649,7 +688,7 @@ export default function PageBuilder() {
                 <button
                   key={step}
                   onClick={() => step < wizardStep && setWizardStep(step)}
-                  aria-label={`Step ${step}: ${["Layout", "Content", "Preview", "Insertion"][step - 1]}`}
+                  aria-label={`Step ${step}: ${stepLabels[step - 1]}`}
                   className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold transition ${
                     wizardStep === step
                       ? "border-marina bg-marina text-white scale-110"
@@ -664,10 +703,11 @@ export default function PageBuilder() {
               ))}
             </div>
             <div className="mx-auto mt-2 grid max-w-lg grid-cols-4 justify-items-center gap-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-ink/65 sm:text-[10px] sm:tracking-wider">
-              <span className={wizardStep === 1 ? "text-marina" : ""}>1. Layout</span>
-              <span className={wizardStep === 2 ? "text-marina" : ""}>2. Content</span>
-              <span className={wizardStep === 3 ? "text-marina" : ""}>3. Preview</span>
-              <span className={wizardStep === 4 ? "text-marina" : ""}>4. Insertion</span>
+              {stepLabels.map((label, index) => (
+                <span key={label} className={wizardStep === index + 1 ? "text-marina" : ""}>
+                  {index + 1}. {label}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -677,11 +717,11 @@ export default function PageBuilder() {
               <div className="text-center max-w-md mx-auto mb-8">
                 <h3 className="text-lg font-bold text-ink">Choose Layout Style</h3>
                 <p className="text-xs text-ink/60 mt-1">
-                  How should your section present on the homepage? Choose from three core styles.
+                  How should your section present on the homepage?
                 </p>
               </div>
 
-              <div className="mx-auto grid max-w-3xl gap-3 sm:grid-cols-3 sm:gap-5">
+              <div className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
                 {/* Option 1: Full-Width */}
                 <button
                   onClick={() => setFormLayout("full-width")}
@@ -747,6 +787,28 @@ export default function PageBuilder() {
                     Splits with a clean text column on the left and a prominent image filling the right column.
                   </p>
                 </button>
+
+                {/* Option 4: Single Image/Flyer */}
+                <button
+                  onClick={() => {
+                    setFormLayout("single-image-flyer");
+                  }}
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
+                    formLayout === "single-image-flyer"
+                      ? "border-marina bg-sand/35"
+                      : "border-marina/10 bg-white hover:border-marina/30"
+                  }`}
+                >
+                  <div className="mb-4 flex h-24 w-full items-center justify-center rounded-lg bg-sand p-2">
+                    <div className="h-full w-14 rounded border border-marina/30 bg-white p-1 shadow-sm">
+                      <div className="h-full w-full bg-marina/20" />
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-bold text-ink">Single Image/Flyer</h4>
+                  <p className="mt-2 text-xxs leading-relaxed text-ink/60">
+                    Display one centered, full-height image. Visitors can click it to enlarge.
+                  </p>
+                </button>
               </div>
 
               <div className="mx-auto mt-8 flex max-w-3xl justify-end border-t border-marina/10 pt-6">
@@ -765,30 +827,44 @@ export default function PageBuilder() {
           {wizardStep === 2 && (
             <div className="space-y-6 animate-fadeIn max-w-2xl mx-auto">
               <div>
-                <h3 className="text-lg font-bold text-ink">Section Content &amp; Media</h3>
+                <h3 className="text-lg font-bold text-ink">
+                  {formLayout === "single-image-flyer" ? "Upload Flyer Image" : "Section Content & Media"}
+                </h3>
                 <p className="text-xs text-ink/60 mt-1">
-                  Fill in the text, upload optional images, and specify buttons or links to insert.
+                  {formLayout === "single-image-flyer"
+                    ? "Upload the single image to display. No additional content is needed."
+                    : "Fill in the text, upload optional images, and specify buttons or links to insert."}
                 </p>
               </div>
 
               <div className="space-y-4">
                 {/* Reference Name */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
-                    Internal Reference Name <span className="text-coral">*</span>
+                  <label htmlFor="section-reference-name" className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
+                    Internal Reference Name{" "}
+                    {formLayout !== "single-image-flyer" && <span className="text-coral">*</span>}
                   </label>
                   <input
+                    id="section-reference-name"
                     type="text"
-                    required
+                    required={formLayout !== "single-image-flyer"}
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Fall Beach Cleanup Flyer Section"
+                    placeholder={
+                      formLayout === "single-image-flyer"
+                        ? "Optional name for your flyer"
+                        : "e.g. Fall Beach Cleanup Flyer Section"
+                    }
                     className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none"
                   />
-                  <p className="text-[10px] text-ink/50 mt-1">This is only seen in the admin dashboard to organize sections.</p>
+                  <p className="mt-1 text-[10px] text-ink/50">
+                    {formLayout === "single-image-flyer"
+                      ? "Optional; only shown in the admin dashboard. Leave blank to use “Single Image/Flyer”."
+                      : "This is only seen in the admin dashboard to organize sections."}
+                  </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                {formLayout !== "single-image-flyer" && <div className="grid gap-4 sm:grid-cols-2">
                   {/* Eyebrow */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
@@ -816,10 +892,10 @@ export default function PageBuilder() {
                       className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none"
                     />
                   </div>
-                </div>
+                </div>}
 
                 {/* Content */}
-                <div>
+                {formLayout !== "single-image-flyer" && <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
                     Section Content Block <span className="text-coral">*</span>
                   </label>
@@ -831,12 +907,13 @@ export default function PageBuilder() {
                     placeholder="Describe the announcements, listings, or general community details in full detail..."
                     className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none resize-y"
                   />
-                </div>
+                </div>}
 
                 {/* Media Image Upload */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
-                    Section Image {formLayout !== "full-width" && <span className="text-coral">*</span>}
+                    {formLayout === "single-image-flyer" ? "Flyer Image" : "Section Image"}{" "}
+                    {formLayout !== "full-width" && <span className="text-coral">*</span>}
                   </label>
                   <div
                     onDragOver={handleDragOver}
@@ -848,29 +925,38 @@ export default function PageBuilder() {
                         : "border border-marina/10"
                     }`}
                   >
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15">
+                    <div className={`shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15 ${
+                      formLayout === "single-image-flyer" ? "h-32 w-24" : "h-20 w-20"
+                    }`}>
                       {formImageUrl ? (
-                        <img src={getProxyUrl(formImageUrl)} alt="Upload preview" className="h-full w-full object-cover" />
+                        <NextImage
+                          src={getProxyUrl(formImageUrl)}
+                          alt="Upload preview"
+                          fill
+                          sizes="96px"
+                          className="object-contain"
+                          unoptimized
+                        />
                       ) : (
                         <ImageIcon className="h-6 w-6 text-ink/30" />
                       )}
                     </div>
                     <div className="flex-1 w-full">
                       <div className="flex flex-wrap gap-2">
-                        <input
+                        {formLayout !== "single-image-flyer" && <input
                           type="text"
                           value={formImageUrl}
                           onChange={(e) => setFormImageUrl(e.target.value)}
                           placeholder="Paste image URL or choose file"
                           className="flex-1 min-w-[150px] rounded-xl border border-marina/20 px-3 py-1.5 text-xs text-ink focus:border-marina outline-none"
-                        />
-                        <button
+                        />}
+                        {formLayout !== "single-image-flyer" && <button
                           type="button"
                           onClick={() => openDocumentSelector("image")}
                           className="flex items-center gap-1 rounded-lg border border-marina/30 hover:bg-sand/35 px-3 py-1.5 text-xs font-bold text-marina transition whitespace-nowrap"
                         >
                           Choose Document
-                        </button>
+                        </button>}
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
@@ -888,13 +974,15 @@ export default function PageBuilder() {
                         className="hidden"
                       />
                       <p className="text-[10px] text-ink/40 mt-2">
-                        Images must be 4 MB or smaller. You can also drag and drop an image here.
+                        {formLayout === "single-image-flyer"
+                          ? "Upload one image, up to 4 MB. You can also drag and drop it here."
+                          : "Images must be 4 MB or smaller. You can also drag and drop an image here."}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                {formLayout !== "single-image-flyer" && <div className="grid gap-4 sm:grid-cols-2">
                   {/* Button Text */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
@@ -931,7 +1019,7 @@ export default function PageBuilder() {
                       className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none"
                     />
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Navigation buttons */}
@@ -946,11 +1034,19 @@ export default function PageBuilder() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!formName.trim() || !formContent.trim()) {
-                      setError("Reference Name and Content are required before previewing.");
+                    if (formLayout !== "single-image-flyer" && !formName.trim()) {
+                      setError("Reference Name is required before previewing.");
                       return;
                     }
-                    if (formLayout !== "full-width" && !formImageUrl) {
+                    if (formLayout === "single-image-flyer" && !formImageUrl) {
+                      setError("Upload a flyer image before previewing.");
+                      return;
+                    }
+                    if (formLayout !== "single-image-flyer" && !formContent.trim()) {
+                      setError("Section content is required before previewing.");
+                      return;
+                    }
+                    if (formLayout !== "full-width" && formLayout !== "single-image-flyer" && !formImageUrl) {
                       setError("Two-column layouts require an uploaded image to render beautifully.");
                       return;
                     }
@@ -1041,6 +1137,30 @@ export default function PageBuilder() {
                     </section>
                   )}
 
+                  {formLayout === "single-image-flyer" && (
+                    <section className="flex h-[70vh] w-full items-center justify-center bg-ink">
+                      {formImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setFlyerPreviewOpen(true)}
+                          aria-label="Open flyer preview"
+                          className="relative h-full w-full cursor-zoom-in"
+                        >
+                          <NextImage
+                            src={getProxyUrl(formImageUrl)}
+                            alt="Flyer preview"
+                            fill
+                            sizes="100vw"
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </button>
+                      ) : (
+                        <ImageIcon className="h-12 w-12 text-white/40" />
+                      )}
+                    </section>
+                  )}
+
                   {formLayout === "full-width" && (
                     <section className="border-y border-sand/30 bg-white px-4 py-12 sm:px-10 sm:py-20">
                       <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
@@ -1054,11 +1174,14 @@ export default function PageBuilder() {
                           {formContent}
                         </div>
                         {formImageUrl && (
-                          <div className="mt-8 max-w-2xl w-full h-[300px] relative overflow-hidden rounded-2xl">
-                            <img
+                          <div className="relative mt-8 h-[300px] w-full max-w-2xl overflow-hidden rounded-2xl bg-sand/30">
+                            <NextImage
                               src={getProxyUrl(formImageUrl)}
                               alt=""
-                              className="w-full h-full object-cover"
+                              fill
+                              sizes="(max-width: 768px) 100vw, 672px"
+                              className="object-contain"
+                              unoptimized
                             />
                           </div>
                         )}
@@ -1179,6 +1302,38 @@ export default function PageBuilder() {
       )}
 
       {/* Document Selector Modal */}
+      {flyerPreviewOpen && formImageUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Flyer preview"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-3 sm:p-6"
+          onClick={() => setFlyerPreviewOpen(false)}
+        >
+          <button
+            type="button"
+            aria-label="Close flyer preview"
+            onClick={() => setFlyerPreviewOpen(false)}
+            className="absolute right-4 top-4 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black"
+          >
+            <X className="h-6 w-6" aria-hidden="true" />
+          </button>
+          <div
+            className="relative h-[94vh] w-[94vw]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <NextImage
+              src={getProxyUrl(formImageUrl)}
+              alt="Enlarged flyer preview"
+              fill
+              sizes="94vw"
+              className="object-contain"
+              unoptimized
+            />
+          </div>
+        </div>
+      )}
+
       {docSelectorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-3 backdrop-blur-sm sm:p-4">
           <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-marina/20 bg-white p-4 shadow-2xl animate-fadeIn sm:rounded-3xl sm:p-6">

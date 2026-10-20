@@ -30,31 +30,49 @@ export async function POST(req: NextRequest) {
   if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   const body = await req.json();
-  if (!body.name || !body.slot || !body.layout || !body.content) {
-    return NextResponse.json({ error: "Missing required fields (name, slot, layout, content)" }, { status: 400 });
+  const isFlyer = body.layout === "single-image-flyer";
+  const sectionName = typeof body.name === "string" ? body.name.trim() : "";
+  if (
+    (!isFlyer && !sectionName) ||
+    !body.slot ||
+    !body.layout ||
+    (isFlyer ? !body.imageUrl : !body.content)
+  ) {
+    return NextResponse.json(
+      { error: "Slot, layout, and the layout's required fields are required" },
+      { status: 400 }
+    );
   }
 
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
 
-  // Determine order (last in slot)
-  const lastSection = await PageSection.findOne({ slot: body.slot }).sort({ order: -1 }).lean();
-  const nextOrder = lastSection ? lastSection.order + 1 : 0;
+    // Determine order (last in slot)
+    const lastSection = await PageSection.findOne({ slot: body.slot }).sort({ order: -1 }).lean();
+    const nextOrder = lastSection ? lastSection.order + 1 : 0;
 
-  const section = await PageSection.create({
-    name: body.name,
-    slot: body.slot,
-    layout: body.layout,
-    eyebrow: body.eyebrow,
-    title: body.title,
-    content: body.content,
-    imageUrl: body.imageUrl,
-    buttonText: body.buttonText,
-    buttonLink: body.buttonLink,
-    isActive: body.isActive !== false,
-    order: body.order ?? nextOrder,
-  });
+    const section = await PageSection.create({
+      name: sectionName || "Single Image/Flyer",
+      slot: body.slot,
+      layout: body.layout,
+      eyebrow: body.eyebrow,
+      title: body.title,
+      content: body.content ?? "",
+      imageUrl: body.imageUrl,
+      buttonText: body.buttonText,
+      buttonLink: body.buttonLink,
+      isActive: body.isActive !== false,
+      order: body.order ?? nextOrder,
+    });
 
-  return NextResponse.json({ section }, { status: 201 });
+    return NextResponse.json({ section }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to publish page-builder section:", error);
+    return NextResponse.json(
+      { error: "Failed to publish section. Please try again." },
+      { status: 500 }
+    );
+  }
 }
 
 // 3. PATCH: Update a section OR update the global toggle

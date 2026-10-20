@@ -2,21 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import {
+  CommunityPostCategory,
+  getCommunityPostCategoryOptions,
+  LegacyCommunityPostCategory,
+} from "@/lib/communityCategories";
 
 type Post = {
   _id: string;
   submittedByName: string;
   address: string;
-  category:
-    | "common-area"
-    | "beach-access"
-    | "landscaping"
-    | "lighting"
-    | "Lost & Found"
-    | "for sale"
-    | "looking for"
-    | "free"
-    | "other";
+  category: CommunityPostCategory | LegacyCommunityPostCategory;
   description: string;
   status: "open" | "in-progress" | "resolved";
   photoUrl?: string;
@@ -34,17 +30,6 @@ function toEditableFields(p: Post): EditableFields {
   return { address: p.address, category: p.category, description: p.description, status: p.status };
 }
 
-const categories: Post["category"][] = [
-  "common-area",
-  "beach-access",
-  "landscaping",
-  "lighting",
-  "Lost & Found",
-  "for sale",
-  "looking for",
-  "free",
-  "other",
-];
 const statuses: Post["status"][] = ["open", "in-progress", "resolved"];
 
 export default function AdminCommunityCorner() {
@@ -151,8 +136,8 @@ export default function AdminCommunityCorner() {
                         value={draft.category}
                         onChange={(e) => setDraft({ ...draft, category: e.target.value as Post["category"] })}
                       >
-                        {categories.map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                        {getCommunityPostCategoryOptions(draft.category).map((category) => (
+                          <option key={category.value} value={category.value}>{category.label}</option>
                         ))}
                       </select>
                       <select

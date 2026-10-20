@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Copy, Pencil, Trash2, X } from "lucide-react";
+import { getCommunityPostCategoryOptions } from "@/lib/communityCategories";
 
 type Post = {
   _id: string;
@@ -16,18 +17,6 @@ type Post = {
 };
 
 type Draft = Pick<Post, "address" | "category" | "description">;
-
-const categories = [
-  "common-area",
-  "beach-access",
-  "landscaping",
-  "lighting",
-  "Lost & Found",
-  "for sale",
-  "looking for",
-  "free",
-  "other",
-];
 
 export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[] }) {
   const [posts, setPosts] = useState(initialPosts);
@@ -155,8 +144,8 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
                   value={draft.category}
                   onChange={(event) => setDraft({ ...draft, category: event.target.value })}
                 >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                  {getCommunityPostCategoryOptions(draft.category).map((category) => (
+                    <option key={category.value} value={category.value}>{category.label}</option>
                   ))}
                 </select>
                 <textarea

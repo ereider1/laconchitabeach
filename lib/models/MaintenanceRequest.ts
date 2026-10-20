@@ -1,19 +1,21 @@
 import mongoose, { Schema, models, model } from "mongoose";
+import {
+  COMMUNITY_POST_CATEGORIES,
+  LEGACY_COMMUNITY_POST_CATEGORIES,
+} from "@/lib/communityCategories";
+
+const categoryValues = [
+  ...COMMUNITY_POST_CATEGORIES.map((category) => category.value),
+  ...Object.keys(LEGACY_COMMUNITY_POST_CATEGORIES),
+];
 
 export interface IMaintenanceRequest {
   submittedByName: string;
   submittedByClerkId: string;
   address: string;
   category:
-    | "common-area"
-    | "beach-access"
-    | "landscaping"
-    | "lighting"
-    | "Lost & Found"
-    | "for sale"
-    | "looking for"
-    | "free"
-    | "other";
+    | (typeof COMMUNITY_POST_CATEGORIES)[number]["value"]
+    | keyof typeof LEGACY_COMMUNITY_POST_CATEGORIES;
   description: string;
   photoUrl?: string;
   status: "open" | "in-progress" | "resolved";
@@ -28,17 +30,7 @@ const MaintenanceRequestSchema = new Schema<IMaintenanceRequest>(
     address: { type: String, required: true },
     category: {
       type: String,
-      enum: [
-        "common-area",
-        "beach-access",
-        "landscaping",
-        "lighting",
-        "Lost & Found",
-        "for sale",
-        "looking for",
-        "free",
-        "other",
-      ],
+      enum: categoryValues,
       default: "other",
     },
     description: { type: String, required: true },

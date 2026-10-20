@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import FlyerImage from "@/components/FlyerImage";
 import { connectToDatabase } from "@/lib/mongodb";
 import PageSection, { IPageSection } from "@/lib/models/PageSection";
 import GlobalSettings from "@/lib/models/GlobalSettings";
@@ -89,6 +90,12 @@ export default async function CustomPageSections({ slot }: CustomPageSectionsPro
 
         const publicImageUrl = getPublicImageUrl(imageUrl);
 
+        if (layout === "single-image-flyer") {
+          return publicImageUrl ? (
+            <FlyerImage key={String(_id)} src={publicImageUrl} />
+          ) : null;
+        }
+
         if (layout === "two-col-img-left") {
           return (
             <section key={String(_id)} className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
@@ -132,13 +139,13 @@ export default async function CustomPageSections({ slot }: CustomPageSectionsPro
                 </div>
               )}
               {publicImageUrl && (
-                <div className="mt-8 max-w-2xl w-full h-[300px] relative overflow-hidden rounded-2xl">
+                <div className="relative mt-8 h-[300px] w-full max-w-2xl overflow-hidden rounded-2xl bg-sand/30">
                   <Image
                     src={publicImageUrl}
                     alt={title || "Section Media"}
                     fill
                     sizes="(max-width: 768px) 100vw, 768px"
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized
                   />
                 </div>
