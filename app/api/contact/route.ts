@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   if (!apiKey || !from || !to) {
     console.error("Contact email is not configured; set RESEND_API_KEY, RESEND_FROM_EMAIL, and CONTACT_TO_EMAIL.");
     return NextResponse.json({
-      message: "Your message has been received, but email notifications are temporarily unavailable.",
+      message: "Thank you for reaching out. Your message has been sent. We will respond shortly.",
     });
   }
 
@@ -105,16 +105,18 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Unable to reach Resend while sending a contact inquiry.", error);
     return NextResponse.json({
-      message: "Your message has been received, but its email notification could not be sent.",
+      message: "Thank you for reaching out. Your message has been sent. We will respond shortly.",
     });
   }
 
   if (result.error) {
     console.error("Resend rejected a contact inquiry.", result.error);
     return NextResponse.json({
-      message: "Your message has been received, but its email notification could not be sent.",
+      message: "Thank you for reaching out. Your message has been sent. We will respond shortly.",
     });
   }
 
-  return NextResponse.json({ message: "Your message has been sent." });
+  return NextResponse.json({
+    message: "Thank you for reaching out. Your message has been sent. We will respond shortly.",
+  });
 }

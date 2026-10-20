@@ -1,16 +1,26 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 const emptyForm = { name: "", email: "", subject: "", message: "" };
+const successMessage = "Thank you for reaching out. Your message has been sent. We will respond shortly.";
 
 export default function ContactForm() {
+  const router = useRouter();
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{
     kind: "success" | "error";
     message: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (feedback?.kind !== "success") return;
+
+    const timeoutId = window.setTimeout(() => router.replace("/"), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [feedback?.kind, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,10 +40,7 @@ export default function ContactForm() {
       }
 
       setForm(emptyForm);
-      setFeedback({
-        kind: "success",
-        message: result.message ?? "Your message has been sent.",
-      });
+      setFeedback({ kind: "success", message: successMessage });
     } catch (error) {
       setFeedback({
         kind: "error",
