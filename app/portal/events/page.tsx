@@ -85,7 +85,7 @@ export default function PortalEventsPage() {
               id={`event-${e._id}`}
               className="scroll-mt-8 rounded-xl border border-ink/10 p-5"
             >
-              <p className="font-mono text-xs uppercase tracking-wider text-dune">
+              <p className="text-lg uppercase tracking-wider text-dune">
                 {new Date(e.startsAt).toLocaleString("en-US", {
                   weekday: "short",
                   month: "short",
@@ -111,8 +111,8 @@ export default function PortalEventsPage() {
                   {going ? "You're going" : "RSVP"}
                 </button>
               </div>
-              <p className="mt-3 text-xs text-ink/40">
-                {e.rsvps.length} resident{e.rsvps.length === 1 ? "" : "s"} going
+              <p className="mt-3 text-sm font-semibold text-marina/80">
+                {e.rsvps.length} <span className="font-normal">resident{e.rsvps.length === 1 ? "" : "s"} going</span>
               </p>
             </div>
           );
