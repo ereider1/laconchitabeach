@@ -19,8 +19,9 @@ export async function GET() {
   // Get the global toggle status
   const globalSetting = await GlobalSettings.findOne({ key: "page-builder-active" }).lean();
   const pageBuilderActive = globalSetting ? globalSetting.value : true;
+  const aboutSetting = await GlobalSettings.findOne({ key: "about-page-content" }).lean();
 
-  return NextResponse.json({ sections, pageBuilderActive });
+  return NextResponse.json({ sections, pageBuilderActive, aboutContent: aboutSetting?.value ?? null });
 }
 
 // 2. POST: Create a new homepage section
@@ -92,6 +93,24 @@ export async function PATCH(req: NextRequest) {
       { upsert: true, new: true }
     );
     return NextResponse.json({ ok: true, active: updatedSetting.value });
+  }
+
+  if (body.settingKey === "about-page-content") {
+    const content = body.value;
+    if (!content || typeof content !== "object" || typeof content.eyebrow !== "string" || typeof content.paragraphs !== "string") {
+      return NextResponse.json({ error: "About page content is invalid" }, { status: 400 });
+    }
+    try {
+      const updatedSetting = await GlobalSettings.findOneAndUpdate(
+        { key: "about-page-content" },
+        { value: { eyebrow: content.eyebrow.trim(), paragraphs: content.paragraphs.trim() } },
+        { upsert: true, new: true, runValidators: true }
+      );
+      return NextResponse.json({ ok: true, aboutContent: updatedSetting.value });
+    } catch (error) {
+      console.error("Failed to save About page content:", error);
+      return NextResponse.json({ error: "Failed to save About page content" }, { status: 500 });
+    }
   }
 
   // Scenario B: Reorder Sections

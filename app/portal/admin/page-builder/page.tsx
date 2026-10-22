@@ -38,12 +38,21 @@ type Section = {
   order: number;
 };
 
+type AboutContent = { eyebrow: string; paragraphs: string };
+
+const defaultAboutContent: AboutContent = {
+  eyebrow: "A small place with a big horizon",
+  paragraphs: "La Conchita sits between the coastal bluffs and the Pacific, a compact neighborhood shaped by salt air, ocean views, and the easy familiarity of people who know the same stretch of beach.\n\nThe community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.\n\nThis site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.",
+};
+
 export default function PageBuilder() {
   const [sections, setSections] = useState<Section[]>([]);
   const [masterActive, setMasterActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [aboutContent, setAboutContent] = useState<AboutContent>(defaultAboutContent);
+  const [aboutSaving, setAboutSaving] = useState(false);
 
   // View state: 'list' | 'create' | 'edit'
   const [view, setView] = useState<"list" | "create" | "edit">("list");
@@ -188,11 +197,37 @@ export default function PageBuilder() {
       if (!res.ok) throw new Error(data.error ?? "Failed to load builder data");
       setSections(data.sections || []);
       setMasterActive(data.pageBuilderActive);
+      if (data.aboutContent) setAboutContent(data.aboutContent);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveAboutContent() {
+    setAboutSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settingKey: "about-page-content", value: aboutContent }),
+      });
+      const responseText = await res.text();
+      let data: { error?: string } = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        throw new Error(`Save failed with HTTP ${res.status}. Please refresh and try again.`);
+      }
+      if (!res.ok) throw new Error(data.error ?? "Failed to save About page content");
+      showSuccess("About page content saved successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save About page content");
+    } finally {
+      setAboutSaving(false);
     }
   }
 
@@ -472,10 +507,10 @@ export default function PageBuilder() {
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink sm:text-xl">
             <Sparkles className="h-5 w-5 shrink-0 text-marina" />
-            Homepage Section Builder
+            Page Builder
           </h2>
           <p className="mt-0.5 text-xs leading-relaxed text-ink/60">
-            Add custom elements, announcements, or clean text-image layouts directly into the public homepage.
+            Add custom elements, announcements, or clean text-image layouts directly into the public facing website.
           </p>
         </div>
 
@@ -528,6 +563,30 @@ export default function PageBuilder() {
       {/* ----------------- VIEW: LIST / DASHBOARD ----------------- */}
       {view === "list" && (
         <div className="mt-6 space-y-8">
+          <section className="rounded-2xl border border-marina/25 bg-sand/20 p-4 sm:p-5">
+            <div className="mb-5 flex flex-col gap-1 border-b border-marina/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-marina">About Page Content</h3>
+                <p className="mt-1 text-xs leading-relaxed text-ink/60">Edit the public copy shown at <span className="font-semibold text-ink">/about</span>. Separate paragraphs with a blank line.</p>
+              </div>
+              <FileText className="hidden h-5 w-5 text-marina/70 sm:block" />
+            </div>
+            <div className="grid gap-4">
+              <label className="text-xs font-bold uppercase tracking-wider text-ink">
+                Intro label
+                <input value={aboutContent.eyebrow} onChange={(e) => setAboutContent({ ...aboutContent, eyebrow: e.target.value })} className="mt-1.5 w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-wider text-ink">
+                Page paragraphs
+                <textarea rows={8} value={aboutContent.paragraphs} onChange={(e) => setAboutContent({ ...aboutContent, paragraphs: e.target.value })} className="mt-1.5 w-full resize-y rounded-xl border border-marina/20 bg-white px-4 py-3 text-sm font-normal normal-case leading-7 tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />
+              </label>
+              <div className="flex justify-end">
+                <button type="button" onClick={saveAboutContent} disabled={aboutSaving} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-marina px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light disabled:opacity-60">
+                  <Check className="h-4 w-4" /> {aboutSaving ? "Saving..." : "Save About Page"}
+                </button>
+              </div>
+            </div>
+          </section>
           {loading && sections.length === 0 ? (
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (
