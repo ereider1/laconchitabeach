@@ -83,9 +83,9 @@ export default function PortalEventsPage() {
             <div
               key={e._id}
               id={`event-${e._id}`}
-              className="scroll-mt-8 rounded-xl border border-ink/10 p-5"
+              className="scroll-mt-8 rounded-xl border border-ink/10 p-4 sm:p-5"
             >
-              <p className="text-lg uppercase tracking-wider text-dune">
+              <p className="text-sm font-semibold uppercase tracking-[0.12em] text-dune sm:text-lg sm:tracking-wider">
                 {new Date(e.startsAt).toLocaleString("en-US", {
                   weekday: "short",
                   month: "short",
@@ -94,16 +94,16 @@ export default function PortalEventsPage() {
                   minute: "2-digit",
                 })}
               </p>
-              <div className="mt-1 flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-display text-xl text-ink">{e.title}</h3>
+              <div className="mt-2 flex flex-col items-stretch gap-4 sm:mt-1 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="break-words font-display text-xl leading-tight text-ink">{e.title}</h3>
                   <p className="text-sm text-ink/60">{e.location}</p>
-                  <p className="mt-2 text-sm text-ink/70">{e.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-ink/70">{e.description}</p>
                 </div>
                 <button
                   onClick={() => toggleRsvp(e._id)}
                   disabled={pending === e._id}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+                  className={`inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 sm:w-auto sm:px-4 sm:py-2 ${
                     going ? "bg-sand text-ink" : "bg-marina text-fog hover:bg-marina-light"
                   }`}
                 >

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
@@ -16,7 +17,6 @@ import {
   Sparkles,
   UserRound,
   UsersRound,
-  Waves,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -86,11 +86,17 @@ export default function PortalSidebar({
       <div className="flex items-center justify-between md:block">
         <Link href="/" className="flex items-center gap-3 text-white">
           <span className="grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-white/10">
-            <Waves className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            <Image
+              src="/favicon/favicon-64x64.png"
+              alt=""
+              width={40}
+              height={40}
+              priority
+            />
           </span>
           <span className="font-semibold leading-tight">
             La Conchita
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-white/45">California coast</span>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-white/45">Beach Community</span>
           </span>
         </Link>
         <button

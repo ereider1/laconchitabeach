@@ -1,6 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Show, UserButton } from "@clerk/nextjs";
-import { ChevronDown, Waves } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 const links = [
   { href: "/events", label: "Events" },
@@ -12,12 +13,19 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-5 px-6 py-4">
         <Link href="/" className="flex items-center gap-3 text-white">
-          <span className="grid h-10 w-10 place-items-center rounded-full border border-white/40 bg-white/10">
-            <Waves className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-white/10 md:h-10 md:w-10">
+            <Image
+              src="/favicon/favicon-64x64.png"
+              alt=""
+              width={48}
+              height={48}
+              className="md:h-10 md:w-10"
+              priority
+            />
           </span>
           <span>
             <span className="block text-base font-semibold tracking-tight">La Conchita</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.26em] text-white/70">
+            <span className="block whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 md:tracking-[0.26em]">
               Beach Community
             </span>
           </span>
@@ -47,7 +55,7 @@ export default function SiteHeader() {
               href="/portal"
               className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-marina transition hover:bg-sand"
             >
-              Go to Intranet
+              Dashboard
             </Link>
             <UserButton
               userProfileProps={{
