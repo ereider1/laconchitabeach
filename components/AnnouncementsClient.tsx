@@ -18,6 +18,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", category: "general", pinned: false });
 
   async function load() {
@@ -52,6 +53,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
       if (!res.ok) throw new Error(data.error ?? "Failed to post");
       setForm({ title: "", body: "", category: "general", pinned: false });
       await load();
+      setFormOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -65,51 +67,73 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
       <p className="mt-2 text-ink/60">Board updates, closures, and safety notices.</p>
 
       {isAdmin && (
-        <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
-          <p className="font-display text-lg text-marina">Post an announcement</p>
-          <input
-            className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-            placeholder="Title"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            required
-          />
-          <textarea
-            className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-            placeholder="Details"
-            rows={3}
-            value={form.body}
-            onChange={(e) => setForm({ ...form, body: e.target.value })}
-            required
-          />
-          <div className="flex items-center gap-4">
-            <select
-              className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-            >
-              <option value="general">General</option>
-              <option value="safety">Safety</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="event">Event</option>
-            </select>
-            <label className="flex items-center gap-2 text-sm text-ink/70">
-              <input
-                type="checkbox"
-                checked={form.pinned}
-                onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
-              />
-              Pin to top
-            </label>
+        <div className="mt-8">
+          {!formOpen && (
             <button
-              type="submit"
-              disabled={posting}
-              className="ml-auto rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog transition hover:bg-marina-light"
             >
-              {posting ? "Posting…" : "Post announcement"}
+              Post announcement
             </button>
-          </div>
-        </form>
+          )}
+          {formOpen && (
+            <form onSubmit={submit} className="space-y-3 rounded-xl border border-ink/10 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <p className="font-display text-lg text-marina">Post an announcement</p>
+                <button
+                  type="button"
+                  onClick={() => setFormOpen(false)}
+                  className="text-sm font-semibold text-ink/55 transition hover:text-ink"
+                >
+                  Cancel
+                </button>
+              </div>
+              <input
+                className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+                placeholder="Title"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+              />
+              <textarea
+                className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+                placeholder="Details"
+                rows={3}
+                value={form.body}
+                onChange={(e) => setForm({ ...form, body: e.target.value })}
+                required
+              />
+              <div className="flex items-center gap-4">
+                <select
+                  className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                >
+                  <option value="general">General</option>
+                  <option value="safety">Safety</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="event">Event</option>
+                </select>
+                <label className="flex items-center gap-2 text-sm text-ink/70">
+                  <input
+                    type="checkbox"
+                    checked={form.pinned}
+                    onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
+                  />
+                  Pin to top
+                </label>
+                <button
+                  type="submit"
+                  disabled={posting}
+                  className="ml-auto rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+                >
+                  {posting ? "Posting…" : "Post announcement"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
