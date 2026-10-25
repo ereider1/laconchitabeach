@@ -26,7 +26,7 @@ export default function PortalEventsPage() {
       const res = await fetch("/api/events");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load events");
-      setEvents(data.events);
+      setEvents(data.events.filter((event: EventItem) => new Date(event.startsAt) >= new Date()));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
