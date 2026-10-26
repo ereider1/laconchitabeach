@@ -15,7 +15,14 @@ export async function GET() {
 
   await connectToDatabase();
   const announcements = await Announcement.find().sort({ pinned: -1, createdAt: -1 }).lean();
-  return NextResponse.json({ announcements });
+  return NextResponse.json({ announcements: announcements.map((announcement) => ({
+    ...announcement,
+    imageDocumentIds: announcement.imageDocumentIds?.length
+      ? announcement.imageDocumentIds
+      : announcement.imageDocumentId
+        ? [announcement.imageDocumentId]
+        : [],
+  })) });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
     authorClerkId: userId,
   });
 
-  return NextResponse.json({ announcement }, { status: 201 });
+  return NextResponse.json({ announcement: { ...announcement.toObject(), imageDocumentIds: announcement.imageDocumentIds ?? [] } }, { status: 201 });
 }
 
 // Body: { id, title?, body?, category?, pinned? }
@@ -66,7 +73,7 @@ export async function PATCH(req: NextRequest) {
   await connectToDatabase();
   const announcement = await Announcement.findByIdAndUpdate(id, fields, { new: true });
   if (!announcement) return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
-  return NextResponse.json({ announcement });
+  return NextResponse.json({ announcement: { ...announcement.toObject(), imageDocumentIds: announcement.imageDocumentIds ?? [] } });
 }
 
 // Query: ?id=<announcementId>
