@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
 type Announcement = {
@@ -11,6 +12,7 @@ type Announcement = {
   pinned: boolean;
   authorName: string;
   createdAt: string;
+  imageDocumentId?: string;
 };
 
 export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
@@ -36,7 +38,8 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
   }
 
   useEffect(() => {
-    load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -145,15 +148,20 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
         )}
         {announcements.map((a) => (
           <div key={a._id} className="rounded-xl border border-ink/10 p-5">
-            <div className="flex items-center gap-2">
-              {a.pinned && <span className="text-xs font-semibold text-coral">PINNED</span>}
-              <span className="text-xs uppercase tracking-wider text-dune">{a.category}</span>
+            <div className="flex items-start gap-4">
+              {a.imageDocumentId && <Image src={`/api/announcements/${a._id}/image`} alt="" width={112} height={112} className="h-28 w-28 shrink-0 rounded-lg object-cover" unoptimized />}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  {a.pinned && <span className="text-xs font-semibold text-coral">PINNED</span>}
+                  <span className="text-xs uppercase tracking-wider text-dune">{a.category}</span>
+                </div>
+                <h3 className="mt-1 font-display text-xl text-ink">{a.title}</h3>
+                <p className="mt-2 text-sm text-ink/70">{a.body}</p>
+                <p className="mt-3 text-xs text-ink/40">
+                  {getAnnouncementAuthorName(a.authorName)} &middot; {new Date(a.createdAt).toLocaleDateString()}
+                </p>
+              </div>
             </div>
-            <h3 className="mt-1 font-display text-xl text-ink">{a.title}</h3>
-            <p className="mt-2 text-sm text-ink/70">{a.body}</p>
-            <p className="mt-3 text-xs text-ink/40">
-              {getAnnouncementAuthorName(a.authorName)} &middot; {new Date(a.createdAt).toLocaleDateString()}
-            </p>
           </div>
         ))}
       </div>

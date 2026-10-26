@@ -2,10 +2,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { isAdmin } from "@/lib/isAdmin";
 import AdminNavGrid from "@/components/AdminNavGrid";
+import { connectToDatabase } from "@/lib/mongodb";
+import Resident from "@/lib/models/Resident";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
   if (!(await isAdmin(userId))) redirect("/portal");
+
+  await connectToDatabase();
+  const pendingRegistrationCount = await Resident.countDocuments({ registrationStatus: "pending" });
 
   return (
     <div>
@@ -14,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         Manage everything residents see across the intranet.
       </p>
 
-      <AdminNavGrid />
+      <AdminNavGrid pendingRegistrationCount={pendingRegistrationCount} />
 
       <div className="mt-10">{children}</div>
     </div>
