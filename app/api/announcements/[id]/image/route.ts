@@ -15,10 +15,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const { id } = await params;
   await connectToDatabase();
-  const announcement = await Announcement.findById(id).select("imageDocumentId").lean();
-  if (!announcement?.imageDocumentId) return NextResponse.json({ error: "Image not found" }, { status: 404 });
+  const announcement = await Announcement.findById(id).select("imageDocumentId imageDocumentIds").lean();
+  const requestedId = _request.nextUrl.searchParams.get("documentId");
+  const imageDocumentId = requestedId && (announcement?.imageDocumentIds?.includes(requestedId) || announcement?.imageDocumentId === requestedId)
+    ? requestedId
+    : announcement?.imageDocumentId;
+  if (!imageDocumentId) return NextResponse.json({ error: "Image not found" }, { status: 404 });
 
-  const document = await Document.findById(announcement.imageDocumentId).lean();
+  const document = await Document.findById(imageDocumentId).lean();
   if (!document) return NextResponse.json({ error: "Image not found" }, { status: 404 });
   const result = await get(document.fileUrl, { access: "private" });
   if (!result || result.statusCode !== 200) return NextResponse.json({ error: "Image not found" }, { status: 404 });

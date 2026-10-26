@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     category: body.category ?? "general",
     pinned: !!body.pinned,
     imageDocumentId: body.imageDocumentId || undefined,
+    imageDocumentIds: Array.isArray(body.imageDocumentIds) ? body.imageDocumentIds : undefined,
     authorName: getAnnouncementAuthorName(user?.fullName ?? user?.username ?? "Board member"),
     authorClerkId: userId,
   });
@@ -56,7 +57,7 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const allowed = ["title", "body", "category", "pinned", "imageDocumentId"];
+  const allowed = ["title", "body", "category", "pinned", "imageDocumentId", "imageDocumentIds"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];

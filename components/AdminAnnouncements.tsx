@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { ImagePlus, X } from "lucide-react";
 import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
+import AnnouncementMediaCarousel from "@/components/AnnouncementMediaCarousel";
 
 type Announcement = {
   _id: string;
@@ -15,6 +15,7 @@ type Announcement = {
   pinned: boolean;
   createdAt: string;
   imageDocumentId?: string;
+  imageDocumentIds?: string[];
 };
 
 type EditableFields = {
@@ -23,13 +24,14 @@ type EditableFields = {
   category: Announcement["category"];
   pinned: boolean;
   imageDocumentId?: string;
+  imageDocumentIds?: string[];
 };
 
 function toEditableFields(a: Announcement): EditableFields {
-  return { title: a.title, body: a.body, category: a.category, pinned: a.pinned, imageDocumentId: a.imageDocumentId };
+  return { title: a.title, body: a.body, category: a.category, pinned: a.pinned, imageDocumentId: a.imageDocumentId, imageDocumentIds: a.imageDocumentIds ?? (a.imageDocumentId ? [a.imageDocumentId] : []) };
 }
 
-const emptyNew: EditableFields = { title: "", body: "", category: "general", pinned: false, imageDocumentId: undefined };
+const emptyNew: EditableFields = { title: "", body: "", category: "general", pinned: false, imageDocumentId: undefined, imageDocumentIds: [] };
 const categories: Announcement["category"][] = ["general", "safety", "maintenance", "event"];
 
 export default function AdminAnnouncements() {
@@ -74,8 +76,8 @@ export default function AdminAnnouncements() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  async function uploadAnnouncementImage(file: File, setFields: (id: string) => void) {
-    if (!file.type.startsWith("image/")) return;
+  async function uploadAnnouncementImage(file: File): Promise<string | null> {
+    if (!file.type.startsWith("image/")) return null;
     setUploadingImage(true);
     try {
       const blob = await upload(file.name, file, { access: "private", handleUploadUrl: "/api/documents/upload" });
@@ -83,16 +85,18 @@ export default function AdminAnnouncements() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to upload image");
       setGallery((current) => [data.document, ...current]);
-      setFields(data.document._id);
+      return data.document._id as string;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload image");
+      return null;
     } finally {
       setUploadingImage(false);
     }
   }
 
   function imagePicker(fields: EditableFields, setFields: (fields: EditableFields) => void) {
-    return <div className="rounded-lg border border-ink/10 p-3"><p className="mb-2 text-sm font-medium text-ink">Announcement image</p><div className="flex flex-wrap items-center gap-2"><label className="cursor-pointer rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-sand/40"><ImagePlus className="mr-1 inline h-4 w-4" />{uploadingImage ? "Uploading…" : "Upload image"}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAnnouncementImage(file, (id) => setFields({ ...fields, imageDocumentId: id })); event.currentTarget.value = ""; }} /></label><select value={fields.imageDocumentId ?? ""} onChange={(event) => setFields({ ...fields, imageDocumentId: event.target.value || undefined })} className="rounded-full border border-ink/15 px-3 py-1.5 text-xs"><option value="">Choose from Photo Gallery</option>{gallery.map((photo) => <option key={photo._id} value={photo._id}>{photo.title}</option>)}</select>{fields.imageDocumentId && <button type="button" onClick={() => setFields({ ...fields, imageDocumentId: undefined })} className="text-xs text-coral"><X className="mr-1 inline h-3.5 w-3.5" />Remove</button>}</div>{fields.imageDocumentId && <img src={`/api/documents/${fields.imageDocumentId}`} alt="Selected announcement" className="mt-3 max-h-40 rounded-lg object-cover" />}</div>;
+    const selected = fields.imageDocumentIds ?? (fields.imageDocumentId ? [fields.imageDocumentId] : []);
+    return <div className="rounded-lg border border-ink/10 p-3"><p className="mb-2 text-sm font-medium text-ink">Announcement images</p><div className="flex flex-wrap items-center gap-2"><label className="cursor-pointer rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-sand/40"><ImagePlus className="mr-1 inline h-4 w-4" />{uploadingImage ? "Uploading…" : "Upload images"}<input type="file" accept="image/*" multiple className="hidden" disabled={uploadingImage} onChange={async (event) => { const files = Array.from(event.target.files ?? []); const uploaded = [...selected]; for (const file of files) { const id = await uploadAnnouncementImage(file); if (id) uploaded.push(id); } setFields({ ...fields, imageDocumentIds: uploaded, imageDocumentId: undefined }); event.currentTarget.value = ""; }} /></label><select multiple value={selected} onChange={(event) => setFields({ ...fields, imageDocumentIds: Array.from(event.target.selectedOptions, (option) => option.value), imageDocumentId: undefined })} className="min-h-20 rounded-lg border border-ink/15 px-3 py-1.5 text-xs"><option disabled value="">Choose from Photo Gallery</option>{gallery.map((photo) => <option key={photo._id} value={photo._id}>{photo.title}</option>)}</select>{selected.length > 0 && <button type="button" onClick={() => setFields({ ...fields, imageDocumentIds: [], imageDocumentId: undefined })} className="text-xs text-coral"><X className="mr-1 inline h-3.5 w-3.5" />Remove all</button>}</div><p className="mt-1 text-xs text-ink/50">Hold Command or Ctrl to choose multiple gallery photos.</p></div>;
   }
 
   function startEdit(a: Announcement) {
@@ -275,7 +279,7 @@ export default function AdminAnnouncements() {
                   <>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 items-start gap-4">
-                        {a.imageDocumentId && <Image src={`/api/announcements/${a._id}/image`} alt="" width={96} height={96} className="h-24 w-24 shrink-0 rounded-lg object-cover" unoptimized />}
+                        {(a.imageDocumentIds?.length || a.imageDocumentId) && <div className="w-24 shrink-0"><AnnouncementMediaCarousel announcementId={a._id} imageDocumentIds={a.imageDocumentIds?.length ? a.imageDocumentIds : [a.imageDocumentId as string]} /></div>}
                         <div className="min-w-0">
                         <p className="font-display text-lg text-ink">
                           {a.pinned && <span className="mr-2 text-coral">📌</span>}
