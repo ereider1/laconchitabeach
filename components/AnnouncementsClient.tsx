@@ -108,7 +108,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
                 required
               />
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <select
                   className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
                   value={form.category}
@@ -130,7 +130,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
                 <button
                   type="submit"
                   disabled={posting}
-                  className="ml-auto rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+                  className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50 sm:ml-auto"
                 >
                   {posting ? "Posting…" : "Post announcement"}
                 </button>
@@ -148,9 +148,9 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
           <p className="text-sm text-ink/60">No announcements yet.</p>
         )}
         {announcements.map((a) => (
-          <div key={a._id} className="rounded-xl border border-ink/10 p-5">
-            <div className="flex items-start gap-4">
-              {(a.imageDocumentIds?.length || a.imageDocumentId) && <div className="w-28 shrink-0"><AnnouncementMediaCarousel announcementId={a._id} imageDocumentIds={a.imageDocumentIds?.length ? a.imageDocumentIds : [a.imageDocumentId as string]} /></div>}
+          <article key={a._id} className="rounded-xl border border-ink/10 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              {(a.imageDocumentIds?.length || a.imageDocumentId) && <div className="w-full shrink-0 sm:w-28"><AnnouncementMediaCarousel announcementId={a._id} imageDocumentIds={a.imageDocumentIds?.length ? a.imageDocumentIds : [a.imageDocumentId as string]} /></div>}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   {a.pinned && <span className="text-xs font-semibold text-coral">PINNED</span>}
@@ -163,7 +163,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
                 </p>
               </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </div>
