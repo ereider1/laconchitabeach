@@ -67,7 +67,7 @@ export default function PortalEventsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink">Events &amp; RSVPs</h1>
+      <h1 className="font-display text-2xl text-ink">Events &amp; RSVPs</h1>
       <p className="mt-2 text-ink/60">HOA meetings and community gatherings.</p>
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}

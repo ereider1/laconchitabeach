@@ -1,6 +1,7 @@
 import { UserButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import PortalSidebar from "@/components/PortalSidebar";
+import PortalQuickLinks from "@/components/PortalQuickLinks";
 import { isAdmin } from "@/lib/isAdmin";
 import ProfileForm from "@/components/ProfileForm";
 import { getResidentRegistrationStatus } from "@/lib/registration";
@@ -97,7 +98,10 @@ export default async function PortalLayout({ children }: { children: React.React
         pendingRegistrationCount={pendingRegistrationCount}
       />
       <main className="portal-main flex-1 overflow-y-auto px-5 py-8 sm:px-8 md:ml-64 md:px-12 md:py-12">
-        <div className="mx-auto max-w-4xl">{children}</div>
+        <div className="mx-auto max-w-4xl">
+          <PortalQuickLinks />
+          <div className="mt-8">{children}</div>
+        </div>
       </main>
     </div>
   );

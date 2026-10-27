@@ -59,7 +59,7 @@ export default function DirectoryPage() {
           <UsersRound className="h-4 w-4" aria-hidden="true" />
           Community
         </p>
-        <h1 className="font-display text-3xl text-ink sm:text-4xl">Resident directory</h1>
+        <h1 className="font-display text-2xl text-ink sm:text-4xl">Resident directory</h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-ink/60 sm:text-base">
           Only residents who&apos;ve opted in to the directory appear here.
         </p>

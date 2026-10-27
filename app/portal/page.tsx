@@ -66,7 +66,7 @@ export default async function PortalDashboard() {
 
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-[0.2em] text-dune">
+      <p className="text-xs uppercase tracking-[0.2em] text-dune">
         {new Date().toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
@@ -74,7 +74,7 @@ export default async function PortalDashboard() {
           timeZone: "America/Los_Angeles",
         })}
       </p>
-      <h1 className="mt-2 font-display text-3xl text-ink">Welcome back, {firstName}.</h1>
+      <h1 className="mt-2 font-display text-2xl text-ink">Welcome back, {firstName}.</h1>
 
       {dbError && (
         <p className="mt-6 rounded-lg border border-dune/30 bg-sand/40 p-4 text-sm text-ink/60">
@@ -141,7 +141,7 @@ export default async function PortalDashboard() {
           </div>
         </section>
         <section className="mt-10">
-          <h2 className="mb-3 font-display text-lg text-marina">My Community Corner Posts</h2>
+          <h2 className="mb-3 font-display text-lg leading-tight text-marina sm:text-xl">My Community Corner Posts</h2>
           {dbError ? (
             <p className="text-sm text-ink/60">Could not load your posts right now.</p>
           ) : (

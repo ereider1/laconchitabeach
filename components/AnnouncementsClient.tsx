@@ -67,7 +67,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink">Announcements</h1>
+      <h1 className="font-display text-2xl text-ink">Announcements</h1>
       <p className="mt-2 text-ink/60">Board updates, closures, and safety notices.</p>
 
       {isAdmin && (

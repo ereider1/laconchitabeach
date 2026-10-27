@@ -139,9 +139,9 @@ export default function MaintenancePage() {
     <div className="pb-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-ink sm:text-4xl">Community Corner</h1>
+          <h1 className="font-display text-2xl text-ink sm:text-4xl">Community Corner</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/60 sm:text-base">
-        Browse posts from neighbors and share maintenance requests, lost &amp; found, and local listings.
+        Browse local posts from neighbors.
           </p>
         </div>
         <span className="hidden shrink-0 rounded-full bg-marina/10 px-3 py-1.5 text-xs font-semibold text-marina sm:inline-flex">

@@ -128,7 +128,7 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
         const busy = busyId === post._id;
 
         return (
-          <article key={post._id} className="rounded-xl border border-ink/10 p-4">
+          <article key={post._id} className="rounded-xl border border-ink/10 p-3 sm:p-4">
             {isEditing ? (
               <div className="space-y-3">
                 <input
@@ -180,7 +180,7 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
                 </div>
               </div>
             ) : (
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
                 {post.photoUrl && (
                   <Image
                     src={`/api/maintenance/${post._id}/photo`}
@@ -188,28 +188,31 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
                     width={128}
                     height={96}
                     unoptimized
-                    className="h-24 w-32 shrink-0 rounded-lg object-cover"
+                    className="h-40 w-full shrink-0 rounded-lg object-cover sm:h-24 sm:w-32"
                   />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="font-medium text-ink">{post.address}</p>
-                      <p className="mt-1 text-xs uppercase tracking-wider text-dune">{post.category}</p>
-                      <p className="mt-1 text-xs text-ink/50">
+                      <p className="font-display text-base text-ink">{post.address}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                        <span className="uppercase tracking-wider text-dune">{post.category}</span>
+                        <span className="text-ink/25" aria-hidden="true">•</span>
+                        <span className="text-ink/50">
                         {new Date(post.createdAt).toLocaleDateString(undefined, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
                         })} · {post.status}
-                      </p>
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                       <button
                         type="button"
                         onClick={() => startEdit(post)}
                         disabled={busy}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-marina/10 px-2 py-2 text-xs font-medium text-marina transition hover:bg-marina/20 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0 sm:underline sm:underline-offset-4"
                       >
                         <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                         Edit
@@ -217,7 +220,7 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
                       <button
                         type="button"
                         onClick={() => sharePost(post)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-marina underline underline-offset-4"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-marina/10 px-2 py-2 text-xs font-medium text-marina transition hover:bg-marina/20 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0 sm:underline sm:underline-offset-4"
                       >
                         <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                         Share
@@ -226,14 +229,14 @@ export default function MyCommunityPosts({ posts: initialPosts }: { posts: Post[
                         type="button"
                         onClick={() => deletePost(post)}
                         disabled={busy}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-coral underline underline-offset-4 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-coral/10 px-2 py-2 text-xs font-medium text-coral transition hover:bg-coral/20 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0 sm:underline sm:underline-offset-4 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         Delete
                       </button>
                     </div>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm text-ink/70">{post.description}</p>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ink/70">{post.description}</p>
                 </div>
               </div>
             )}

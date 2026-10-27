@@ -16,6 +16,17 @@ function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
+function getUpcomingEventsThisWeek(events: EventItem[], now = new Date()) {
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  return events.filter((event) => {
+    const startsAt = new Date(event.startsAt);
+    return startsAt >= now && startsAt < weekEnd;
+  }).length;
+}
+
 function getCalendarWeeks(date: Date) {
   const firstOfMonth = startOfMonth(date);
   const gridStart = new Date(firstOfMonth);
@@ -99,7 +110,11 @@ export default function PortalCalendarPage() {
   }, [filteredEvents]);
 
   const selectedEvents = selected ? eventsByDay.get(selected.toDateString()) ?? [] : [];
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
+  const upcomingEventsThisWeek = useMemo(
+    () => getUpcomingEventsThisWeek(events, today),
+    [events, today],
+  );
 
   function renderDayCell(day: Date) {
     const inMonth = day.getMonth() === cursor.getMonth();
@@ -116,7 +131,7 @@ export default function PortalCalendarPage() {
     return (
       <div
         key={day.toISOString()}
-        className={`flex min-h-24 min-w-0 flex-col items-start gap-1 border-b border-r border-ink/10 p-2 text-left transition last:border-r-0 hover:bg-ink/5 ${
+        className={`flex min-h-16 min-w-0 flex-col items-start gap-1 border-b border-r border-ink/10 p-1.5 text-left transition last:border-r-0 hover:bg-ink/5 sm:min-h-20 sm:p-2 ${
           inMonth ? "bg-white" : "bg-fog/40"
         } ${isSelected ? "ring-2 ring-inset ring-marina" : ""}`}
       >
@@ -165,7 +180,9 @@ export default function PortalCalendarPage() {
     <div>
       <h1 className="font-display text-3xl text-ink">Calendar</h1>
       <p className="mt-2 text-ink/60">
-        Select a date to see event times, locations, and descriptions.
+        {loading
+          ? "Loading this week's events…"
+          : `${upcomingEventsThisWeek} upcoming event${upcomingEventsThisWeek === 1 ? "" : "s"} this week.`}
       </p>
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
