@@ -136,14 +136,21 @@ export default function MaintenancePage() {
   }
 
   return (
-    <div>
-      <h1 className="font-display text-3xl text-ink">Community Corner</h1>
-      <p className="mt-2 text-ink/60">
+    <div className="pb-8">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-ink sm:text-4xl">Community Corner</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/60 sm:text-base">
         Browse posts from neighbors and share maintenance requests, lost &amp; found, and local listings.
-      </p>
+          </p>
+        </div>
+        <span className="hidden shrink-0 rounded-full bg-marina/10 px-3 py-1.5 text-xs font-semibold text-marina sm:inline-flex">
+          {requests.length} {requests.length === 1 ? "post" : "posts"}
+        </span>
+      </div>
 
       {showPostForm ? (
-        <form id="new-community-post" onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-ink/10 p-5">
+        <form id="new-community-post" onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border border-ink/10 p-4 sm:mt-8 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="font-display text-lg text-marina">New Post</p>
             <button
@@ -161,9 +168,9 @@ export default function MaintenancePage() {
           onChange={(e) => setForm({ ...form, address: e.target.value })}
           required
         />
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
           <select
-            className="rounded-lg border border-ink/15 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-ink/15 px-3 py-3 text-sm sm:w-auto sm:py-2"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           >
@@ -175,7 +182,7 @@ export default function MaintenancePage() {
         <textarea
           className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
           placeholder="Describe your post"
-          rows={3}
+          rows={4}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           required
@@ -223,7 +230,7 @@ export default function MaintenancePage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog disabled:opacity-50"
+          className="w-full rounded-full bg-marina px-5 py-3 text-sm font-semibold text-fog disabled:opacity-50 sm:w-auto sm:py-2"
         >
           {submitting ? "Submitting…" : "Submit post"}
         </button>
@@ -234,7 +241,7 @@ export default function MaintenancePage() {
           onClick={() => setShowPostForm(true)}
           aria-expanded={false}
           aria-controls="new-community-post"
-          className="mt-8 rounded-full bg-marina px-5 py-2 text-sm font-semibold text-fog"
+          className="mt-6 w-full rounded-full bg-marina px-5 py-3 text-sm font-semibold text-fog sm:mt-8 sm:w-auto sm:py-2"
         >
           Create New Post
         </button>
@@ -242,14 +249,15 @@ export default function MaintenancePage() {
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-6 space-y-3 sm:mt-8">
         {loading && <p className="text-sm text-ink/60">Loading…</p>}
         {!loading && requests.length === 0 && !error && (
           <p className="text-sm text-ink/60">No posts yet.</p>
         )}
         {requests.map((r) => (
-          <div id={`post-${r._id}`} key={r._id} className="flex items-start justify-between gap-4 rounded-xl border border-ink/10 p-4">
-            <div className="flex min-w-0 items-start gap-4">
+          <div id={`post-${r._id}`} key={r._id} className="rounded-2xl border border-ink/10 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               {r.photoUrl && (
                 <Image
                   src={`/api/maintenance/${r._id}/photo`}
@@ -257,12 +265,11 @@ export default function MaintenancePage() {
                   width={128}
                   height={96}
                   unoptimized
-                  className="h-24 w-32 shrink-0 rounded-lg object-cover"
+                  className="h-20 w-24 shrink-0 rounded-lg object-cover sm:h-24 sm:w-32"
                 />
               )}
               <div className="min-w-0">
                 <p className="font-medium text-ink">{r.address}</p>
-                <p className="text-sm text-ink/70">{r.description}</p>
                 <p className="mt-1 text-xs uppercase tracking-wider text-dune">{r.category}</p>
                 <p className="mt-1 text-xs text-ink/50">
                   Posted by {r.submittedByName} on {new Date(r.createdAt).toLocaleDateString(undefined, {
@@ -272,10 +279,12 @@ export default function MaintenancePage() {
                   })}
                 </p>
               </div>
+              </div>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor[r.status]}`}>
+                {r.status}
+              </span>
             </div>
-            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusColor[r.status]}`}>
-              {r.status}
-            </span>
+            <p className="mt-4 w-full text-sm leading-6 text-ink/70">{r.description}</p>
           </div>
         ))}
       </div>
