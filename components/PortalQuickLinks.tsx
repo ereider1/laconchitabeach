@@ -21,6 +21,8 @@ export default function PortalQuickLinks() {
   const pathname = usePathname();
   const isActive = (href: string) => href === "/portal" ? pathname === href : pathname.startsWith(href);
 
+  if (pathname.startsWith("/portal/admin")) return null;
+
   return (
     <nav aria-label="Quick links" className="grid grid-cols-5 gap-2 sm:gap-3">
       {links.map(({ href, label, icon: Icon, bg }) => (
