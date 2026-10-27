@@ -55,13 +55,9 @@ export default function DirectoryPage() {
   return (
     <div>
       <div className="border-b border-ink/10 pb-6 sm:pb-8">
-        <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-marina">
-          <UsersRound className="h-4 w-4" aria-hidden="true" />
-          Community
-        </p>
         <h1 className="font-display text-2xl text-ink sm:text-4xl">Resident directory</h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-ink/60 sm:text-base">
-          Only residents who&apos;ve opted in to the directory appear here.
+          Only residents who&apos;ve opted in appear here.
         </p>
 
         <div className="relative mt-5 max-w-xl sm:mt-6">

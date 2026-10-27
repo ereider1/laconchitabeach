@@ -178,7 +178,7 @@ export default function PortalCalendarPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-ink">Calendar</h1>
+      <h1 className="font-display text-2xl text-ink">Calendar</h1>
       <p className="mt-2 text-ink/60">
         {loading
           ? "Loading this week's events…"

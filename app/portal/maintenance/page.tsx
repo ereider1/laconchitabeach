@@ -141,7 +141,7 @@ export default function MaintenancePage() {
         <div>
           <h1 className="font-display text-2xl text-ink sm:text-4xl">Community Corner</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/60 sm:text-base">
-        Browse local posts from neighbors.
+        Neighborhood bulletin board
           </p>
         </div>
         <span className="hidden shrink-0 rounded-full bg-marina/10 px-3 py-1.5 text-xs font-semibold text-marina sm:inline-flex">
