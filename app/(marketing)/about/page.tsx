@@ -2,6 +2,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { connectToDatabase } from "@/lib/mongodb";
 import GlobalSettings from "@/lib/models/GlobalSettings";
+import AboutImageCarousel from "@/components/AboutImageCarousel";
 
 const defaultAboutContent = {
   eyebrow: "A small place with a big horizon",
@@ -10,6 +11,7 @@ const defaultAboutContent = {
 The community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.
 
 This site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.`,
+  images: [],
 };
 
 export default async function AboutPage() {
@@ -18,7 +20,7 @@ export default async function AboutPage() {
     await connectToDatabase();
     const setting = await GlobalSettings.findOne({ key: "about-page-content" }).lean();
     if (setting?.value && typeof setting.value === "object" && "eyebrow" in setting.value && "paragraphs" in setting.value) {
-      aboutContent = setting.value as typeof defaultAboutContent;
+      aboutContent = { ...defaultAboutContent, ...(setting.value as Partial<typeof defaultAboutContent>) };
     }
   } catch (error) {
     console.error("Error loading About page content:", error);
@@ -42,6 +44,7 @@ export default async function AboutPage() {
             {aboutContent.paragraphs.split(/\n\s*\n/).filter(Boolean).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
         </section>
+        <AboutImageCarousel images={aboutContent.images} />
       </main>
       <SiteFooter />
     </div>

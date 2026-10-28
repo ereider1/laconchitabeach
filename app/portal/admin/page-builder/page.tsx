@@ -40,11 +40,12 @@ type Section = {
   order: number;
 };
 
-type AboutContent = { eyebrow: string; paragraphs: string };
+type AboutContent = { eyebrow: string; paragraphs: string; images: string[] };
 
 const defaultAboutContent: AboutContent = {
   eyebrow: "A small place with a big horizon",
   paragraphs: "La Conchita sits between the coastal bluffs and the Pacific, a compact neighborhood shaped by salt air, ocean views, and the easy familiarity of people who know the same stretch of beach.\n\nThe community shares responsibility for the paths, common areas, neighborhood gatherings, and the practical work of caring for a place this close to the water. Residents are always welcome to take part and stay informed.\n\nThis site is our public front door. Residents have a second, private door for directory lookups, community requests, shared documents, and the announcements that keep everyday life moving.",
+  images: [],
 };
 
 export default function PageBuilder() {
@@ -55,6 +56,11 @@ export default function PageBuilder() {
   const [success, setSuccess] = useState<string | null>(null);
   const [aboutContent, setAboutContent] = useState<AboutContent>(defaultAboutContent);
   const [aboutSaving, setAboutSaving] = useState(false);
+  const [aboutImageUploading, setAboutImageUploading] = useState(false);
+  const aboutImageInputRef = useRef<HTMLInputElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryPhotos, setGalleryPhotos] = useState<Array<{ _id: string; title: string; fileUrl: string }>>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const [preparednessContent, setPreparednessContent] = useState<CommunityPreparednessContent>(defaultCommunityPreparednessContent);
   const [preparednessSaving, setPreparednessSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"about" | "preparedness" | "custom">("preparedness");
@@ -202,7 +208,7 @@ export default function PageBuilder() {
       if (!res.ok) throw new Error(data.error ?? "Failed to load builder data");
       setSections(data.sections || []);
       setMasterActive(data.pageBuilderActive);
-      if (data.aboutContent) setAboutContent(data.aboutContent);
+      if (data.aboutContent) setAboutContent({ ...defaultAboutContent, ...data.aboutContent });
       if (data.preparednessContent) setPreparednessContent({ ...defaultCommunityPreparednessContent, ...data.preparednessContent });
       setError(null);
     } catch (err) {
@@ -249,6 +255,43 @@ export default function PageBuilder() {
       setError(err instanceof Error ? err.message : "Failed to save About page content");
     } finally {
       setAboutSaving(false);
+    }
+  }
+
+  async function openAboutGallery() {
+    setGalleryOpen(true);
+    setGalleryLoading(true);
+    try {
+      const response = await fetch("/api/admin/documents");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load gallery");
+      setGalleryPhotos((data.documents ?? []).filter((photo: { title?: string; fileUrl?: string }) => photo.fileUrl && photo.title?.match(/\.(avif|gif|jpe?g|png|webp)$/i)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load gallery");
+    } finally {
+      setGalleryLoading(false);
+    }
+  }
+
+  function chooseAboutGalleryImage(imageUrl: string) {
+    setAboutContent((current) => current.images.includes(imageUrl) ? current : { ...current, images: [...current.images, imageUrl] });
+    setGalleryOpen(false);
+  }
+
+  async function handleAboutImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAboutImageUploading(true);
+    setError(null);
+    try {
+      const url = await uploadHomepageImage(file);
+      setAboutContent((current) => ({ ...current, images: [...current.images, url] }));
+      showSuccess("About page image added.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setAboutImageUploading(false);
+      event.target.value = "";
     }
   }
 
@@ -618,6 +661,13 @@ export default function PageBuilder() {
                 Intro label
                 <input value={aboutContent.eyebrow} onChange={(e) => setAboutContent({ ...aboutContent, eyebrow: e.target.value })} className="mt-1.5 w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />
               </label>
+              <div className="rounded-2xl border border-marina/15 bg-white p-4">
+                <div className="mb-3"><p className="text-xs font-bold uppercase tracking-wider text-marina">About page image carousel</p><p className="mt-1 text-xs leading-relaxed text-ink/55">Add images shown below the About page copy. Visitors can swipe through them and tap any image for a large preview.</p></div>
+                <div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => aboutImageInputRef.current?.click()} disabled={aboutImageUploading} className="rounded-xl bg-marina px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-marina-light disabled:opacity-60">{aboutImageUploading ? "Uploading..." : "Upload Image"}</button><button type="button" onClick={() => void openAboutGallery()} className="rounded-xl border border-marina/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand">Choose from Gallery</button></div>
+                <input ref={aboutImageInputRef} type="file" accept="image/*" onChange={handleAboutImageUpload} className="hidden" />
+                {aboutContent.images.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{aboutContent.images.map((image, index) => <div key={`${image}-${index}`} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand"><NextImage src={getProxyUrl(image)} alt={`About carousel image ${index + 1}`} fill sizes="160px" className="object-cover" unoptimized /><button type="button" onClick={() => setAboutContent((current) => ({ ...current, images: current.images.filter((_, imageIndex) => imageIndex !== index) }))} className="absolute right-2 top-2 rounded-full bg-deep-ocean/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100">Remove</button></div>)}</div>}
+              </div>
+              {galleryOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-deep-ocean/70 p-4" role="dialog" aria-modal="true" aria-label="Choose an image from the gallery" onClick={() => setGalleryOpen(false)}><div className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex items-center justify-between"><div><h4 className="text-base font-bold text-ink">Choose from Gallery</h4><p className="mt-1 text-xs text-ink/60">Select an existing gallery image to add to the carousel.</p></div><button type="button" onClick={() => setGalleryOpen(false)} className="rounded-full px-3 py-1 text-xs font-bold text-ink/60 hover:bg-sand">Close</button></div>{galleryLoading ? <p className="py-10 text-center text-sm text-ink/60">Loading gallery...</p> : galleryPhotos.length === 0 ? <p className="py-10 text-center text-sm text-ink/60">No gallery images found.</p> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{galleryPhotos.map((photo) => <button key={photo._id} type="button" onClick={() => chooseAboutGalleryImage(photo.fileUrl)} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand text-left"><NextImage src={getProxyUrl(photo.fileUrl)} alt={photo.title} fill sizes="240px" className="object-cover transition group-hover:scale-105" unoptimized /><span className="absolute inset-x-0 bottom-0 bg-deep-ocean/75 px-2 py-1 text-[10px] font-semibold text-white">{photo.title}</span></button>)}</div>}</div></div>}
               <label className="text-xs font-bold uppercase tracking-wider text-ink">
                 Page paragraphs
                 <textarea rows={8} value={aboutContent.paragraphs} onChange={(e) => setAboutContent({ ...aboutContent, paragraphs: e.target.value })} className="mt-1.5 w-full resize-y rounded-xl border border-marina/20 bg-white px-4 py-3 text-sm font-normal normal-case leading-7 tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />

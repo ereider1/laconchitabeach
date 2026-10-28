@@ -98,13 +98,13 @@ export async function PATCH(req: NextRequest) {
 
   if (body.settingKey === "about-page-content") {
     const content = body.value;
-    if (!content || typeof content !== "object" || typeof content.eyebrow !== "string" || typeof content.paragraphs !== "string") {
+    if (!content || typeof content !== "object" || typeof content.eyebrow !== "string" || typeof content.paragraphs !== "string" || (content.images !== undefined && (!Array.isArray(content.images) || content.images.some((image: unknown) => typeof image !== "string")))) {
       return NextResponse.json({ error: "About page content is invalid" }, { status: 400 });
     }
     try {
       const updatedSetting = await GlobalSettings.findOneAndUpdate(
         { key: "about-page-content" },
-        { value: { eyebrow: content.eyebrow.trim(), paragraphs: content.paragraphs.trim() } },
+        { value: { eyebrow: content.eyebrow.trim(), paragraphs: content.paragraphs.trim(), images: content.images ?? [] } },
         { upsert: true, new: true, runValidators: true }
       );
       return NextResponse.json({ ok: true, aboutContent: updatedSetting.value });
