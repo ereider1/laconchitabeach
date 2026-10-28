@@ -22,6 +22,8 @@ import {
   Copy,
   FileText,
 } from "lucide-react";
+import CommunityPreparednessEditor from "@/components/CommunityPreparednessEditor";
+import { defaultCommunityPreparednessContent, type CommunityPreparednessContent } from "@/lib/communityPreparedness";
 
 type Section = {
   _id: string;
@@ -53,6 +55,8 @@ export default function PageBuilder() {
   const [success, setSuccess] = useState<string | null>(null);
   const [aboutContent, setAboutContent] = useState<AboutContent>(defaultAboutContent);
   const [aboutSaving, setAboutSaving] = useState(false);
+  const [preparednessContent, setPreparednessContent] = useState<CommunityPreparednessContent>(defaultCommunityPreparednessContent);
+  const [preparednessSaving, setPreparednessSaving] = useState(false);
 
   // View state: 'list' | 'create' | 'edit'
   const [view, setView] = useState<"list" | "create" | "edit">("list");
@@ -198,11 +202,27 @@ export default function PageBuilder() {
       setSections(data.sections || []);
       setMasterActive(data.pageBuilderActive);
       if (data.aboutContent) setAboutContent(data.aboutContent);
+      if (data.preparednessContent) setPreparednessContent({ ...defaultCommunityPreparednessContent, ...data.preparednessContent });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function savePreparednessContent() {
+    setPreparednessSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/page-builder", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settingKey: "community-preparedness-content", value: preparednessContent }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to save Community Preparedness content");
+      showSuccess("Community Preparedness content saved successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save Community Preparedness content");
+    } finally {
+      setPreparednessSaving(false);
     }
   }
 
@@ -587,6 +607,7 @@ export default function PageBuilder() {
               </div>
             </div>
           </section>
+          <CommunityPreparednessEditor value={preparednessContent} onChange={setPreparednessContent} onSave={savePreparednessContent} saving={preparednessSaving} />
           {loading && sections.length === 0 ? (
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (

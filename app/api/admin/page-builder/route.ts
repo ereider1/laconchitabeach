@@ -20,8 +20,9 @@ export async function GET() {
   const globalSetting = await GlobalSettings.findOne({ key: "page-builder-active" }).lean();
   const pageBuilderActive = globalSetting ? globalSetting.value : true;
   const aboutSetting = await GlobalSettings.findOne({ key: "about-page-content" }).lean();
+  const preparednessSetting = await GlobalSettings.findOne({ key: "community-preparedness-content" }).lean();
 
-  return NextResponse.json({ sections, pageBuilderActive, aboutContent: aboutSetting?.value ?? null });
+  return NextResponse.json({ sections, pageBuilderActive, aboutContent: aboutSetting?.value ?? null, preparednessContent: preparednessSetting?.value ?? null });
 }
 
 // 2. POST: Create a new homepage section
@@ -110,6 +111,23 @@ export async function PATCH(req: NextRequest) {
     } catch (error) {
       console.error("Failed to save About page content:", error);
       return NextResponse.json({ error: "Failed to save About page content" }, { status: 500 });
+    }
+  }
+
+  if (body.settingKey === "community-preparedness-content") {
+    if (!body.value || typeof body.value !== "object") {
+      return NextResponse.json({ error: "Community preparedness content is invalid" }, { status: 400 });
+    }
+    try {
+      const updatedSetting = await GlobalSettings.findOneAndUpdate(
+        { key: "community-preparedness-content" },
+        { value: body.value },
+        { upsert: true, new: true }
+      );
+      return NextResponse.json({ ok: true, preparednessContent: updatedSetting.value });
+    } catch (error) {
+      console.error("Failed to save Community Preparedness content:", error);
+      return NextResponse.json({ error: "Failed to save Community Preparedness content" }, { status: 500 });
     }
   }
 
