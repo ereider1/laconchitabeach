@@ -57,6 +57,7 @@ export default function PageBuilder() {
   const [aboutSaving, setAboutSaving] = useState(false);
   const [preparednessContent, setPreparednessContent] = useState<CommunityPreparednessContent>(defaultCommunityPreparednessContent);
   const [preparednessSaving, setPreparednessSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"about" | "preparedness" | "custom">("preparedness");
 
   // View state: 'list' | 'create' | 'edit'
   const [view, setView] = useState<"list" | "create" | "edit">("list");
@@ -583,7 +584,28 @@ export default function PageBuilder() {
       {/* ----------------- VIEW: LIST / DASHBOARD ----------------- */}
       {view === "list" && (
         <div className="mt-6 space-y-8">
-          <section className="rounded-2xl border border-marina/25 bg-sand/20 p-4 sm:p-5">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-marina/15 bg-sand/40 p-1 sm:gap-2 sm:p-1.5" role="tablist" aria-label="Page builder sections">
+            {([
+              ["about", "About Page"],
+              ["preparedness", "Community Preparedness"],
+              ["custom", "Custom Sections"],
+            ] as const).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                className={`min-h-11 rounded-xl px-2 py-2 text-[10px] font-bold uppercase leading-tight tracking-wider transition sm:px-4 sm:text-xs ${
+                  activeTab === tab ? "bg-white text-marina shadow-sm" : "text-ink/55 hover:bg-white/60 hover:text-ink"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "about" && <section className="rounded-2xl border border-marina/25 bg-sand/20 p-4 sm:p-5">
             <div className="mb-5 flex flex-col gap-1 border-b border-marina/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-marina">About Page Content</h3>
@@ -606,9 +628,9 @@ export default function PageBuilder() {
                 </button>
               </div>
             </div>
-          </section>
-          <CommunityPreparednessEditor value={preparednessContent} onChange={setPreparednessContent} onSave={savePreparednessContent} saving={preparednessSaving} />
-          {loading && sections.length === 0 ? (
+          </section>}
+          {activeTab === "preparedness" && <CommunityPreparednessEditor value={preparednessContent} onChange={setPreparednessContent} onSave={savePreparednessContent} saving={preparednessSaving} />}
+          {activeTab === "custom" && (loading && sections.length === 0 ? (
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (
             Object.entries(sectionsBySlot).map(([slotName, slotSections]) => (
@@ -739,7 +761,7 @@ export default function PageBuilder() {
                 )}
               </div>
             ))
-          )}
+          ))}
         </div>
       )}
 
