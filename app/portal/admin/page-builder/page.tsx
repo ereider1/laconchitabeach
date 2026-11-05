@@ -587,24 +587,7 @@ export default function PageBuilder() {
 
         {view === "list" && (
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
-            <div className="flex items-center justify-between gap-3 rounded-full border border-marina/20 bg-sand px-3 py-1.5 sm:justify-start">
-              <span className="text-xs font-semibold text-ink">Module Active:</span>
-              <button
-                type="button"
-                onClick={toggleMasterActive}
-                aria-label={masterActive ? "Deactivate page builder module" : "Activate page builder module"}
-                aria-pressed={masterActive}
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
-                  masterActive ? "bg-marina" : "bg-ink/20"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    masterActive ? "translate-x-7" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
+            
             <button
               type="button"
               onClick={openCreate}
