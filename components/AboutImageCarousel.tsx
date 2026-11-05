@@ -86,7 +86,7 @@ export default function AboutImageCarousel({ images }: { images: string[] }) {
   if (!images.length) return null;
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-10" aria-label="La Conchita photo gallery">
+    <section className="mx-auto w-full max-w-6xl px-6 pt-16 pb-16 sm:px-10" aria-label="La Conchita photo gallery">
       <div className="mb-5 flex items-end justify-between gap-4">
         <div><p className="eyebrow text-marina">See the neighborhood</p><h2 className="mt-2 text-2xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-3xl">Life by the water</h2></div>
         <div className="flex items-center gap-3">
