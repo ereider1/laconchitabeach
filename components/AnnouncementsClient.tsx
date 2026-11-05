@@ -43,6 +43,11 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
+  }, [loading, announcements]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setPosting(true);
@@ -148,7 +153,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
           <p className="text-sm text-ink/60">No announcements yet.</p>
         )}
         {announcements.map((a) => (
-          <article key={a._id} className="rounded-xl border border-ink/10 p-4 sm:p-5">
+          <article id={`announcement-${a._id}`} key={a._id} tabIndex={-1} className="rounded-xl border border-ink/10 p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               {(a.imageDocumentIds?.length || a.imageDocumentId) && <div className="w-full shrink-0 sm:w-28"><AnnouncementMediaCarousel announcementId={a._id} imageDocumentIds={a.imageDocumentIds?.length ? a.imageDocumentIds : [a.imageDocumentId as string]} /></div>}
               <div className="min-w-0 flex-1">

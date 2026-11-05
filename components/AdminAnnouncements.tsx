@@ -47,6 +47,10 @@ export default function AdminAnnouncements() {
   const [gallery, setGallery] = useState<Array<{ _id: string; title: string }>>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [postedAnnouncement, setPostedAnnouncement] = useState<Announcement | null>(null);
+  const [sendingEmailBlast, setSendingEmailBlast] = useState(false);
+  const [emailBlastError, setEmailBlastError] = useState<string | null>(null);
+  const [emailBlastSentCount, setEmailBlastSentCount] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -162,11 +166,49 @@ export default function AdminAnnouncements() {
       if (!res.ok) throw new Error(data.error ?? "Failed to post announcement");
       setItems((prev) => [data.announcement, ...prev]);
       setNewItem(emptyNew);
+      setPostedAnnouncement(data.announcement);
+      setEmailBlastError(null);
+      setEmailBlastSentCount(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setAdding(false);
     }
+  }
+
+  async function sendEmailBlast() {
+    if (!postedAnnouncement) return;
+    setSendingEmailBlast(true);
+    setEmailBlastError(null);
+    try {
+      const res = await fetch("/api/admin/announcements/email-blast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: postedAnnouncement._id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const partialCount =
+          typeof data.sentCount === "number" && data.sentCount > 0
+            ? ` The request stopped after sending to ${data.sentCount} residents.`
+            : "";
+        throw new Error(`${data.error ?? "Failed to send email blast."}${partialCount}`);
+      }
+      if (typeof data.sentCount !== "number") {
+        throw new Error("The email service returned an unexpected response. Please check the email logs.");
+      }
+      setEmailBlastSentCount(data.sentCount);
+    } catch (err) {
+      setEmailBlastError(err instanceof Error ? err.message : "Failed to send email blast.");
+    } finally {
+      setSendingEmailBlast(false);
+    }
+  }
+
+  function closePostedAnnouncementModal() {
+    setPostedAnnouncement(null);
+    setEmailBlastError(null);
+    setEmailBlastSentCount(null);
   }
 
   return (
@@ -316,6 +358,52 @@ export default function AdminAnnouncements() {
             );
           })}
       </div>
+
+      {postedAnnouncement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-deep-ocean/60 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="announcement-posted-title"
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <h3 id="announcement-posted-title" className="font-display text-xl text-marina">
+              Announcement posted
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-ink/70">
+              Success, Announcement is posted on the website. Would you like to send an email blast to all residents?
+            </p>
+            {emailBlastError && (
+              <p role="alert" className="mt-4 text-sm text-coral">{emailBlastError}</p>
+            )}
+            {emailBlastSentCount !== null && (
+              <p role="status" className="mt-4 text-sm font-medium text-marina">
+                Email blast sent to {emailBlastSentCount} residents.
+              </p>
+            )}
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closePostedAnnouncementModal}
+                disabled={sendingEmailBlast}
+                className="rounded-full border border-ink/15 px-5 py-2 text-sm font-semibold text-ink/70 transition hover:bg-sand/40 disabled:opacity-50"
+              >
+                {emailBlastSentCount !== null ? "Done" : "Not now"}
+              </button>
+              {emailBlastSentCount === null && (
+                <button
+                  type="button"
+                  onClick={() => void sendEmailBlast()}
+                  disabled={sendingEmailBlast}
+                  className="rounded-full bg-marina px-5 py-2 text-sm font-semibold uppercase text-fog transition hover:bg-marina-light disabled:opacity-50"
+                >
+                  {sendingEmailBlast ? "Sending…" : "SEND EMAIL BLAST"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
