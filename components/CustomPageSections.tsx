@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import FlyerImage from "@/components/FlyerImage";
+import CustomImageCollection from "@/components/CustomImageCollection";
 import { connectToDatabase } from "@/lib/mongodb";
 import PageSection, { IPageSection } from "@/lib/models/PageSection";
-import GlobalSettings from "@/lib/models/GlobalSettings";
 import type { PageSectionSlot } from "@/lib/pageSectionSlots";
 
 interface CustomPageSectionsProps {
@@ -31,12 +31,6 @@ export default async function CustomPageSections({
 
   try {
     await connectToDatabase();
-
-    const globalSetting = await GlobalSettings.findOne({ key: "page-builder-active" }).lean();
-    const isModuleActive = globalSetting ? globalSetting.value : true;
-    if (!isModuleActive) {
-      return null;
-    }
 
     const activeSections = (await PageSection.find({
       slot,
@@ -71,6 +65,7 @@ export default async function CustomPageSections({
           title,
           content,
           imageUrl,
+          imageUrls,
           buttonText,
           buttonLink,
         } = section as IPageSection & { _id?: string | number };
@@ -104,6 +99,22 @@ export default async function CustomPageSections({
         );
 
         const publicImageUrl = getPublicImageUrl(imageUrl);
+
+        if (layout === "image-gallery" || layout === "image-carousel") {
+          const publicImages = (imageUrls?.length ? imageUrls : imageUrl ? [imageUrl] : [])
+            .map(getPublicImageUrl)
+            .filter(Boolean);
+          return (
+            <CustomImageCollection
+              key={String(_id)}
+              layout={layout}
+              images={publicImages}
+              eyebrow={eyebrow}
+              title={title}
+              content={content}
+            />
+          );
+        }
 
         if (layout === "single-image-flyer") {
           return publicImageUrl ? (

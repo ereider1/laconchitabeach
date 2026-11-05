@@ -6,8 +6,10 @@ import GlobalSettings from "@/lib/models/GlobalSettings";
 import { isAdmin } from "@/lib/isAdmin";
 import { isPageSectionVisibility } from "@/lib/pageSectionVisibility";
 import { isPageSectionSlot } from "@/lib/pageSectionSlots";
+import { isImageCollectionLayout, isPageSectionLayout } from "@/lib/pageSectionLayouts";
+import { isHomePageContent } from "@/lib/homePageContent";
 
-// 1. GET: Fetch all sections and the global setting
+// 1. GET: Fetch sections and page content
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,13 +20,16 @@ export async function GET() {
   // Get all custom sections sorted by slot, then order
   const sections = await PageSection.find().sort({ slot: 1, order: 1 }).lean();
 
-  // Get the global toggle status
-  const globalSetting = await GlobalSettings.findOne({ key: "page-builder-active" }).lean();
-  const pageBuilderActive = globalSetting ? globalSetting.value : true;
   const aboutSetting = await GlobalSettings.findOne({ key: "about-page-content" }).lean();
   const preparednessSetting = await GlobalSettings.findOne({ key: "community-preparedness-content" }).lean();
+  const homepageSetting = await GlobalSettings.findOne({ key: "home-page-content" }).lean();
 
-  return NextResponse.json({ sections, pageBuilderActive, aboutContent: aboutSetting?.value ?? null, preparednessContent: preparednessSetting?.value ?? null });
+  return NextResponse.json({
+    sections,
+    aboutContent: aboutSetting?.value ?? null,
+    preparednessContent: preparednessSetting?.value ?? null,
+    homePageContent: homepageSetting?.value ?? null,
+  });
 }
 
 // 2. POST: Create a new homepage section
@@ -35,6 +40,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const isFlyer = body.layout === "single-image-flyer";
+  const isImageCollection = isPageSectionLayout(body.layout) && isImageCollectionLayout(body.layout);
   const sectionName = typeof body.name === "string" ? body.name.trim() : "";
   if (!isPageSectionSlot(body.slot)) {
     return NextResponse.json({ error: "Section placement is invalid" }, { status: 400 });
@@ -42,11 +48,22 @@ export async function POST(req: NextRequest) {
   if (body.visibility !== undefined && !isPageSectionVisibility(body.visibility)) {
     return NextResponse.json({ error: "Section visibility is invalid" }, { status: 400 });
   }
+  if (!isPageSectionLayout(body.layout)) {
+    return NextResponse.json({ error: "Section layout is invalid" }, { status: 400 });
+  }
+  if (
+    isImageCollection &&
+    (!Array.isArray(body.imageUrls) ||
+      body.imageUrls.length === 0 ||
+      body.imageUrls.some((image: unknown) => typeof image !== "string" || !image.trim()))
+  ) {
+    return NextResponse.json({ error: "Add at least one valid image to the gallery or carousel" }, { status: 400 });
+  }
   if (
     (!isFlyer && !sectionName) ||
     !body.slot ||
-    !body.layout ||
-    (isFlyer ? !body.imageUrl : !body.content)
+    (isFlyer && !body.imageUrl) ||
+    (!isFlyer && !isImageCollection && !body.content)
   ) {
     return NextResponse.json(
       { error: "Slot, layout, and the layout's required fields are required" },
@@ -69,6 +86,7 @@ export async function POST(req: NextRequest) {
       title: body.title,
       content: body.content ?? "",
       imageUrl: body.imageUrl,
+      imageUrls: isImageCollection ? body.imageUrls : undefined,
       buttonText: body.buttonText,
       buttonLink: body.buttonLink,
       visibility: body.visibility ?? "everyone",
@@ -94,16 +112,6 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   await connectToDatabase();
-
-  // Scenario A: Global Toggle Update
-  if (body.toggleKey === "page-builder-active") {
-    const updatedSetting = await GlobalSettings.findOneAndUpdate(
-      { key: "page-builder-active" },
-      { value: !!body.value },
-      { upsert: true, new: true }
-    );
-    return NextResponse.json({ ok: true, active: updatedSetting.value });
-  }
 
   if (body.settingKey === "about-page-content") {
     const content = body.value;
@@ -140,6 +148,23 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  if (body.settingKey === "home-page-content") {
+    if (!isHomePageContent(body.value)) {
+      return NextResponse.json({ error: "Home page content is invalid" }, { status: 400 });
+    }
+    try {
+      const updatedSetting = await GlobalSettings.findOneAndUpdate(
+        { key: "home-page-content" },
+        { value: body.value },
+        { upsert: true, new: true },
+      );
+      return NextResponse.json({ ok: true, homePageContent: updatedSetting.value });
+    } catch (error) {
+      console.error("Failed to save Home page content:", error);
+      return NextResponse.json({ error: "Failed to save Home page content" }, { status: 500 });
+    }
+  }
+
   // Scenario B: Reorder Sections
   if (body.reorder && Array.isArray(body.reorder)) {
     const promises = body.reorder.map(async (item: { id: string; order: number }) => {
@@ -159,11 +184,27 @@ export async function PATCH(req: NextRequest) {
   if (updates.slot !== undefined && !isPageSectionSlot(updates.slot)) {
     return NextResponse.json({ error: "Section placement is invalid" }, { status: 400 });
   }
-
-  const allowed = ["name", "slot", "layout", "eyebrow", "title", "content", "imageUrl", "buttonText", "buttonLink", "visibility", "isActive", "order"];
+  if (updates.layout !== undefined && !isPageSectionLayout(updates.layout)) {
+    return NextResponse.json({ error: "Section layout is invalid" }, { status: 400 });
+  }
+  if (updates.imageUrls !== undefined &&
+    (!Array.isArray(updates.imageUrls) ||
+      updates.imageUrls.some((image: unknown) => typeof image !== "string" || !image.trim()))
+  ) {
+    return NextResponse.json({ error: "Section images are invalid" }, { status: 400 });
+  }
+  const allowed = ["name", "slot", "layout", "eyebrow", "title", "content", "imageUrl", "imageUrls", "buttonText", "buttonLink", "visibility", "isActive", "order"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];
+  }
+
+  const existingSection = await PageSection.findById(id).lean();
+  if (!existingSection) return NextResponse.json({ error: "Section not found" }, { status: 404 });
+  const effectiveLayout = updates.layout ?? existingSection.layout;
+  const effectiveImages = updates.imageUrls ?? existingSection.imageUrls ?? (existingSection.imageUrl ? [existingSection.imageUrl] : []);
+  if (isImageCollectionLayout(effectiveLayout) && effectiveImages.length === 0) {
+    return NextResponse.json({ error: "Add at least one image to the gallery or carousel" }, { status: 400 });
   }
 
   const section = await PageSection.findByIdAndUpdate(id, fields, { new: true });

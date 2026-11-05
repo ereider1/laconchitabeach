@@ -23,27 +23,26 @@ import {
   FileText,
 } from "lucide-react";
 import CommunityPreparednessEditor from "@/components/CommunityPreparednessEditor";
+import CustomImageCollection from "@/components/CustomImageCollection";
+import InlineEditableLink from "@/components/InlineEditableLink";
+import InlineEditableText from "@/components/InlineEditableText";
+import PageBuilderSectionSlot, { type PageBuilderSection } from "@/components/PageBuilderSectionSlot";
+import PageSectionVisibilityToggle from "@/components/PageSectionVisibilityToggle";
+import SavedPageSections from "@/components/SavedPageSections";
 import { defaultCommunityPreparednessContent, type CommunityPreparednessContent } from "@/lib/communityPreparedness";
+import { defaultHomePageContent, isHomePageContent, type HomePageContent } from "@/lib/homePageContent";
+import { isImageCollectionLayout } from "@/lib/pageSectionLayouts";
 import type { PageSectionVisibility } from "@/lib/pageSectionVisibility";
-import { PAGE_SECTION_SLOTS, type PageSectionSlot } from "@/lib/pageSectionSlots";
+import { PAGE_SECTION_SLOTS } from "@/lib/pageSectionSlots";
 
-type Section = {
-  _id: string;
-  name: string;
-  slot: PageSectionSlot;
-  layout: "full-width" | "two-col-img-left" | "two-col-img-right" | "single-image-flyer";
-  eyebrow?: string;
-  title?: string;
-  content: string;
-  imageUrl?: string;
-  buttonText?: string;
-  buttonLink?: string;
-  visibility?: PageSectionVisibility;
-  isActive: boolean;
-  order: number;
-};
+type Section = PageBuilderSection;
+type LeaveTarget =
+  | { type: "url"; href: string }
+  | { type: "list" }
+  | { type: "tab"; tab: "home" | "about" };
 
 type AboutContent = { eyebrow: string; paragraphs: string; images: string[] };
+const inlineSectionFields = ["eyebrow", "title", "content", "buttonText", "buttonLink"] as const;
 
 const defaultAboutContent: AboutContent = {
   eyebrow: "A small place with a big horizon",
@@ -53,25 +52,44 @@ const defaultAboutContent: AboutContent = {
 
 export default function PageBuilder() {
   const [sections, setSections] = useState<Section[]>([]);
-  const [masterActive, setMasterActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [dirtySectionIds, setDirtySectionIds] = useState<Set<string>>(new Set());
+  const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
+  const [restoringSectionId, setRestoringSectionId] = useState<string | null>(null);
+  const [updatingVisibilitySectionId, setUpdatingVisibilitySectionId] = useState<string | null>(null);
   const [aboutContent, setAboutContent] = useState<AboutContent>(defaultAboutContent);
+  const [originalAboutContent, setOriginalAboutContent] = useState<AboutContent>(defaultAboutContent);
+  const [originalPreparednessContent, setOriginalPreparednessContent] = useState<CommunityPreparednessContent>(defaultCommunityPreparednessContent);
+  const [originalHomePageContent, setOriginalHomePageContent] = useState<HomePageContent>(defaultHomePageContent);
+  const originalSections = useRef<Map<string, Section>>(new Map());
+  const sectionsRef = useRef<Section[]>(sections);
   const [aboutSaving, setAboutSaving] = useState(false);
   const [aboutImageUploading, setAboutImageUploading] = useState(false);
   const aboutImageInputRef = useRef<HTMLInputElement>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryPhotos, setGalleryPhotos] = useState<Array<{ _id: string; title: string; fileUrl: string }>>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryTarget, setGalleryTarget] = useState<"about" | "section">("about");
+  const [gallerySelectedUrls, setGallerySelectedUrls] = useState<string[]>([]);
   const [preparednessContent, setPreparednessContent] = useState<CommunityPreparednessContent>(defaultCommunityPreparednessContent);
   const [preparednessSaving, setPreparednessSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"about" | "preparedness" | "custom">("preparedness");
+  const [homePageContent, setHomePageContent] = useState<HomePageContent>(defaultHomePageContent);
+  const [homePageSaving, setHomePageSaving] = useState(false);
+  const [homeImageTarget, setHomeImageTarget] = useState<"headerLogoUrl" | "heroImageUrl" | "lifeImageUrl" | "aboutImageUrl">("heroImageUrl");
+  const homeImageInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<"home" | "about">("home");
 
   // View state: 'list' | 'create' | 'edit'
-  const [view, setView] = useState<"list" | "create" | "edit">("list");
+  const [view, setView] = useState<"list" | "choose" | "create" | "edit">("list");
+  const [requestedSlot, setRequestedSlot] = useState<Section["slot"]>("below-hero");
   const [wizardStep, setWizardStep] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingLeave, setPendingLeave] = useState<LeaveTarget | null>(null);
+  const [savingBeforeLeave, setSavingBeforeLeave] = useState(false);
+  const [originalFormSnapshot, setOriginalFormSnapshot] = useState("");
+  const bypassBeforeUnload = useRef(false);
 
   // Form states
   const [formName, setFormName] = useState("");
@@ -82,14 +100,41 @@ export default function PageBuilder() {
   const [formButtonText, setFormButtonText] = useState("");
   const [formButtonLink, setFormButtonLink] = useState("");
   const [formImageUrl, setFormImageUrl] = useState("");
+  const [formImageUrls, setFormImageUrls] = useState<string[]>([]);
   const [formSlot, setFormSlot] = useState<Section["slot"]>("below-hero");
   const [formVisibility, setFormVisibility] = useState<PageSectionVisibility>("everyone");
   const [formIsActive, setFormIsActive] = useState(true);
   const [flyerPreviewOpen, setFlyerPreviewOpen] = useState(false);
 
+  function getFormSnapshot() {
+    return JSON.stringify({
+      name: formName,
+      layout: formLayout,
+      eyebrow: formEyebrow,
+      title: formTitle,
+      content: formContent,
+      buttonText: formButtonText,
+      buttonLink: formButtonLink,
+      imageUrl: formImageUrl,
+      imageUrls: formImageUrls,
+      slot: formSlot,
+      visibility: formVisibility,
+      isActive: formIsActive,
+    });
+  }
+
+  const hasUnsavedChanges =
+    JSON.stringify(homePageContent) !== JSON.stringify(originalHomePageContent) ||
+    JSON.stringify(aboutContent) !== JSON.stringify(originalAboutContent) ||
+    JSON.stringify(preparednessContent) !== JSON.stringify(originalPreparednessContent) ||
+    dirtySectionIds.size > 0 ||
+    ((view === "create" || view === "edit") && getFormSnapshot() !== originalFormSnapshot);
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
+
   // Upload state
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const collectionFileInputRef = useRef<HTMLInputElement>(null);
 
   // Document Selector state
   const [docSelectorOpen, setDocSelectorOpen] = useState(false);
@@ -97,6 +142,14 @@ export default function PageBuilder() {
   const [availableDocs, setAvailableDocs] = useState<Array<{ _id: string; title: string; category: string; fileUrl: string }>>([]);
   const [docSearchQuery, setDocSelectorSearchQuery] = useState("");
   const [loadingDocs, setLoadingDocs] = useState(false);
+
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
+
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     if (!flyerPreviewOpen) return;
@@ -203,17 +256,34 @@ export default function PageBuilder() {
     return url;
   };
 
-  // 1. Fetch sections & global toggle
+  // 1. Fetch sections and page content
   async function loadData(showLoading = false) {
     if (showLoading) setLoading(true);
     try {
       const res = await fetch("/api/admin/page-builder");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load builder data");
-      setSections(data.sections || []);
-      setMasterActive(data.pageBuilderActive);
-      if (data.aboutContent) setAboutContent({ ...defaultAboutContent, ...data.aboutContent });
-      if (data.preparednessContent) setPreparednessContent({ ...defaultCommunityPreparednessContent, ...data.preparednessContent });
+      const loadedSections: Section[] = data.sections || [];
+      setSections(loadedSections);
+      originalSections.current = new Map(loadedSections.map((section) => [section._id, section]));
+      setDirtySectionIds(new Set());
+      const loadedAboutContent = data.aboutContent
+        ? { ...defaultAboutContent, ...data.aboutContent }
+        : defaultAboutContent;
+      const loadedPreparednessContent = data.preparednessContent
+        ? { ...defaultCommunityPreparednessContent, ...data.preparednessContent }
+        : defaultCommunityPreparednessContent;
+      setAboutContent(loadedAboutContent);
+      setOriginalAboutContent(loadedAboutContent);
+      setPreparednessContent(loadedPreparednessContent);
+      setOriginalPreparednessContent(loadedPreparednessContent);
+      if (data.homePageContent && isHomePageContent(data.homePageContent)) {
+        setHomePageContent(data.homePageContent);
+        setOriginalHomePageContent(data.homePageContent);
+      } else {
+        setHomePageContent(defaultHomePageContent);
+        setOriginalHomePageContent(defaultHomePageContent);
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -222,22 +292,90 @@ export default function PageBuilder() {
     }
   }
 
-  async function savePreparednessContent() {
+  async function savePreparednessContent(): Promise<boolean> {
     setPreparednessSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/admin/page-builder", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settingKey: "community-preparedness-content", value: preparednessContent }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save Community Preparedness content");
+      setOriginalPreparednessContent(preparednessContent);
       showSuccess("Community Preparedness content saved successfully.");
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save Community Preparedness content");
+      return false;
     } finally {
       setPreparednessSaving(false);
     }
   }
 
-  async function saveAboutContent() {
+  async function saveHomePageContent(): Promise<boolean> {
+    setHomePageSaving(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settingKey: "home-page-content", value: homePageContent }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Failed to save Home page content");
+      setOriginalHomePageContent(homePageContent);
+      showSuccess("Home page content saved successfully.");
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save Home page content");
+      return false;
+    } finally {
+      setHomePageSaving(false);
+    }
+  }
+
+  function updateHomePageField<K extends keyof HomePageContent>(field: K, value: HomePageContent[K]) {
+    setHomePageContent((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateHomeService(
+    index: number,
+    field: keyof HomePageContent["services"][number],
+    value: string,
+  ) {
+    setHomePageContent((current) => ({
+      ...current,
+      services: current.services.map((service, serviceIndex) =>
+        serviceIndex === index ? { ...service, [field]: value } : service,
+      ),
+    }));
+  }
+
+  function updateHomeNavItem(index: number, field: "label" | "href", value: string) {
+    setHomePageContent((current) => ({
+      ...current,
+      navItems: current.navItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
+  }
+
+  async function handleHomeImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const url = await uploadHomepageImage(file);
+      updateHomePageField(homeImageTarget, url);
+      showSuccess("Homepage image updated. Save Home Page to publish it.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Homepage image upload failed");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function saveAboutContent(): Promise<boolean> {
     setAboutSaving(true);
     setError(null);
     try {
@@ -254,15 +392,45 @@ export default function PageBuilder() {
         throw new Error(`Save failed with HTTP ${res.status}. Please refresh and try again.`);
       }
       if (!res.ok) throw new Error(data.error ?? "Failed to save About page content");
+      setOriginalAboutContent(aboutContent);
       showSuccess("About page content saved successfully.");
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save About page content");
+      return false;
     } finally {
       setAboutSaving(false);
     }
   }
 
-  async function openAboutGallery() {
+  function updateAboutParagraph(index: number, paragraph: string) {
+    setAboutContent((current) => {
+      const paragraphs = current.paragraphs.split(/\n\s*\n/);
+      paragraphs[index] = paragraph;
+      return { ...current, paragraphs: paragraphs.join("\n\n") };
+    });
+  }
+
+  function addAboutParagraph() {
+    setAboutContent((current) => ({
+      ...current,
+      paragraphs: [current.paragraphs.trim(), "New paragraph"].filter(Boolean).join("\n\n"),
+    }));
+  }
+
+  function removeAboutParagraph(index: number) {
+    setAboutContent((current) => ({
+      ...current,
+      paragraphs: current.paragraphs
+        .split(/\n\s*\n/)
+        .filter((_, paragraphIndex) => paragraphIndex !== index)
+        .join("\n\n"),
+    }));
+  }
+
+  async function openGallery(target: "about" | "section") {
+    setGalleryTarget(target);
+    setGallerySelectedUrls([]);
     setGalleryOpen(true);
     setGalleryLoading(true);
     try {
@@ -277,9 +445,52 @@ export default function PageBuilder() {
     }
   }
 
-  function chooseAboutGalleryImage(imageUrl: string) {
-    setAboutContent((current) => current.images.includes(imageUrl) ? current : { ...current, images: [...current.images, imageUrl] });
+  function chooseGalleryImage(imageUrl: string) {
+    if (galleryTarget === "about") {
+      setAboutContent((current) =>
+        current.images.includes(imageUrl) ? current : { ...current, images: [...current.images, imageUrl] },
+      );
+      setGalleryOpen(false);
+    } else {
+      setGallerySelectedUrls((current) =>
+        current.includes(imageUrl)
+          ? current.filter((url) => url !== imageUrl)
+          : [...current, imageUrl],
+      );
+    }
+  }
+
+  function addSelectedGalleryImages() {
+    setFormImageUrls((current) => [...current, ...gallerySelectedUrls.filter((url) => !current.includes(url))]);
     setGalleryOpen(false);
+  }
+
+  async function handleCollectionImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+
+    setUploading(true);
+    setError(null);
+    const failedFiles: string[] = [];
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        failedFiles.push(`${file.name}: not an image`);
+        continue;
+      }
+      try {
+        const url = await uploadHomepageImage(file);
+        setFormImageUrls((current) => current.includes(url) ? current : [...current, url]);
+      } catch (err) {
+        failedFiles.push(`${file.name}: ${err instanceof Error ? err.message : "upload failed"}`);
+      }
+    }
+    setUploading(false);
+    event.target.value = "";
+    if (failedFiles.length) {
+      setError(`Some images could not be uploaded. ${failedFiles.join("; ")}`);
+    } else {
+      showSuccess(`${files.length} image${files.length === 1 ? "" : "s"} added.`);
+    }
   }
 
   async function handleAboutImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -305,25 +516,6 @@ export default function PageBuilder() {
     });
   }, []);
 
-  // 2. Toggle master active
-  async function toggleMasterActive() {
-    const nextVal = !masterActive;
-    setMasterActive(nextVal);
-    try {
-      const res = await fetch("/api/admin/page-builder", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ toggleKey: "page-builder-active", value: nextVal }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to update global switch");
-      showSuccess(`Page Section Builder module globally ${nextVal ? "ENABLED" : "DISABLED"}.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setMasterActive(!nextVal); // rollback
-    }
-  }
-
   // 3. Helper to display success message
   function showSuccess(msg: string) {
     setSuccess(msg);
@@ -331,7 +523,8 @@ export default function PageBuilder() {
   }
 
   // 4. Open creator wizard
-  function openCreate() {
+  function openCreate(slot?: Section["slot"]) {
+    const targetSlot = slot ?? requestedSlot;
     setEditingId(null);
     setError(null);
     setSuccess(null);
@@ -343,11 +536,33 @@ export default function PageBuilder() {
     setFormButtonText("");
     setFormButtonLink("");
     setFormImageUrl("");
-    setFormSlot("below-hero");
+    setFormImageUrls([]);
+    setFormSlot(targetSlot ?? (activeTab === "about" ? "about-below-content" : "below-hero"));
     setFormVisibility("everyone");
     setFormIsActive(true);
+    setOriginalFormSnapshot(JSON.stringify({
+      name: "",
+      layout: "full-width",
+      eyebrow: "",
+      title: "",
+      content: "",
+      buttonText: "",
+      buttonLink: "",
+      imageUrl: "",
+      imageUrls: [],
+      slot: targetSlot ?? (activeTab === "about" ? "about-below-content" : "below-hero"),
+      visibility: "everyone",
+      isActive: true,
+    }));
     setWizardStep(1);
     setView("create");
+  }
+
+  function openSectionOptions(slot?: Section["slot"]) {
+    setRequestedSlot(slot ?? (activeTab === "about" ? "about-below-content" : "below-hero"));
+    setError(null);
+    setSuccess(null);
+    setView("choose");
   }
 
   // 5. Open editing wizard
@@ -362,12 +577,87 @@ export default function PageBuilder() {
     setFormContent(sec.content);
     setFormButtonText(sec.buttonText || "");
     setFormButtonLink(sec.buttonLink || "");
-    setFormImageUrl(sec.imageUrl || "");
+    setFormImageUrl(sec.imageUrl || sec.imageUrls?.[0] || "");
+    setFormImageUrls(sec.imageUrls ?? (sec.imageUrl ? [sec.imageUrl] : []));
     setFormSlot(sec.slot);
     setFormVisibility(sec.visibility ?? "everyone");
     setFormIsActive(sec.isActive);
+    setOriginalFormSnapshot(JSON.stringify({
+      name: sec.name,
+      layout: sec.layout,
+      eyebrow: sec.eyebrow || "",
+      title: sec.title || "",
+      content: sec.content,
+      buttonText: sec.buttonText || "",
+      buttonLink: sec.buttonLink || "",
+      imageUrl: sec.imageUrl || sec.imageUrls?.[0] || "",
+      imageUrls: sec.imageUrls ?? (sec.imageUrl ? [sec.imageUrl] : []),
+      slot: sec.slot,
+      visibility: sec.visibility ?? "everyone",
+      isActive: sec.isActive,
+    }));
     setWizardStep(1);
     setView("edit");
+  }
+
+  function updateInlineSection(
+    id: string,
+    field: "eyebrow" | "title" | "content" | "buttonText" | "buttonLink",
+    value: string,
+  ) {
+    updateInlineSectionFields(id, { [field]: value });
+  }
+
+  function updateInlineSectionFields(
+    id: string,
+    updates: Partial<Pick<Section, "eyebrow" | "title" | "content" | "buttonText" | "buttonLink">>,
+  ) {
+    const updatedSection = sections.find((section) => section._id === id);
+    if (!updatedSection) return;
+    const nextSection = { ...updatedSection, ...updates };
+    const original = originalSections.current.get(id);
+    const hasChanges = !original || inlineSectionFields.some((key) => original[key] !== nextSection[key]);
+
+    setSections((current) => current.map((section) => (section._id === id ? nextSection : section)));
+    setDirtySectionIds((current) => {
+      const next = new Set(current);
+      if (hasChanges) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  async function saveInlineSection(section: Section): Promise<boolean> {
+    setSavingSectionId(section._id);
+    setError(null);
+    const { _id, ...updates } = section;
+    try {
+      const response = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: _id, ...updates }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Failed to save section");
+      originalSections.current.set(_id, section);
+      const latestSection = sectionsRef.current.find((item) => item._id === _id);
+      const hasChanges = latestSection
+        ? inlineSectionFields.some((field) => latestSection[field] !== section[field])
+        : false;
+      setDirtySectionIds((current) => {
+        const next = new Set(current);
+        if (hasChanges) next.add(_id);
+        else next.delete(_id);
+        return next;
+      });
+      showSuccess(`Section "${section.name}" saved successfully.`);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save section");
+      return false;
+    } finally {
+      setSavingSectionId(null);
+    }
   }
 
   // 6. Handle image upload directly to Vercel Blob from the client
@@ -389,19 +679,22 @@ export default function PageBuilder() {
   }
 
   // 7. Save / Update section
-  async function saveSection() {
+  async function saveSection(): Promise<boolean> {
     const isFlyer = formLayout === "single-image-flyer";
+    const isImageCollection = isImageCollectionLayout(formLayout);
     if (!isFlyer && !formName.trim()) {
       setError("Reference Name is required.");
-      return;
+      return false;
     }
-    if (isFlyer ? !formImageUrl : !formContent.trim()) {
+    if (isImageCollection ? formImageUrls.length === 0 : isFlyer ? !formImageUrl : !formContent.trim()) {
       setError(
-        isFlyer
+        isImageCollection
+          ? "Add at least one image to the gallery or carousel."
+          : isFlyer
           ? "Upload a flyer image before saving."
           : "Section content is required."
       );
-      return;
+      return false;
     }
 
     setLoading(true);
@@ -415,7 +708,8 @@ export default function PageBuilder() {
       content: isFlyer ? "" : formContent,
       buttonText: isFlyer ? "" : formButtonText,
       buttonLink: isFlyer ? "" : formButtonLink,
-      imageUrl: formImageUrl,
+      imageUrl: isImageCollection ? formImageUrls[0] : formImageUrl,
+      imageUrls: isImageCollection ? formImageUrls : undefined,
       slot: formSlot,
       visibility: formVisibility,
       isActive: formIsActive,
@@ -442,13 +736,110 @@ export default function PageBuilder() {
 
       showSuccess(`Section "${payload.name}" saved successfully.`);
       setView("list");
-      loadData(true);
+      await loadData(true);
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      return false;
     } finally {
       setLoading(false);
     }
   }
+
+  function completeLeave(target: LeaveTarget) {
+    setPendingLeave(null);
+    if (target.type === "url") {
+      bypassBeforeUnload.current = true;
+      window.location.assign(target.href);
+    } else if (target.type === "list") {
+      setView("list");
+    } else {
+      setActiveTab(target.tab);
+    }
+  }
+
+  function requestLeave(target: LeaveTarget) {
+    if (hasUnsavedChangesRef.current) {
+      setPendingLeave(target);
+      return;
+    }
+    completeLeave(target);
+  }
+
+  async function saveBeforeLeave() {
+    if (!pendingLeave) return;
+    const target = pendingLeave;
+    setSavingBeforeLeave(true);
+    setError(null);
+    try {
+      if (JSON.stringify(homePageContent) !== JSON.stringify(originalHomePageContent)) {
+        if (!(await saveHomePageContent())) return;
+      }
+      if (JSON.stringify(aboutContent) !== JSON.stringify(originalAboutContent)) {
+        if (!(await saveAboutContent())) return;
+      }
+      if (JSON.stringify(preparednessContent) !== JSON.stringify(originalPreparednessContent)) {
+        if (!(await savePreparednessContent())) return;
+      }
+      for (const id of dirtySectionIds) {
+        const section = sections.find((item) => item._id === id);
+        if (section && !(await saveInlineSection(section))) return;
+      }
+      if (
+        (view === "create" || view === "edit") &&
+        getFormSnapshot() !== originalFormSnapshot &&
+        !(await saveSection())
+      ) {
+        return;
+      }
+      completeLeave(target);
+    } finally {
+      setSavingBeforeLeave(false);
+    }
+  }
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedChangesRef.current || bypassBeforeUnload.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function guardLinkNavigation(event: MouseEvent) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest("a");
+      if (
+        !link ||
+        link.target === "_blank" ||
+        link.hasAttribute("download") ||
+        !link.href ||
+        !hasUnsavedChangesRef.current
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingLeave({ type: "url", href: link.href });
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", guardLinkNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", guardLinkNavigation, true);
+    };
+  }, []);
 
   // 8. Delete section
   async function deleteSection(id: string, name: string) {
@@ -517,6 +908,60 @@ export default function PageBuilder() {
     }
   }
 
+  async function updateSectionVisibility(
+    sec: Section,
+    visibility: "everyone" | "residents",
+  ) {
+    if ((sec.visibility ?? "everyone") === visibility) return;
+
+    setUpdatingVisibilitySectionId(sec._id);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sec._id, visibility }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Failed to update section audience");
+      setSections((current) =>
+        current.map((section) =>
+          section._id === sec._id ? { ...section, visibility } : section,
+        ),
+      );
+      originalSections.current.set(sec._id, { ...sec, visibility });
+      showSuccess(`Section "${sec.name}" is now ${visibility === "residents" ? "Residents Only" : "Public"}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update section audience");
+    } finally {
+      setUpdatingVisibilitySectionId(null);
+    }
+  }
+
+  async function restoreSection(sec: Section, slot: Section["slot"]) {
+    setRestoringSectionId(sec._id);
+    setError(null);
+    try {
+      const nextOrder = sections
+        .filter((section) => section.slot === slot)
+        .reduce((maxOrder, section) => Math.max(maxOrder, section.order), -1) + 1;
+      const response = await fetch("/api/admin/page-builder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sec._id, slot, isActive: true, order: nextOrder }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Failed to restore section");
+      showSuccess(`Section "${sec.name}" restored to the page.`);
+      await loadData(true);
+      if (view === "choose") setView("list");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to restore section");
+    } finally {
+      setRestoringSectionId(null);
+    }
+  }
+
   // 11. Clone section (saves as draft)
   async function cloneSection(sec: Section) {
     setError(null);
@@ -530,6 +975,7 @@ export default function PageBuilder() {
         title: sec.title,
         content: sec.content,
         imageUrl: sec.imageUrl,
+        imageUrls: sec.imageUrls,
         buttonText: sec.buttonText,
         buttonLink: sec.buttonLink,
         visibility: sec.visibility ?? "everyone",
@@ -551,30 +997,109 @@ export default function PageBuilder() {
     }
   }
 
-  // Group and sort sections (Active first, then by order)
-  const sortActiveFirst = (list: Section[]) => {
-    return [...list].sort((a, b) => {
-      if (a.isActive && !b.isActive) return -1;
-      if (!a.isActive && b.isActive) return 1;
-      return a.order - b.order;
-    });
-  };
-
   const sectionsBySlot = PAGE_SECTION_SLOTS.map(({ value, label }) => ({
     value,
     label,
-    sections: sortActiveFirst(sections.filter((section) => section.slot === value)),
+    sections: [...sections.filter((section) => section.slot === value && section.isActive)].sort((a, b) => a.order - b.order),
   }));
+  const savedSections = [...sections.filter((section) => !section.isActive)]
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const aboutParagraphs = aboutContent.paragraphs
+    ? aboutContent.paragraphs.split(/\n\s*\n/)
+    : [""];
+  const formIsImageCollection = isImageCollectionLayout(formLayout);
   const stepLabels = [
     "Layout",
-    formLayout === "single-image-flyer" ? "Image" : "Content",
+    formLayout === "single-image-flyer" || isImageCollectionLayout(formLayout) ? "Images" : "Content",
     "Preview",
     "Insertion",
   ];
+  const renderSlot = (slot: Section["slot"]) => {
+    const slotDetails = sectionsBySlot.find((item) => item.value === slot);
+    if (!slotDetails) return null;
+    return (
+      <PageBuilderSectionSlot
+        key={slot}
+        slot={slot}
+        label={slotDetails.label}
+        sections={slotDetails.sections}
+        dirtySectionIds={dirtySectionIds}
+        savingSectionId={savingSectionId}
+        updatingVisibilitySectionId={updatingVisibilitySectionId}
+        onAdd={openSectionOptions}
+        onSave={(section) => void saveInlineSection(section)}
+        onMove={(index, direction, slotSections) => void moveOrder(index, direction, slotSections)}
+        onToggle={(section) => void toggleSectionActive(section)}
+        onVisibilityChange={(section, visibility) =>
+          void updateSectionVisibility(section, visibility)
+        }
+        onClone={(section) => void cloneSection(section)}
+        onEdit={openEdit}
+        onDelete={(id, name) => void deleteSection(id, name)}
+        onUpdate={updateInlineSection}
+        onUpdateLink={(id, label, url) =>
+          updateInlineSectionFields(id, { buttonText: label, buttonLink: url })
+        }
+      />
+    );
+  };
+  const renderSiteHeader = () => (
+    <div className="site-header flex min-h-20 items-center justify-between gap-5 px-5 py-4 text-white sm:px-8" aria-label="Site header preview">
+      <div className="flex items-center gap-3">
+        <span className="group/logo relative grid h-10 w-10 place-items-center rounded-full bg-white/15">
+          <NextImage src={getProxyUrl(homePageContent.headerLogoUrl)} alt="" width={36} height={36} unoptimized />
+          <button type="button" onClick={() => { setHomeImageTarget("headerLogoUrl"); homeImageInputRef.current?.click(); }} disabled={uploading} className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-deep-ocean/90 px-2 py-1 text-[8px] font-bold uppercase text-white">
+            Change logo
+          </button>
+        </span>
+        <span className="min-w-0">
+          <InlineEditableText label="Header brand name" value={homePageContent.headerTitle} onChange={(value) => updateHomePageField("headerTitle", value)} className="block text-base font-semibold text-white" />
+          <InlineEditableText label="Header brand subtitle" value={homePageContent.headerSubtitle} onChange={(value) => updateHomePageField("headerSubtitle", value)} className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/70" />
+        </span>
+      </div>
+      <nav className="hidden items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80 sm:flex" aria-label="Preview navigation">
+        {homePageContent.navItems.map((item, index) => (
+          <InlineEditableLink
+            key={`nav-${index}`}
+            label={item.label}
+            url={item.href}
+            onSave={(label, href) => {
+              updateHomeNavItem(index, "label", label);
+              updateHomeNavItem(index, "href", href);
+            }}
+            className="text-white/80"
+          />
+        ))}
+      </nav>
+      <span className="rounded-full border border-white/45 px-3 py-2 text-[9px] font-semibold uppercase tracking-wider text-white">
+        <InlineEditableLink
+          label={homePageContent.headerLoginText}
+          url={homePageContent.headerLoginHref}
+          onSave={(label, href) => setHomePageContent((current) => ({ ...current, headerLoginText: label, headerLoginHref: href }))}
+          className="text-white"
+        />
+      </span>
+      <span className="sm:hidden">
+        <InlineEditableText label="Mobile navigation label" value={homePageContent.headerExploreLabel} onChange={(value) => updateHomePageField("headerExploreLabel", value)} className="text-[9px] font-bold uppercase text-white" />
+      </span>
+    </div>
+  );
+  const renderSiteFooter = () => (
+    <footer className="bg-ink px-6 py-8 text-white sm:px-8" aria-label="Site footer preview">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <InlineEditableText label="Footer site name" value={homePageContent.footerTitle} onChange={(value) => updateHomePageField("footerTitle", value)} className="block text-sm font-semibold text-white" />
+          <InlineEditableText label="Footer location" value={homePageContent.footerSubtitle} onChange={(value) => updateHomePageField("footerSubtitle", value)} className="mt-1 block text-[9px] uppercase tracking-[0.2em] text-white/45" />
+        </div>
+        <InlineEditableText label="Footer tagline" value={homePageContent.footerTagline} onChange={(value) => updateHomePageField("footerTagline", value)} className="text-xs text-white/60" />
+        <span className="text-white/60">© {new Date().getFullYear()} <InlineEditableText label="Footer copyright name" value={homePageContent.footerCopyright} onChange={(value) => updateHomePageField("footerCopyright", value)} className="text-white/60" /></span>
+      </div>
+    </footer>
+  );
 
   return (
     <div className="min-w-0 rounded-2xl border border-marina/15 bg-white p-4 shadow-xl shadow-deep-ocean/5 sm:rounded-3xl sm:p-6">
-      {/* Header with Title & Master Toggle */}
+      {/* Header with Title */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-marina/10 pb-5">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink sm:text-xl">
@@ -588,10 +1113,9 @@ export default function PageBuilder() {
 
         {view === "list" && (
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
-            
             <button
               type="button"
-              onClick={openCreate}
+              onClick={() => openSectionOptions()}
               className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-marina px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-marina-light sm:min-h-10"
             >
               <Plus className="h-4 w-4" /> New Section
@@ -615,14 +1139,145 @@ export default function PageBuilder() {
         </div>
       )}
 
+      {pendingLeave && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-deep-ocean/65 p-4"
+          role="presentation"
+        >
+          <section
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unsaved-changes-title"
+          >
+            <h2 id="unsaved-changes-title" className="text-lg font-bold text-ink">
+              Save your changes?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink/65">
+              You have unsaved page changes. Save them before leaving?
+            </p>
+            {error && <p className="mt-3 text-xs font-medium text-coral">{error}</p>}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => completeLeave(pendingLeave)}
+                disabled={savingBeforeLeave}
+                className="min-h-10 rounded-full border border-ink/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-ink/70 hover:bg-sand disabled:opacity-60"
+              >
+                Leave without saving
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingLeave(null)}
+                disabled={savingBeforeLeave}
+                className="min-h-10 rounded-full border border-marina/30 px-4 py-2 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand disabled:opacity-60"
+              >
+                Stay
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveBeforeLeave()}
+                disabled={savingBeforeLeave}
+                className="min-h-10 rounded-full bg-marina px-5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-marina-light disabled:opacity-60"
+              >
+                {savingBeforeLeave ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {galleryOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-deep-ocean/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose images from the gallery"
+          onClick={() => setGalleryOpen(false)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h4 className="text-base font-bold text-ink">Choose from gallery</h4>
+                <p className="mt-1 text-xs text-ink/60">
+                  {galleryTarget === "section"
+                    ? `${gallerySelectedUrls.length} image${gallerySelectedUrls.length === 1 ? "" : "s"} selected.`
+                    : "Select an image to add to the About page carousel."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGalleryOpen(false)}
+                className="rounded-full px-3 py-2 text-xs font-bold text-ink/60 hover:bg-sand"
+              >
+                Close
+              </button>
+            </div>
+            {galleryLoading ? (
+              <p className="py-10 text-center text-sm text-ink/60">Loading gallery...</p>
+            ) : galleryPhotos.length === 0 ? (
+              <p className="py-10 text-center text-sm text-ink/60">No gallery images found.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {galleryPhotos.map((photo) => {
+                  const selected = gallerySelectedUrls.includes(photo.fileUrl);
+                  return (
+                    <button
+                      key={photo._id}
+                      type="button"
+                      aria-pressed={galleryTarget === "section" ? selected : undefined}
+                      onClick={() => chooseGalleryImage(photo.fileUrl)}
+                      className={`group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand text-left ${
+                        selected ? "ring-4 ring-marina" : ""
+                      }`}
+                    >
+                      <NextImage
+                        src={getProxyUrl(photo.fileUrl)}
+                        alt={photo.title}
+                        fill
+                        sizes="240px"
+                        className="object-cover transition group-hover:scale-105"
+                        unoptimized
+                      />
+                      <span className="absolute inset-x-0 bottom-0 bg-deep-ocean/75 px-2 py-1 text-[10px] font-semibold text-white">
+                        {photo.title}
+                      </span>
+                      {selected && (
+                        <span className="absolute right-2 top-2 rounded-full bg-marina p-1 text-white">
+                          <Check className="h-4 w-4" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {galleryTarget === "section" && (
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={addSelectedGalleryImages}
+                  disabled={gallerySelectedUrls.length === 0}
+                  className="min-h-10 rounded-full bg-marina px-5 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-marina-light disabled:opacity-50"
+                >
+                  Add selected images
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ----------------- VIEW: LIST / DASHBOARD ----------------- */}
       {view === "list" && (
         <div className="mt-6 space-y-8">
-          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-marina/15 bg-sand/40 p-1 sm:gap-2 sm:p-1.5" role="tablist" aria-label="Page builder sections">
+          <div className="grid grid-cols-2 gap-1 rounded-2xl border border-marina/15 bg-sand/40 p-1 sm:gap-2 sm:p-1.5" role="tablist" aria-label="Choose a page to edit">
             {([
+              ["home", "Home Page"],
               ["about", "About Page"],
-              ["preparedness", "Community Preparedness"],
-              ["custom", "Custom Sections"],
             ] as const).map(([tab, label]) => (
               <button
                 key={tab}
@@ -639,43 +1294,411 @@ export default function PageBuilder() {
             ))}
           </div>
 
-          {activeTab === "about" && <section className="rounded-2xl border border-marina/25 bg-sand/20 p-4 sm:p-5">
-            <div className="mb-5 flex flex-col gap-1 border-b border-marina/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-marina">About Page Content</h3>
-                <p className="mt-1 text-xs leading-relaxed text-ink/60">Edit the public copy shown at <span className="font-semibold text-ink">/about</span>. Separate paragraphs with a blank line.</p>
-              </div>
-              <FileText className="hidden h-5 w-5 text-marina/70 sm:block" />
-            </div>
-            <div className="grid gap-4">
-              <label className="text-xs font-bold uppercase tracking-wider text-ink">
-                Intro label
-                <input value={aboutContent.eyebrow} onChange={(e) => setAboutContent({ ...aboutContent, eyebrow: e.target.value })} className="mt-1.5 w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />
-              </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs leading-relaxed text-ink/60">
+              {activeTab === "home"
+                ? "Edit text and links in place, change the page images, then Save Home Page. Preparedness content has its own save control."
+                : "About page copy and imagery are shown in context. Click any text block to edit it directly."}
+            </p>
+            <a
+              href={activeTab === "home" ? "/" : "/about"}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-10 items-center rounded-full border border-marina/30 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-marina transition hover:bg-sand"
+            >
+              View live page
+            </a>
+            {activeTab === "home" && (
+              <button
+                type="button"
+                onClick={() => void saveHomePageContent()}
+                disabled={homePageSaving || uploading}
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-marina px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-marina-light disabled:opacity-60"
+              >
+                <Check className="h-4 w-4" />
+                {homePageSaving ? "Saving..." : "Save Home Page"}
+              </button>
+            )}
+          </div>
 
-              <label className="text-xs font-bold uppercase tracking-wider text-ink">
-                Page paragraphs
-                <textarea rows={8} value={aboutContent.paragraphs} onChange={(e) => setAboutContent({ ...aboutContent, paragraphs: e.target.value })} className="mt-1.5 w-full resize-y rounded-xl border border-marina/20 bg-white px-4 py-3 text-sm font-normal normal-case leading-7 tracking-normal text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina" />
-              </label>
-                            <div className="rounded-2xl border border-marina/15 bg-white p-4">
-                <div className="mb-3"><p className="text-xs font-bold uppercase tracking-wider text-marina">About page image carousel</p><p className="mt-1 text-xs leading-relaxed text-ink/55">Add images shown below the About page copy. Visitors can swipe through them and tap any image for a large preview.</p></div>
-                <div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => aboutImageInputRef.current?.click()} disabled={aboutImageUploading} className="rounded-xl bg-marina px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-marina-light disabled:opacity-60">{aboutImageUploading ? "Uploading..." : "Upload Image"}</button><button type="button" onClick={() => void openAboutGallery()} className="rounded-xl border border-marina/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand">Choose from Gallery</button></div>
-                <input ref={aboutImageInputRef} type="file" accept="image/*" onChange={handleAboutImageUpload} className="hidden" />
-                {aboutContent.images.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{aboutContent.images.map((image, index) => <div key={`${image}-${index}`} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand"><NextImage src={getProxyUrl(image)} alt={`About carousel image ${index + 1}`} fill sizes="160px" className="object-cover" unoptimized /><button type="button" onClick={() => setAboutContent((current) => ({ ...current, images: current.images.filter((_, imageIndex) => imageIndex !== index) }))} className="absolute right-2 top-2 rounded-full bg-deep-ocean/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100">Remove</button></div>)}</div>}
+          {activeTab === "home" && (
+            <div className="overflow-hidden rounded-2xl border border-marina/20 bg-white shadow-sm">
+              <input
+                ref={homeImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleHomeImageUpload}
+                className="hidden"
+              />
+              {renderSiteHeader()}
+              <div aria-label="Homepage full-page preview">
+                <section
+                  className="hero-beach relative grid min-h-[440px] place-items-center px-6 py-16 text-center text-white sm:min-h-[520px]"
+                  style={{
+                    backgroundImage: `linear-gradient(180deg, rgba(3, 30, 44, 0.68), rgba(3, 55, 73, 0.5) 46%, rgba(3, 35, 48, 0.68)), url("${getProxyUrl(homePageContent.heroImageUrl)}")`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHomeImageTarget("heroImageUrl");
+                      homeImageInputRef.current?.click();
+                    }}
+                    disabled={uploading}
+                    className="absolute right-4 top-4 z-20 rounded-full bg-deep-ocean/75 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-white disabled:opacity-60"
+                  >
+                    {uploading && homeImageTarget === "heroImageUrl" ? "Uploading..." : "Change hero image"}
+                  </button>
+                  <div className="relative z-10 max-w-3xl">
+                    <InlineEditableText
+                      label="Homepage hero eyebrow"
+                      value={homePageContent.heroEyebrow}
+                      onChange={(value) => updateHomePageField("heroEyebrow", value)}
+                      textAlign="center"
+                      className="eyebrow text-white/80"
+                    />
+                    <h1 className="mt-4 text-5xl font-bold uppercase leading-[0.92] tracking-[-0.055em] drop-shadow-md sm:text-7xl">
+                      <InlineEditableText label="Homepage hero title" value={homePageContent.heroTitle} onChange={(value) => updateHomePageField("heroTitle", value)} textAlign="center" className="inline-block" />
+                      <InlineEditableText label="Homepage hero subtitle" value={homePageContent.heroSubtitle} onChange={(value) => updateHomePageField("heroSubtitle", value)} textAlign="center" className="mt-2 block w-full text-white/95" />
+                    </h1>
+                    <InlineEditableText
+                      label="Homepage hero description"
+                      value={homePageContent.heroDescription}
+                      onChange={(value) => updateHomePageField("heroDescription", value)}
+                      textAlign="center"
+                      multiline
+                      rows={3}
+                      className="mx-auto mt-6 block max-w-xl text-sm leading-7 text-white/90 sm:text-base"
+                    />
+                    <div className="mt-8 flex flex-wrap justify-center gap-3">
+                      <span className="rounded-full bg-marina px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <InlineEditableText label="Weather button label" value={homePageContent.heroWeatherLabel} onChange={(value) => updateHomePageField("heroWeatherLabel", value)} />
+                      </span>
+                      <span className="rounded-full border border-white/55 bg-white/10 px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <InlineEditableLink
+                          label={homePageContent.heroLinkText}
+                          url={homePageContent.heroLinkHref}
+                          onSave={(label, href) => setHomePageContent((current) => ({ ...current, heroLinkText: label, heroLinkHref: href }))}
+                          className="text-white"
+                        />
+                      </span>
+                    </div>
+                  </div>
+                </section>
+                {renderSlot("below-hero")}
+
+                <section className="bg-white px-6 py-14 sm:px-10 sm:py-16">
+                  <div className="mx-auto max-w-6xl">
+                    <div className="mx-auto mb-9 max-w-2xl text-center">
+                      <InlineEditableText label="Services eyebrow" value={homePageContent.servicesEyebrow} onChange={(value) => updateHomePageField("servicesEyebrow", value)} className="eyebrow text-marina" />
+                      <InlineEditableText label="Services heading" value={homePageContent.servicesTitle} onChange={(value) => updateHomePageField("servicesTitle", value)} className="mt-3 block w-full text-center text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl" />
+                      <InlineEditableText label="Services description" value={homePageContent.servicesDescription} onChange={(value) => updateHomePageField("servicesDescription", value)} multiline rows={3} className="mt-4 block w-full text-center text-sm text-ink/60" />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {homePageContent.services.map((service, index) => (
+                        <article key={`service-${index}`} data-mark={String(index + 1).padStart(2, "0")} className="service-card rounded-2xl p-5">
+                          <button
+                            type="button"
+                            onClick={() => updateHomePageField("services", homePageContent.services.filter((_, serviceIndex) => serviceIndex !== index))}
+                            aria-label={`Remove service card ${index + 1}`}
+                            className="mb-2 rounded-full bg-coral/10 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-coral"
+                          >
+                            Remove card
+                          </button>
+                          <InlineEditableText label={`Service ${index + 1} title`} value={service.title} onChange={(value) => updateHomeService(index, "title", value)} className="block text-xs font-bold uppercase tracking-[0.08em] text-ink" />
+                          <InlineEditableText label={`Service ${index + 1} description`} value={service.description} onChange={(value) => updateHomeService(index, "description", value)} multiline rows={3} className="mt-3 block w-full text-xs leading-6 text-ink/60" />
+                          <span className="mt-4 inline-flex text-[10px] font-bold uppercase tracking-wider text-marina">
+                            <InlineEditableLink
+                              label={service.actionText}
+                              url={service.href}
+                              onSave={(label, href) => {
+                                updateHomeService(index, "actionText", label);
+                                updateHomeService(index, "href", href);
+                              }}
+                            /> →
+                          </span>
+                        </article>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateHomePageField("services", [...homePageContent.services, { title: "New service", description: "Add a short description.", actionText: "Open portal", href: "/sign-in" }])}
+                      disabled={homePageContent.services.length >= 12}
+                      className="mt-4 rounded-full border border-dashed border-marina/40 px-4 py-2 text-[9px] font-bold uppercase tracking-wider text-marina disabled:opacity-50"
+                    >
+                      <Plus className="mr-1 inline h-3 w-3" /> Add service card
+                    </button>
+                  </div>
+                </section>
+                {renderSlot("below-services")}
+
+                <CommunityPreparednessEditor
+                  value={preparednessContent}
+                  onChange={setPreparednessContent}
+                  onSave={savePreparednessContent}
+                  saving={preparednessSaving}
+                />
+
+                <section className="grid bg-sand md:grid-cols-2">
+                  <div className="relative min-h-64 bg-cover bg-center sm:min-h-[360px]" style={{ backgroundImage: `url("${getProxyUrl(homePageContent.lifeImageUrl)}")` }}>
+                    <button type="button" onClick={() => { setHomeImageTarget("lifeImageUrl"); homeImageInputRef.current?.click(); }} disabled={uploading} className="absolute right-3 top-3 rounded-full bg-deep-ocean/75 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-white disabled:opacity-60">
+                      {uploading && homeImageTarget === "lifeImageUrl" ? "Uploading..." : "Change image"}
+                    </button>
+                  </div>
+                  <div className="flex items-center px-7 py-12 sm:px-12 sm:py-14">
+                    <div className="max-w-lg">
+                      <InlineEditableText label="Life section eyebrow" value={homePageContent.lifeEyebrow} onChange={(value) => updateHomePageField("lifeEyebrow", value)} className="eyebrow text-marina" />
+                      <InlineEditableText label="Life section heading" value={homePageContent.lifeTitle} onChange={(value) => updateHomePageField("lifeTitle", value)} className="mt-3 block w-full text-2xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-3xl" />
+                      <InlineEditableText label="Life section description" value={homePageContent.lifeDescription} onChange={(value) => updateHomePageField("lifeDescription", value)} multiline rows={4} className="mt-4 block w-full text-sm leading-7 text-ink/65" />
+                      <span className="mt-6 inline-flex rounded-full bg-marina px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                        <InlineEditableLink
+                          label={homePageContent.lifeButtonText}
+                          url={homePageContent.lifeButtonHref}
+                          onSave={(label, href) => setHomePageContent((current) => ({ ...current, lifeButtonText: label, lifeButtonHref: href }))}
+                          className="text-white"
+                        />
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-marina px-6 py-10 text-white sm:px-10 sm:py-12">
+                  <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 md:flex-row md:items-center">
+                    <div>
+                      <InlineEditableText label="Community CTA eyebrow" value={homePageContent.communityEyebrow} onChange={(value) => updateHomePageField("communityEyebrow", value)} className="eyebrow text-white/65" />
+                      <InlineEditableText label="Community CTA heading" value={homePageContent.communityTitle} onChange={(value) => updateHomePageField("communityTitle", value)} className="mt-2 block w-full text-2xl font-bold uppercase tracking-[-0.04em] sm:text-3xl" />
+                    </div>
+                    <span className="inline-flex rounded-full bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-marina">
+                      <InlineEditableLink
+                        label={homePageContent.communityButtonText}
+                        url={homePageContent.communityButtonHref}
+                        onSave={(label, href) => setHomePageContent((current) => ({ ...current, communityButtonText: label, communityButtonHref: href }))}
+                      />
+                    </span>
+                  </div>
+                </section>
+
+                <section className="grid bg-sand md:grid-cols-2">
+                  <div className="flex items-center px-7 py-12 sm:px-12 sm:py-14">
+                    <div className="max-w-lg">
+                      <InlineEditableText label="Homepage about eyebrow" value={homePageContent.aboutEyebrow} onChange={(value) => updateHomePageField("aboutEyebrow", value)} className="eyebrow text-marina" />
+                      <InlineEditableText label="Homepage about heading" value={homePageContent.aboutTitle} onChange={(value) => updateHomePageField("aboutTitle", value)} className="mt-3 block w-full text-2xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-3xl" />
+                      {homePageContent.aboutParagraphs.map((paragraph, index) => (
+                        <div key={`home-about-${index}`} className="mt-4 flex items-start gap-2">
+                          <InlineEditableText
+                            label={`Homepage about paragraph ${index + 1}`}
+                            value={paragraph}
+                            onChange={(value) => updateHomePageField("aboutParagraphs", homePageContent.aboutParagraphs.map((item, itemIndex) => itemIndex === index ? value : item))}
+                            multiline
+                            rows={3}
+                            className="block w-full flex-1 text-sm leading-7 text-ink/65"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateHomePageField("aboutParagraphs", homePageContent.aboutParagraphs.filter((_, paragraphIndex) => paragraphIndex !== index))}
+                            aria-label={`Remove homepage about paragraph ${index + 1}`}
+                            className="shrink-0 rounded-full bg-coral/10 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-coral"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => updateHomePageField("aboutParagraphs", [...homePageContent.aboutParagraphs, "New paragraph"])}
+                        className="mt-3 rounded-full border border-dashed border-marina/40 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-marina"
+                      >
+                        <Plus className="mr-1 inline h-3 w-3" /> Add paragraph
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative min-h-64 bg-cover bg-center sm:min-h-[360px]" style={{ backgroundImage: `url("${getProxyUrl(homePageContent.aboutImageUrl)}")` }}>
+                    <button type="button" onClick={() => { setHomeImageTarget("aboutImageUrl"); homeImageInputRef.current?.click(); }} disabled={uploading} className="absolute right-3 top-3 rounded-full bg-deep-ocean/75 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-white disabled:opacity-60">
+                      {uploading && homeImageTarget === "aboutImageUrl" ? "Uploading..." : "Change image"}
+                    </button>
+                  </div>
+                </section>
+                {renderSlot("above-footer")}
               </div>
-              {galleryOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-deep-ocean/70 p-4" role="dialog" aria-modal="true" aria-label="Choose an image from the gallery" onClick={() => setGalleryOpen(false)}><div className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex items-center justify-between"><div><h4 className="text-base font-bold text-ink">Choose from Gallery</h4><p className="mt-1 text-xs text-ink/60">Select an existing gallery image to add to the carousel.</p></div><button type="button" onClick={() => setGalleryOpen(false)} className="rounded-full px-3 py-1 text-xs font-bold text-ink/60 hover:bg-sand">Close</button></div>{galleryLoading ? <p className="py-10 text-center text-sm text-ink/60">Loading gallery...</p> : galleryPhotos.length === 0 ? <p className="py-10 text-center text-sm text-ink/60">No gallery images found.</p> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{galleryPhotos.map((photo) => <button key={photo._id} type="button" onClick={() => chooseAboutGalleryImage(photo.fileUrl)} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand text-left"><NextImage src={getProxyUrl(photo.fileUrl)} alt={photo.title} fill sizes="240px" className="object-cover transition group-hover:scale-105" unoptimized /><span className="absolute inset-x-0 bottom-0 bg-deep-ocean/75 px-2 py-1 text-[10px] font-semibold text-white">{photo.title}</span></button>)}</div>}</div></div>}
-              <div className="flex justify-end">
-                <button type="button" onClick={saveAboutContent} disabled={aboutSaving} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-marina px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light disabled:opacity-60">
-                  <Check className="h-4 w-4" /> {aboutSaving ? "Saving..." : "Save About Page"}
-                </button>
-              </div>
+              {renderSiteFooter()}
             </div>
-          </section>}
-          {activeTab === "preparedness" && <CommunityPreparednessEditor value={preparednessContent} onChange={setPreparednessContent} onSave={savePreparednessContent} saving={preparednessSaving} />}
-          {activeTab === "custom" && (loading && sections.length === 0 ? (
+          )}
+
+          {activeTab === "about" && (
+            <div className="overflow-hidden rounded-2xl border border-marina/20 bg-white shadow-sm">
+              {renderSiteHeader()}
+              <div aria-label="About page full-page preview">
+              <div className="subpage-hero">
+                <div>
+                <p className="eyebrow text-white/75">Since 1924</p>
+                <h1 className="mt-3 text-4xl font-bold uppercase tracking-[-0.05em] sm:text-6xl">About La Conchita</h1>
+                </div>
+              </div>
+              {renderSlot("about-below-hero")}
+              <section className="overflow-hidden bg-white">
+              <div className="bg-sand/35 p-3 sm:p-6">
+                <div className="content-card mx-auto max-w-3xl px-5 py-8 sm:px-10 sm:py-12">
+                  <InlineEditableText
+                    label="About page intro"
+                    value={aboutContent.eyebrow}
+                    onChange={(eyebrow) => setAboutContent((current) => ({ ...current, eyebrow }))}
+                    className="eyebrow text-marina"
+                  />
+                  <div className="mt-5 space-y-4 text-sm leading-7 text-ink/70 sm:text-base">
+                    {aboutParagraphs.map((paragraph, index) => (
+                      <div key={`about-paragraph-${index}`} className="flex items-start gap-2">
+                        <InlineEditableText
+                          label={`About paragraph ${index + 1}`}
+                          value={paragraph}
+                          onChange={(next) => updateAboutParagraph(index, next)}
+                          multiline
+                          rows={4}
+                          className="block w-full flex-1"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Remove paragraph ${index + 1}`}
+                          onClick={() => removeAboutParagraph(index)}
+                          className="mt-1 shrink-0 rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-coral transition hover:bg-coral/10"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addAboutParagraph}
+                      className="rounded-full border border-dashed border-marina/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-marina hover:bg-sand"
+                    >
+                      Add paragraph
+                    </button>
+                  </div>
+                </div>
+
+                {renderSlot("about-below-content")}
+
+                <div className="mx-auto mt-4 max-w-3xl rounded-2xl border border-marina/15 bg-white p-4 sm:p-6">
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-marina">
+                      About page image carousel
+                    </h4>
+                    <p className="mt-1 text-xs leading-relaxed text-ink/55">
+                      Images are shown below the page copy. Visitors can swipe through them and open a larger preview.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => aboutImageInputRef.current?.click()}
+                      disabled={aboutImageUploading}
+                      className="min-h-10 rounded-xl bg-marina px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-marina-light disabled:opacity-60"
+                    >
+                      {aboutImageUploading ? "Uploading..." : "Upload image"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void openGallery("about")}
+                      className="min-h-10 rounded-xl border border-marina/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-marina hover:bg-sand"
+                    >
+                      Choose from gallery
+                    </button>
+                  </div>
+                  <input
+                    ref={aboutImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAboutImageUpload}
+                    className="hidden"
+                  />
+                  {aboutContent.images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {aboutContent.images.map((image, index) => (
+                        <div
+                          key={`${image}-${index}`}
+                          className="group/image relative aspect-[4/3] overflow-hidden rounded-xl bg-sand"
+                        >
+                          <NextImage
+                            src={getProxyUrl(image)}
+                            alt={`About carousel image ${index + 1}`}
+                            fill
+                            sizes="160px"
+                            className="object-cover"
+                            unoptimized
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAboutContent((current) => ({
+                                ...current,
+                                images: current.images.filter((_, imageIndex) => imageIndex !== index),
+                              }))
+                            }
+                            className="absolute right-2 top-2 rounded-full bg-deep-ocean/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white opacity-0 transition group-hover/image:opacity-100 focus:opacity-100"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-5 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={saveAboutContent}
+                      disabled={aboutSaving}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full bg-marina px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow transition hover:bg-marina-light disabled:opacity-60"
+                    >
+                      <Check className="h-4 w-4" />
+                      {aboutSaving ? "Saving..." : "Save About Page"}
+                    </button>
+                  </div>
+                </div>
+                <section className="mx-auto mt-8 w-full max-w-6xl px-3 py-8 sm:px-6" aria-label="About page image carousel preview">
+                  <div className="mb-5">
+                    <p className="eyebrow text-marina">See the neighborhood</p>
+                    <h2 className="mt-2 text-2xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-3xl">Life by the water</h2>
+                  </div>
+                  {aboutContent.images.length ? (
+                    <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+                      {aboutContent.images.map((image, index) => (
+                        <div key={`${image}-${index}`} className="relative h-48 w-[80%] shrink-0 snap-center overflow-hidden rounded-2xl bg-sand shadow-lg sm:h-64 sm:w-[min(28rem,42vw)]">
+                          <NextImage src={getProxyUrl(image)} alt={`La Conchita neighborhood view ${index + 1}`} fill sizes="(max-width: 640px) 80vw, 42vw" className="object-cover" unoptimized />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-2xl border border-dashed border-marina/25 bg-white px-4 py-8 text-center text-xs text-ink/50">
+                      The public image carousel will appear here after images are added above.
+                    </p>
+                  )}
+                </section>
+              </div>
+            </section>
+            {renderSlot("about-above-footer")}
+            </div>
+            {renderSiteFooter()}
+            </div>
+          )}
+
+          {false && activeTab === "home" && (
+            <CommunityPreparednessEditor
+              value={preparednessContent}
+              onChange={setPreparednessContent}
+              onSave={savePreparednessContent}
+              saving={preparednessSaving}
+            />
+          )}
+
+          {false && (loading && sections.length === 0 ? (
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (
-            sectionsBySlot.map(({ value: slotName, label, sections: slotSections }) => (
+            sectionsBySlot
+              .filter(({ value: slotName }) =>
+                activeTab === "about"
+                  ? slotName.startsWith("about-")
+                  : !slotName.startsWith("about-"),
+              )
+              .map(({ value: slotName, label, sections: slotSections }) => (
               <div key={slotName} className="rounded-2xl border border-sand-dark bg-sand/30 p-3 sm:p-5">
                 <div className="mb-4 flex flex-col gap-1 border-b border-marina/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-xs font-bold uppercase leading-relaxed tracking-wider text-marina sm:text-sm">
@@ -711,16 +1734,69 @@ export default function PageBuilder() {
                               <ImageIcon className="h-5 w-5 text-ink/30" />
                             )}
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="break-words text-sm font-bold leading-tight text-ink">{sec.name}</h4>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words text-[10px] font-bold uppercase tracking-wider text-ink/45">
+                              {sec.name}
+                            </p>
                             <p className="mt-1 text-[10px] font-semibold uppercase leading-relaxed tracking-wider text-marina">
                               {sec.layout.replaceAll("-", " ")} <span aria-hidden="true">·</span> {sec.visibility === "residents" ? "Residents only" : sec.visibility === "visitors" ? "Visitors only" : "Everyone"} <span aria-hidden="true">·</span> {sec.isActive ? "LIVE" : "Inactive"}
                             </p>
+                            <div className="mt-3 space-y-2 rounded-xl bg-sand/30 p-3">
+                              <InlineEditableText
+                                label={`${sec.name} eyebrow`}
+                                value={sec.eyebrow ?? ""}
+                                onChange={(value) => updateInlineSection(sec._id, "eyebrow", value)}
+                                className="block text-[10px] font-bold uppercase tracking-wider text-marina"
+                              />
+                              <InlineEditableText
+                                label={`${sec.name} title`}
+                                value={sec.title ?? ""}
+                                onChange={(value) => updateInlineSection(sec._id, "title", value)}
+                                className="block text-base font-bold text-ink"
+                              />
+                              {sec.layout !== "single-image-flyer" && (
+                                <InlineEditableText
+                                  label={`${sec.name} content`}
+                                  value={sec.content}
+                                  onChange={(value) => updateInlineSection(sec._id, "content", value)}
+                                  multiline
+                                  rows={3}
+                                  className="block w-full whitespace-pre-wrap text-sm leading-6 text-ink/65"
+                                />
+                              )}
+                              {sec.buttonText !== undefined && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <InlineEditableText
+                                    label={`${sec.name} button text`}
+                                    value={sec.buttonText ?? ""}
+                                    onChange={(value) => updateInlineSection(sec._id, "buttonText", value)}
+                                    className="text-xs font-bold uppercase tracking-wider text-marina"
+                                  />
+                                  <span className="text-xs text-ink/35">→</span>
+                                  <InlineEditableText
+                                    label={`${sec.name} button link`}
+                                    value={sec.buttonLink ?? ""}
+                                    onChange={(value) => updateInlineSection(sec._id, "buttonLink", value)}
+                                    className="break-all text-xs text-ink/55"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Controls */}
                         <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-ink/5 pt-2 sm:w-auto sm:flex-nowrap sm:justify-end sm:border-0 sm:pt-0">
+                          {dirtySectionIds.has(sec._id) && (
+                            <button
+                              type="button"
+                              onClick={() => void saveInlineSection(sec)}
+                              disabled={savingSectionId === sec._id}
+                              className="min-h-10 rounded-full bg-marina px-3 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-marina-light disabled:opacity-60"
+                            >
+                              {savingSectionId === sec._id ? "Saving..." : "Save"}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => moveOrder(idx, "up", slotSections)}
@@ -802,8 +1878,61 @@ export default function PageBuilder() {
                   </div>
                 )}
               </div>
-            ))
+              ))
           ))}
+        </div>
+      )}
+
+      {view === "choose" && (
+        <div className="mt-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-ink">Add a section</h3>
+              <p className="mt-1 text-xs text-ink/60">
+                Start from scratch or insert a section you have already saved.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className="min-h-10 rounded-full border border-marina/30 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-marina hover:bg-sand"
+            >
+              Back to Page Builder
+            </button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => openCreate(requestedSlot)}
+              className="flex min-h-36 flex-col items-start justify-center rounded-2xl border-2 border-marina bg-white p-5 text-left shadow-sm transition hover:bg-sand/30"
+            >
+              <span className="text-sm font-bold uppercase tracking-wider text-marina">Start a New Section</span>
+              <span className="mt-2 text-xs leading-relaxed text-ink/60">
+                Open the section wizard to choose a layout and add new content.
+              </span>
+            </button>
+            <div className="flex min-h-36 flex-col justify-center rounded-2xl border border-marina/20 bg-sand/30 p-5">
+              <span className="text-sm font-bold uppercase tracking-wider text-marina">Insert a Saved Section</span>
+              <span className="mt-2 text-xs leading-relaxed text-ink/60">
+                Choose an inactive section below to add it at the selected page position.
+              </span>
+            </div>
+          </div>
+
+          <SavedPageSections
+            sections={savedSections}
+            restoringSectionId={restoringSectionId}
+            updatingVisibilitySectionId={updatingVisibilitySectionId}
+            defaultExpanded
+            defaultSlot={requestedSlot}
+            onRestore={(section, slot) => void restoreSection(section, slot)}
+            onVisibilityChange={(section, visibility) =>
+              void updateSectionVisibility(section, visibility)
+            }
+            onEdit={openEdit}
+            onDelete={(id, name) => void deleteSection(id, name)}
+          />
         </div>
       )}
 
@@ -813,7 +1942,7 @@ export default function PageBuilder() {
           {/* Breadcrumb / Step Indicator */}
           <div className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-ink/65">
             <button
-              onClick={() => setView("list")}
+              onClick={() => requestLeave({ type: "list" })}
               className="flex items-center gap-1 text-marina hover:underline"
             >
               <ArrowLeft className="h-3 w-3" /> Back to Dashboard
@@ -865,7 +1994,7 @@ export default function PageBuilder() {
                 </p>
               </div>
 
-              <div className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+              <div className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                 {/* Option 1: Full-Width */}
                 <button
                   onClick={() => setFormLayout("full-width")}
@@ -953,6 +2082,47 @@ export default function PageBuilder() {
                     Display one centered, full-height image. Visitors can click it to enlarge.
                   </p>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormLayout("image-gallery")}
+                  aria-pressed={formLayout === "image-gallery"}
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
+                    formLayout === "image-gallery"
+                      ? "border-marina bg-sand/35"
+                      : "border-marina/10 bg-white hover:border-marina/30"
+                  }`}
+                >
+                  <div className="mb-4 grid h-24 w-full grid-cols-3 gap-1.5 rounded-lg bg-sand p-2">
+                    <span className="rounded bg-marina/25" />
+                    <span className="rounded bg-ink/15" />
+                    <span className="rounded bg-marina/35" />
+                  </div>
+                  <h4 className="text-sm font-bold text-ink">Image Gallery</h4>
+                  <p className="mt-2 text-xxs leading-relaxed text-ink/60">
+                    Display all selected images together in a responsive grid. Visitors can open images larger.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormLayout("image-carousel")}
+                  aria-pressed={formLayout === "image-carousel"}
+                  className={`flex flex-col items-center rounded-2xl border-2 p-4 text-center transition sm:p-5 ${
+                    formLayout === "image-carousel"
+                      ? "border-marina bg-sand/35"
+                      : "border-marina/10 bg-white hover:border-marina/30"
+                  }`}
+                >
+                  <div className="mb-4 flex h-24 w-full gap-2 overflow-hidden rounded-lg bg-sand p-2">
+                    <span className="h-full w-2/3 shrink-0 rounded bg-marina/25" />
+                    <span className="h-full w-2/3 shrink-0 rounded bg-ink/15" />
+                  </div>
+                  <h4 className="text-sm font-bold text-ink">Image Carousel</h4>
+                  <p className="mt-2 text-xxs leading-relaxed text-ink/60">
+                    Let visitors browse selected images horizontally with next and previous controls.
+                  </p>
+                </button>
               </div>
 
               <div className="mx-auto mt-8 flex max-w-3xl justify-end border-t border-marina/10 pt-6">
@@ -972,12 +2142,18 @@ export default function PageBuilder() {
             <div className="space-y-6 animate-fadeIn max-w-2xl mx-auto">
               <div>
                 <h3 className="text-lg font-bold text-ink">
-                  {formLayout === "single-image-flyer" ? "Upload Flyer Image" : "Section Content & Media"}
+                  {formLayout === "single-image-flyer"
+                    ? "Upload Flyer Image"
+                    : formIsImageCollection
+                      ? "Add Images"
+                      : "Section Content & Media"}
                 </h3>
                 <p className="text-xs text-ink/60 mt-1">
                   {formLayout === "single-image-flyer"
                     ? "Upload the single image to display. No additional content is needed."
-                    : "Fill in the text, upload optional images, and specify buttons or links to insert."}
+                    : formIsImageCollection
+                      ? "Upload multiple images or choose several from the photo gallery. You can remove or reorder them before publishing."
+                      : "Fill in the text, upload optional images, and specify buttons or links to insert."}
                 </p>
               </div>
 
@@ -997,14 +2173,18 @@ export default function PageBuilder() {
                     placeholder={
                       formLayout === "single-image-flyer"
                         ? "Optional name for your flyer"
-                        : "e.g. Fall Beach Cleanup Flyer Section"
+                        : formIsImageCollection
+                          ? "e.g. Summer beach photos"
+                          : "e.g. Fall Beach Cleanup Flyer Section"
                     }
                     className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none"
                   />
                   <p className="mt-1 text-[10px] text-ink/50">
                     {formLayout === "single-image-flyer"
                       ? "Optional; only shown in the admin dashboard. Leave blank to use “Single Image/Flyer”."
-                      : "This is only seen in the admin dashboard to organize sections."}
+                      : formIsImageCollection
+                        ? "This is only shown in the admin dashboard to organize sections."
+                        : "This is only seen in the admin dashboard to organize sections."}
                   </p>
                 </div>
 
@@ -1041,92 +2221,199 @@ export default function PageBuilder() {
                 {/* Content */}
                 {formLayout !== "single-image-flyer" && <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
-                    Section Content Block <span className="text-coral">*</span>
+                    {formIsImageCollection ? "Intro (Optional)" : <>Section Content Block <span className="text-coral">*</span></>}
                   </label>
                   <textarea
-                    required
+                    required={!formIsImageCollection}
                     rows={5}
                     value={formContent}
                     onChange={(e) => setFormContent(e.target.value)}
-                    placeholder="Describe the announcements, listings, or general community details in full detail..."
+                    placeholder={formIsImageCollection ? "Add an optional introduction for this image collection..." : "Describe the announcements, listings, or general community details in full detail..."}
                     className="w-full rounded-xl border border-marina/20 px-4 py-2.5 text-sm text-ink focus:border-marina focus:ring-1 focus:ring-marina outline-none resize-y"
                   />
                 </div>}
 
-                {/* Media Image Upload */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
-                    {formLayout === "single-image-flyer" ? "Flyer Image" : "Section Image"}{" "}
-                    {formLayout !== "full-width" && <span className="text-coral">*</span>}
-                  </label>
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`flex flex-col sm:flex-row items-center gap-4 bg-sand/20 rounded-2xl p-4 border transition-all duration-200 ${
-                      isDragging
-                        ? "border-2 border-dashed border-marina bg-sand-dark/40 scale-[1.01]"
-                        : "border border-marina/10"
-                    }`}
-                  >
-                    <div className={`shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15 ${
-                      formLayout === "single-image-flyer" ? "h-32 w-24" : "h-20 w-20"
-                    }`}>
-                      {formImageUrl ? (
-                        <NextImage
-                          src={getProxyUrl(formImageUrl)}
-                          alt="Upload preview"
-                          fill
-                          sizes="96px"
-                          className="object-contain"
-                          unoptimized
-                        />
-                      ) : (
-                        <ImageIcon className="h-6 w-6 text-ink/30" />
-                      )}
+                {formIsImageCollection ? (
+                  <div className="rounded-2xl border border-marina/15 bg-sand/20 p-4">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => collectionFileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-marina px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-marina-light disabled:opacity-60"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {uploading ? "Uploading..." : "Upload images"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void openGallery("section")}
+                        className="min-h-10 rounded-xl border border-marina/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-marina transition hover:bg-sand"
+                      >
+                        Choose from gallery
+                      </button>
                     </div>
-                    <div className="flex-1 w-full">
-                      <div className="flex flex-wrap gap-2">
-                        {formLayout !== "single-image-flyer" && <input
-                          type="text"
-                          value={formImageUrl}
-                          onChange={(e) => setFormImageUrl(e.target.value)}
-                          placeholder="Paste image URL or choose file"
-                          className="flex-1 min-w-[150px] rounded-xl border border-marina/20 px-3 py-1.5 text-xs text-ink focus:border-marina outline-none"
-                        />}
-                        {formLayout !== "single-image-flyer" && <button
-                          type="button"
-                          onClick={() => openDocumentSelector("image")}
-                          className="flex items-center gap-1 rounded-lg border border-marina/30 hover:bg-sand/35 px-3 py-1.5 text-xs font-bold text-marina transition whitespace-nowrap"
-                        >
-                          Choose Document
-                        </button>}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploading}
-                          className="flex items-center gap-1 rounded-lg bg-marina hover:bg-marina-light px-3 py-1.5 text-xs font-bold text-white transition whitespace-nowrap disabled:opacity-50"
-                        >
-                          <Upload className="h-3.5 w-3.5" /> {uploading ? "Uploading..." : "Upload File"}
-                        </button>
+                    <input
+                      ref={collectionFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleCollectionImageUpload}
+                      className="hidden"
+                    />
+                    <p className="mt-2 text-[10px] text-ink/50">
+                      Add images in the order you want them shown. Each uploaded image must be 4 MB or smaller.
+                    </p>
+                    {formImageUrls.length > 0 ? (
+                      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {formImageUrls.map((image, index) => (
+                          <div
+                            key={`${image}-${index}`}
+                            className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-sand"
+                          >
+                            <NextImage
+                              src={getProxyUrl(image)}
+                              alt={`Selected image ${index + 1}`}
+                              fill
+                              sizes="240px"
+                              className="object-cover"
+                              unoptimized
+                            />
+                            <span className="absolute left-2 top-2 rounded-full bg-deep-ocean/75 px-2 py-1 text-[10px] font-bold text-white">
+                              {index + 1}
+                            </span>
+                            <div className="absolute inset-x-1 bottom-1 flex justify-end gap-1 opacity-100 sm:opacity-0 sm:transition group-hover:opacity-100 group-focus-within:opacity-100">
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormImageUrls((current) => {
+                                      const reordered = [...current];
+                                      [reordered[index - 1], reordered[index]] = [
+                                        reordered[index],
+                                        reordered[index - 1],
+                                      ];
+                                      return reordered;
+                                    })
+                                  }
+                                  aria-label={`Move image ${index + 1} earlier`}
+                                  className="rounded-full bg-white/95 px-2 py-1 text-[9px] font-bold uppercase text-ink shadow"
+                                >
+                                  <ArrowLeft className="h-3 w-3" />
+                                </button>
+                              )}
+                              {index < formImageUrls.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormImageUrls((current) => {
+                                      const reordered = [...current];
+                                      [reordered[index], reordered[index + 1]] = [
+                                        reordered[index + 1],
+                                        reordered[index],
+                                      ];
+                                      return reordered;
+                                    })
+                                  }
+                                  aria-label={`Move image ${index + 1} later`}
+                                  className="rounded-full bg-white/95 px-2 py-1 text-[9px] font-bold uppercase text-ink shadow"
+                                >
+                                  <ArrowRight className="h-3 w-3" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setFormImageUrls((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                                aria-label={`Remove image ${index + 1}`}
+                                className="rounded-full bg-white/95 px-2 py-1 text-[9px] font-bold uppercase text-coral shadow"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                      <p className="text-[10px] text-ink/40 mt-2">
-                        {formLayout === "single-image-flyer"
-                          ? "Upload one image, up to 4 MB. You can also drag and drop it here."
-                          : "Images must be 4 MB or smaller. You can also drag and drop an image here."}
-                      </p>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-dashed border-marina/25 bg-white/70 px-4 py-8 text-center text-xs text-ink/55">
+                        No images selected yet.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
+                      {formLayout === "single-image-flyer" ? "Flyer Image" : "Section Image"}{" "}
+                      {formLayout !== "full-width" && <span className="text-coral">*</span>}
+                    </label>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`flex flex-col sm:flex-row items-center gap-4 bg-sand/20 rounded-2xl p-4 border transition-all duration-200 ${
+                        isDragging
+                          ? "border-2 border-dashed border-marina bg-sand-dark/40 scale-[1.01]"
+                          : "border border-marina/10"
+                      }`}
+                    >
+                      <div className={`shrink-0 overflow-hidden rounded-xl bg-sand-dark relative flex items-center justify-center border border-marina/15 ${
+                        formLayout === "single-image-flyer" ? "h-32 w-24" : "h-20 w-20"
+                      }`}>
+                        {formImageUrl ? (
+                          <NextImage
+                            src={getProxyUrl(formImageUrl)}
+                            alt="Upload preview"
+                            fill
+                            sizes="96px"
+                            className="object-contain"
+                            unoptimized
+                          />
+                        ) : (
+                          <ImageIcon className="h-6 w-6 text-ink/30" />
+                        )}
+                      </div>
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-wrap gap-2">
+                          {formLayout !== "single-image-flyer" && <input
+                            type="text"
+                            value={formImageUrl}
+                            onChange={(e) => setFormImageUrl(e.target.value)}
+                            placeholder="Paste image URL or choose file"
+                            className="flex-1 min-w-[150px] rounded-xl border border-marina/20 px-3 py-1.5 text-xs text-ink focus:border-marina outline-none"
+                          />}
+                          {formLayout !== "single-image-flyer" && <button
+                            type="button"
+                            onClick={() => openDocumentSelector("image")}
+                            className="flex items-center gap-1 rounded-lg border border-marina/30 hover:bg-sand/35 px-3 py-1.5 text-xs font-bold text-marina transition whitespace-nowrap"
+                          >
+                            Choose Document
+                          </button>}
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="flex items-center gap-1 rounded-lg bg-marina hover:bg-marina-light px-3 py-1.5 text-xs font-bold text-white transition whitespace-nowrap disabled:opacity-50"
+                          >
+                            <Upload className="h-3.5 w-3.5" /> {uploading ? "Uploading..." : "Upload File"}
+                          </button>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <p className="text-[10px] text-ink/40 mt-2">
+                          {formLayout === "single-image-flyer"
+                            ? "Upload one image, up to 4 MB. You can also drag and drop it here."
+                            : "Images must be 4 MB or smaller. You can also drag and drop an image here."}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {formLayout !== "single-image-flyer" && <div className="grid gap-4 sm:grid-cols-2">
+                {formLayout !== "single-image-flyer" && !formIsImageCollection && <div className="grid gap-4 sm:grid-cols-2">
                   {/* Button Text */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-1">
@@ -1186,11 +2473,15 @@ export default function PageBuilder() {
                       setError("Upload a flyer image before previewing.");
                       return;
                     }
-                    if (formLayout !== "single-image-flyer" && !formContent.trim()) {
+                    if (formIsImageCollection && formImageUrls.length === 0) {
+                      setError("Add at least one image before previewing.");
+                      return;
+                    }
+                    if (formLayout !== "single-image-flyer" && !formIsImageCollection && !formContent.trim()) {
                       setError("Section content is required before previewing.");
                       return;
                     }
-                    if (formLayout !== "full-width" && formLayout !== "single-image-flyer" && !formImageUrl) {
+                    if (formLayout !== "full-width" && formLayout !== "single-image-flyer" && !formIsImageCollection && !formImageUrl) {
                       setError("Two-column layouts require an uploaded image to render beautifully.");
                       return;
                     }
@@ -1223,6 +2514,16 @@ export default function PageBuilder() {
 
                 {/* Simulating CustomPageSection Layouts */}
                 <div className="bg-white">
+                  {formIsImageCollection && (
+                    <CustomImageCollection
+                      layout={formLayout}
+                      images={formImageUrls.map(getProxyUrl)}
+                      eyebrow={formEyebrow}
+                      title={formTitle}
+                      content={formContent}
+                    />
+                  )}
+
                   {formLayout === "two-col-img-left" && (
                     <section className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
                       <div
@@ -1390,19 +2691,14 @@ export default function PageBuilder() {
                 </div>
 
                 <div>
-                  <label htmlFor="section-visibility" className="block text-xs font-bold uppercase tracking-wider text-ink mb-2">
-                    Who can see this section?
-                  </label>
-                  <select
-                    id="section-visibility"
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ink">
+                    Section audience
+                  </p>
+                  <PageSectionVisibilityToggle
                     value={formVisibility}
-                    onChange={(e) => setFormVisibility(e.target.value as PageSectionVisibility)}
-                    className="w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm text-ink focus:border-marina outline-none"
-                  >
-                    <option value="everyone">Everyone</option>
-                    <option value="visitors">Non-logged-in visitors only</option>
-                    <option value="residents">Approved logged-in residents only</option>
-                  </select>
+                    onChange={setFormVisibility}
+                    label="Section audience"
+                  />
                 </div>
 
                 {/* Active Status Checkbox */}

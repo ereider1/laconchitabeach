@@ -1,15 +1,17 @@
 import mongoose, { Schema, models, model } from "mongoose";
 import { PAGE_SECTION_VISIBILITIES, type PageSectionVisibility } from "@/lib/pageSectionVisibility";
 import { PAGE_SECTION_SLOTS, type PageSectionSlot } from "@/lib/pageSectionSlots";
+import { PAGE_SECTION_LAYOUTS, type PageSectionLayout } from "@/lib/pageSectionLayouts";
 
 export interface IPageSection {
   name: string;
   slot: PageSectionSlot;
-  layout: "full-width" | "two-col-img-left" | "two-col-img-right" | "single-image-flyer";
+  layout: PageSectionLayout;
   eyebrow?: string;
   title?: string;
   content: string;
   imageUrl?: string;
+  imageUrls?: string[];
   buttonText?: string;
   buttonLink?: string;
   visibility: PageSectionVisibility;
@@ -29,13 +31,14 @@ const PageSectionSchema = new Schema<IPageSection>(
     },
     layout: {
       type: String,
-      enum: ["full-width", "two-col-img-left", "two-col-img-right", "single-image-flyer"],
+      enum: PAGE_SECTION_LAYOUTS,
       required: true,
     },
     eyebrow: { type: String },
     title: { type: String },
     content: { type: String, default: "" },
     imageUrl: { type: String },
+    imageUrls: { type: [String], default: undefined },
     buttonText: { type: String },
     buttonLink: { type: String },
     visibility: { type: String, enum: PAGE_SECTION_VISIBILITIES, default: "everyone" },
@@ -55,7 +58,7 @@ if (
   existingPageSection &&
   ((!Array.isArray(existingSlotEnum) || !PAGE_SECTION_SLOTS.every((slot) => existingSlotEnum.includes(slot.value))) ||
     !Array.isArray(existingLayoutEnum) ||
-    !existingLayoutEnum.includes("single-image-flyer") ||
+    !PAGE_SECTION_LAYOUTS.every((layout) => existingLayoutEnum.includes(layout)) ||
     existingContentRequired === true ||
     !Array.isArray(existingVisibilityEnum) ||
     !PAGE_SECTION_VISIBILITIES.every((visibility) => existingVisibilityEnum.includes(visibility)))
