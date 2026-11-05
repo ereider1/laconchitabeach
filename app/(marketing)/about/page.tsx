@@ -32,7 +32,7 @@ export default async function AboutPage() {
       <main>
         <section className="subpage-hero">
           <div>
-            <p className="eyebrow text-white/75">Since 1962</p>
+            <p className="eyebrow text-white/75">Since 1924</p>
             <h1 className="mt-3 text-4xl font-bold uppercase tracking-[-0.05em] sm:text-6xl">
               About La Conchita
             </h1>
