@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HarborBoard from "@/components/HarborBoard";
@@ -12,10 +13,21 @@ import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react
 import { defaultCommunityPreparednessContent } from "@/lib/communityPreparedness";
 import { connectToDatabase } from "@/lib/mongodb";
 import GlobalSettings from "@/lib/models/GlobalSettings";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 
 
 export default async function HomePage() {
+  const { userId } = await auth();
+  let isResident = false;
+  if (userId) {
+    try {
+      isResident = await hasApprovedResidentAccess(userId);
+    } catch (error) {
+      console.error("Failed to verify homepage resident access:", error);
+    }
+  }
+
   const services = [
     {
       mark: "01",
@@ -113,7 +125,7 @@ export default async function HomePage() {
           </section>
         </WeatherDisclosureProvider>
 
-        <CustomPageSections slot="below-hero" />
+        <CustomPageSections slot="below-hero" isLoggedIn={!!userId} isResident={isResident} />
 
         <section className="bg-white px-6 py-20 sm:px-10">
           <div className="mx-auto max-w-6xl">
@@ -147,7 +159,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <CustomPageSections slot="below-services" />
+        <CustomPageSections slot="below-services" isLoggedIn={!!userId} isResident={isResident} />
 
         <section className="preparedness-section px-6 py-20 sm:px-10" aria-labelledby="preparedness-heading">
           <div className="mx-auto max-w-6xl">
@@ -240,7 +252,7 @@ export default async function HomePage() {
 		  
         </section>
 
-        <CustomPageSections slot="above-footer" />
+        <CustomPageSections slot="above-footer" isLoggedIn={!!userId} isResident={isResident} />
 
       </main>
 

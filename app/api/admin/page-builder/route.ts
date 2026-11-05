@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import PageSection from "@/lib/models/PageSection";
 import GlobalSettings from "@/lib/models/GlobalSettings";
 import { isAdmin } from "@/lib/isAdmin";
+import { isPageSectionVisibility } from "@/lib/pageSectionVisibility";
 
 // 1. GET: Fetch all sections and the global setting
 export async function GET() {
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const isFlyer = body.layout === "single-image-flyer";
   const sectionName = typeof body.name === "string" ? body.name.trim() : "";
+  if (body.visibility !== undefined && !isPageSectionVisibility(body.visibility)) {
+    return NextResponse.json({ error: "Section visibility is invalid" }, { status: 400 });
+  }
   if (
     (!isFlyer && !sectionName) ||
     !body.slot ||
@@ -63,6 +67,7 @@ export async function POST(req: NextRequest) {
       imageUrl: body.imageUrl,
       buttonText: body.buttonText,
       buttonLink: body.buttonLink,
+      visibility: body.visibility ?? "everyone",
       isActive: body.isActive !== false,
       order: body.order ?? nextOrder,
     });
@@ -144,7 +149,11 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const allowed = ["name", "slot", "layout", "eyebrow", "title", "content", "imageUrl", "buttonText", "buttonLink", "isActive", "order"];
+  if (updates.visibility !== undefined && !isPageSectionVisibility(updates.visibility)) {
+    return NextResponse.json({ error: "Section visibility is invalid" }, { status: 400 });
+  }
+
+  const allowed = ["name", "slot", "layout", "eyebrow", "title", "content", "imageUrl", "buttonText", "buttonLink", "visibility", "isActive", "order"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];

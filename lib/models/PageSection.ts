@@ -1,4 +1,5 @@
 import mongoose, { Schema, models, model } from "mongoose";
+import { PAGE_SECTION_VISIBILITIES, type PageSectionVisibility } from "@/lib/pageSectionVisibility";
 
 export interface IPageSection {
   name: string;
@@ -10,6 +11,7 @@ export interface IPageSection {
   imageUrl?: string;
   buttonText?: string;
   buttonLink?: string;
+  visibility: PageSectionVisibility;
   isActive: boolean;
   order: number;
   createdAt: Date;
@@ -35,6 +37,7 @@ const PageSectionSchema = new Schema<IPageSection>(
     imageUrl: { type: String },
     buttonText: { type: String },
     buttonLink: { type: String },
+    visibility: { type: String, enum: PAGE_SECTION_VISIBILITIES, default: "everyone" },
     isActive: { type: Boolean, default: true },
     order: { type: Number, default: 0 },
   },
@@ -44,11 +47,14 @@ const PageSectionSchema = new Schema<IPageSection>(
 const existingPageSection = models.PageSection as mongoose.Model<IPageSection> | undefined;
 const existingLayoutEnum = existingPageSection?.schema.path("layout")?.options.enum;
 const existingContentRequired = existingPageSection?.schema.path("content")?.options.required;
+const existingVisibilityEnum = existingPageSection?.schema.path("visibility")?.options.enum;
 
 if (
   existingPageSection &&
   ((!Array.isArray(existingLayoutEnum) || !existingLayoutEnum.includes("single-image-flyer")) ||
-    existingContentRequired === true)
+    existingContentRequired === true ||
+    !Array.isArray(existingVisibilityEnum) ||
+    !PAGE_SECTION_VISIBILITIES.every((visibility) => existingVisibilityEnum.includes(visibility)))
 ) {
   mongoose.deleteModel("PageSection");
 }

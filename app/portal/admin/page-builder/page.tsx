@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import CommunityPreparednessEditor from "@/components/CommunityPreparednessEditor";
 import { defaultCommunityPreparednessContent, type CommunityPreparednessContent } from "@/lib/communityPreparedness";
+import type { PageSectionVisibility } from "@/lib/pageSectionVisibility";
 
 type Section = {
   _id: string;
@@ -36,6 +37,7 @@ type Section = {
   imageUrl?: string;
   buttonText?: string;
   buttonLink?: string;
+  visibility?: PageSectionVisibility;
   isActive: boolean;
   order: number;
 };
@@ -80,6 +82,7 @@ export default function PageBuilder() {
   const [formButtonLink, setFormButtonLink] = useState("");
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formSlot, setFormSlot] = useState<Section["slot"]>("below-hero");
+  const [formVisibility, setFormVisibility] = useState<PageSectionVisibility>("everyone");
   const [formIsActive, setFormIsActive] = useState(true);
   const [flyerPreviewOpen, setFlyerPreviewOpen] = useState(false);
 
@@ -340,6 +343,7 @@ export default function PageBuilder() {
     setFormButtonLink("");
     setFormImageUrl("");
     setFormSlot("below-hero");
+    setFormVisibility("everyone");
     setFormIsActive(true);
     setWizardStep(1);
     setView("create");
@@ -359,6 +363,7 @@ export default function PageBuilder() {
     setFormButtonLink(sec.buttonLink || "");
     setFormImageUrl(sec.imageUrl || "");
     setFormSlot(sec.slot);
+    setFormVisibility(sec.visibility ?? "everyone");
     setFormIsActive(sec.isActive);
     setWizardStep(1);
     setView("edit");
@@ -411,6 +416,7 @@ export default function PageBuilder() {
       buttonLink: isFlyer ? "" : formButtonLink,
       imageUrl: formImageUrl,
       slot: formSlot,
+      visibility: formVisibility,
       isActive: formIsActive,
     };
 
@@ -525,6 +531,7 @@ export default function PageBuilder() {
         imageUrl: sec.imageUrl,
         buttonText: sec.buttonText,
         buttonLink: sec.buttonLink,
+        visibility: sec.visibility ?? "everyone",
         isActive: false, // Clone starts as draft for safety
       };
       const res = await fetch("/api/admin/page-builder", {
@@ -722,7 +729,7 @@ export default function PageBuilder() {
                           <div className="min-w-0">
                             <h4 className="break-words text-sm font-bold leading-tight text-ink">{sec.name}</h4>
                             <p className="mt-1 text-[10px] font-semibold uppercase leading-relaxed tracking-wider text-marina">
-                              {sec.layout.replaceAll("-", " ")} <span aria-hidden="true">·</span> {sec.isActive ? "LIVE" : "Inactive"}
+                              {sec.layout.replaceAll("-", " ")} <span aria-hidden="true">·</span> {sec.visibility === "residents" ? "Residents only" : sec.visibility === "visitors" ? "Visitors only" : "Everyone"} <span aria-hidden="true">·</span> {sec.isActive ? "LIVE" : "Inactive"}
                             </p>
                           </div>
                         </div>
@@ -1370,7 +1377,7 @@ export default function PageBuilder() {
             </div>
           )}
 
-          {/* STEP 4: Choose Slot & Publish Switch */}
+          {/* STEP 4: Choose Slot, Visibility & Publish Switch */}
           {wizardStep === 4 && (
             <div className="space-y-6 animate-fadeIn max-w-md mx-auto">
               <div className="text-center">
@@ -1394,6 +1401,22 @@ export default function PageBuilder() {
                     <option value="below-hero">Below Hero (Above Services)</option>
                     <option value="below-services">Below Services (Above Community Preparedness)</option>
                     <option value="above-footer">Above Footer (Below About Section)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="section-visibility" className="block text-xs font-bold uppercase tracking-wider text-ink mb-2">
+                    Who can see this section?
+                  </label>
+                  <select
+                    id="section-visibility"
+                    value={formVisibility}
+                    onChange={(e) => setFormVisibility(e.target.value as PageSectionVisibility)}
+                    className="w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm text-ink focus:border-marina outline-none"
+                  >
+                    <option value="everyone">Everyone</option>
+                    <option value="visitors">Non-logged-in visitors only</option>
+                    <option value="residents">Approved logged-in residents only</option>
                   </select>
                 </div>
 

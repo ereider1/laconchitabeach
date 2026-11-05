@@ -7,6 +7,8 @@ import GlobalSettings from "@/lib/models/GlobalSettings";
 
 interface CustomPageSectionsProps {
   slot: "below-hero" | "below-services" | "above-footer";
+  isLoggedIn: boolean;
+  isResident: boolean;
 }
 
 function getPublicImageUrl(url?: string) {
@@ -19,7 +21,11 @@ function getPublicImageUrl(url?: string) {
   return url;
 }
 
-export default async function CustomPageSections({ slot }: CustomPageSectionsProps) {
+export default async function CustomPageSections({
+  slot,
+  isLoggedIn,
+  isResident,
+}: CustomPageSectionsProps) {
   let sections: IPageSection[] = [];
 
   try {
@@ -31,12 +37,20 @@ export default async function CustomPageSections({ slot }: CustomPageSectionsPro
       return null;
     }
 
-    sections = (await PageSection.find({
+    const activeSections = (await PageSection.find({
       slot,
       isActive: true,
     })
       .sort({ order: 1 })
       .lean()) as IPageSection[];
+    sections = activeSections.filter((section) => {
+      const visibility = section.visibility ?? "everyone";
+      return (
+        visibility === "everyone" ||
+        (visibility === "visitors" && !isLoggedIn) ||
+        (visibility === "residents" && isResident)
+      );
+    });
   } catch (error) {
     console.error("Error loading custom page sections:", error);
     return null;
@@ -99,10 +113,18 @@ export default async function CustomPageSections({ slot }: CustomPageSectionsPro
         if (layout === "two-col-img-left") {
           return (
             <section key={String(_id)} className="grid bg-sand md:grid-cols-2 border-t border-b border-sand">
-              <div
-                className="min-h-[360px] bg-cover bg-center"
-                style={publicImageUrl ? { backgroundImage: `url(${publicImageUrl})` } : { backgroundColor: "#e2e8f0" }}
-              />
+              <div className="relative min-h-[360px] bg-sand-dark">
+                {publicImageUrl && (
+                  <Image
+                    src={publicImageUrl}
+                    alt={title || "Section image"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain"
+                    unoptimized
+                  />
+                )}
+              </div>
               <div className="flex items-center px-8 py-16 sm:px-14">
                 {contentElement}
               </div>
@@ -116,10 +138,18 @@ export default async function CustomPageSections({ slot }: CustomPageSectionsPro
               <div className="flex items-center px-8 py-16 sm:px-14 order-last md:order-first">
                 {contentElement}
               </div>
-              <div
-                className="min-h-[360px] bg-cover bg-center"
-                style={publicImageUrl ? { backgroundImage: `url(${publicImageUrl})` } : { backgroundColor: "#e2e8f0" }}
-              />
+              <div className="relative min-h-[360px] bg-sand-dark">
+                {publicImageUrl && (
+                  <Image
+                    src={publicImageUrl}
+                    alt={title || "Section image"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain"
+                    unoptimized
+                  />
+                )}
+              </div>
             </section>
           );
         }
