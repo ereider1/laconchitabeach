@@ -4,9 +4,10 @@ import FlyerImage from "@/components/FlyerImage";
 import { connectToDatabase } from "@/lib/mongodb";
 import PageSection, { IPageSection } from "@/lib/models/PageSection";
 import GlobalSettings from "@/lib/models/GlobalSettings";
+import type { PageSectionSlot } from "@/lib/pageSectionSlots";
 
 interface CustomPageSectionsProps {
-  slot: "below-hero" | "below-services" | "above-footer";
+  slot: PageSectionSlot;
   isLoggedIn: boolean;
   isResident: boolean;
 }

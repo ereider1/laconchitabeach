@@ -1,9 +1,10 @@
 import mongoose, { Schema, models, model } from "mongoose";
 import { PAGE_SECTION_VISIBILITIES, type PageSectionVisibility } from "@/lib/pageSectionVisibility";
+import { PAGE_SECTION_SLOTS, type PageSectionSlot } from "@/lib/pageSectionSlots";
 
 export interface IPageSection {
   name: string;
-  slot: "below-hero" | "below-services" | "above-footer";
+  slot: PageSectionSlot;
   layout: "full-width" | "two-col-img-left" | "two-col-img-right" | "single-image-flyer";
   eyebrow?: string;
   title?: string;
@@ -23,7 +24,7 @@ const PageSectionSchema = new Schema<IPageSection>(
     name: { type: String, required: true },
     slot: {
       type: String,
-      enum: ["below-hero", "below-services", "above-footer"],
+      enum: PAGE_SECTION_SLOTS.map((slot) => slot.value),
       required: true,
     },
     layout: {
@@ -45,13 +46,16 @@ const PageSectionSchema = new Schema<IPageSection>(
 );
 
 const existingPageSection = models.PageSection as mongoose.Model<IPageSection> | undefined;
+const existingSlotEnum = existingPageSection?.schema.path("slot")?.options.enum;
 const existingLayoutEnum = existingPageSection?.schema.path("layout")?.options.enum;
 const existingContentRequired = existingPageSection?.schema.path("content")?.options.required;
 const existingVisibilityEnum = existingPageSection?.schema.path("visibility")?.options.enum;
 
 if (
   existingPageSection &&
-  ((!Array.isArray(existingLayoutEnum) || !existingLayoutEnum.includes("single-image-flyer")) ||
+  ((!Array.isArray(existingSlotEnum) || !PAGE_SECTION_SLOTS.every((slot) => existingSlotEnum.includes(slot.value))) ||
+    !Array.isArray(existingLayoutEnum) ||
+    !existingLayoutEnum.includes("single-image-flyer") ||
     existingContentRequired === true ||
     !Array.isArray(existingVisibilityEnum) ||
     !PAGE_SECTION_VISIBILITIES.every((visibility) => existingVisibilityEnum.includes(visibility)))

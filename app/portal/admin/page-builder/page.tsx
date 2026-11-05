@@ -25,11 +25,12 @@ import {
 import CommunityPreparednessEditor from "@/components/CommunityPreparednessEditor";
 import { defaultCommunityPreparednessContent, type CommunityPreparednessContent } from "@/lib/communityPreparedness";
 import type { PageSectionVisibility } from "@/lib/pageSectionVisibility";
+import { PAGE_SECTION_SLOTS, type PageSectionSlot } from "@/lib/pageSectionSlots";
 
 type Section = {
   _id: string;
   name: string;
-  slot: "below-hero" | "below-services" | "above-footer";
+  slot: PageSectionSlot;
   layout: "full-width" | "two-col-img-left" | "two-col-img-right" | "single-image-flyer";
   eyebrow?: string;
   title?: string;
@@ -559,11 +560,11 @@ export default function PageBuilder() {
     });
   };
 
-  const sectionsBySlot = {
-    "below-hero": sortActiveFirst(sections.filter((s) => s.slot === "below-hero")),
-    "below-services": sortActiveFirst(sections.filter((s) => s.slot === "below-services")),
-    "above-footer": sortActiveFirst(sections.filter((s) => s.slot === "above-footer")),
-  };
+  const sectionsBySlot = PAGE_SECTION_SLOTS.map(({ value, label }) => ({
+    value,
+    label,
+    sections: sortActiveFirst(sections.filter((section) => section.slot === value)),
+  }));
   const stepLabels = [
     "Layout",
     formLayout === "single-image-flyer" ? "Image" : "Content",
@@ -674,11 +675,11 @@ export default function PageBuilder() {
           {activeTab === "custom" && (loading && sections.length === 0 ? (
             <p className="text-center text-sm text-ink/65 py-12">Loading page builder details...</p>
           ) : (
-            Object.entries(sectionsBySlot).map(([slotName, slotSections]) => (
+            sectionsBySlot.map(({ value: slotName, label, sections: slotSections }) => (
               <div key={slotName} className="rounded-2xl border border-sand-dark bg-sand/30 p-3 sm:p-5">
                 <div className="mb-4 flex flex-col gap-1 border-b border-marina/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-xs font-bold uppercase leading-relaxed tracking-wider text-marina sm:text-sm">
-                    Slot: {slotName === "below-hero" ? "Below Hero Wave" : slotName === "below-services" ? "Below Resident Services" : "Above Footer"}
+                    Slot: {label}
                   </span>
                   <span className="text-xs font-medium text-ink/65">{slotSections.length} sections</span>
                 </div>
@@ -1367,7 +1368,7 @@ export default function PageBuilder() {
               <div className="text-center">
                 <h3 className="text-lg font-bold text-ink">Placement &amp; Status</h3>
                 <p className="text-xs text-ink/60 mt-1">
-                  Decide where on the homepage to insert this section, and set it live immediately or save as draft.
+                  Choose where to insert this section, and set it live immediately or save as draft.
                 </p>
               </div>
 
@@ -1375,16 +1376,16 @@ export default function PageBuilder() {
                 {/* Slot Selection */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink mb-2">
-                    Homepage Insertion Point Slot
+                    Page Insertion Point
                   </label>
                   <select
                     value={formSlot}
                     onChange={(e) => setFormSlot(e.target.value as Section["slot"])}
                     className="w-full rounded-xl border border-marina/20 bg-white px-4 py-2.5 text-sm text-ink focus:border-marina outline-none"
                   >
-                    <option value="below-hero">Below Hero (Above Services)</option>
-                    <option value="below-services">Below Services (Above Community Preparedness)</option>
-                    <option value="above-footer">Above Footer (Below About Section)</option>
+                    {PAGE_SECTION_SLOTS.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
                 </div>
 

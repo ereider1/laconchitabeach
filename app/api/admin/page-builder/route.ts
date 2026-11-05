@@ -5,6 +5,7 @@ import PageSection from "@/lib/models/PageSection";
 import GlobalSettings from "@/lib/models/GlobalSettings";
 import { isAdmin } from "@/lib/isAdmin";
 import { isPageSectionVisibility } from "@/lib/pageSectionVisibility";
+import { isPageSectionSlot } from "@/lib/pageSectionSlots";
 
 // 1. GET: Fetch all sections and the global setting
 export async function GET() {
@@ -35,6 +36,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const isFlyer = body.layout === "single-image-flyer";
   const sectionName = typeof body.name === "string" ? body.name.trim() : "";
+  if (!isPageSectionSlot(body.slot)) {
+    return NextResponse.json({ error: "Section placement is invalid" }, { status: 400 });
+  }
   if (body.visibility !== undefined && !isPageSectionVisibility(body.visibility)) {
     return NextResponse.json({ error: "Section visibility is invalid" }, { status: 400 });
   }
@@ -151,6 +155,9 @@ export async function PATCH(req: NextRequest) {
 
   if (updates.visibility !== undefined && !isPageSectionVisibility(updates.visibility)) {
     return NextResponse.json({ error: "Section visibility is invalid" }, { status: 400 });
+  }
+  if (updates.slot !== undefined && !isPageSectionSlot(updates.slot)) {
+    return NextResponse.json({ error: "Section placement is invalid" }, { status: 400 });
   }
 
   const allowed = ["name", "slot", "layout", "eyebrow", "title", "content", "imageUrl", "buttonText", "buttonLink", "visibility", "isActive", "order"];

@@ -1,8 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import CustomPageSections from "@/components/CustomPageSections";
 import { connectToDatabase } from "@/lib/mongodb";
 import GlobalSettings from "@/lib/models/GlobalSettings";
 import AboutImageCarousel from "@/components/AboutImageCarousel";
+import { hasApprovedResidentAccess } from "@/lib/registration";
 
 const defaultAboutContent = {
   eyebrow: "A small place with a big horizon",
@@ -15,6 +18,16 @@ This site is our public front door. Residents have a second, private door for di
 };
 
 export default async function AboutPage() {
+  const { userId } = await auth();
+  let isResident = false;
+  if (userId) {
+    try {
+      isResident = await hasApprovedResidentAccess(userId);
+    } catch (error) {
+      console.error("Failed to verify About page resident access:", error);
+    }
+  }
+
   let aboutContent = defaultAboutContent;
   try {
     await connectToDatabase();
@@ -38,13 +51,16 @@ export default async function AboutPage() {
             </h1>
           </div>
         </section>
+        <CustomPageSections slot="about-below-hero" isLoggedIn={!!userId} isResident={isResident} />
         <section className="content-card relative max-w-3xl px-7 py-10 sm:px-12 sm:py-14">
           <p className="eyebrow text-marina">{aboutContent.eyebrow}</p>
           <div className="mt-6 space-y-6 text-base leading-8 text-ink/70 sm:text-lg">
             {aboutContent.paragraphs.split(/\n\s*\n/).filter(Boolean).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
         </section>
+        <CustomPageSections slot="about-below-content" isLoggedIn={!!userId} isResident={isResident} />
         <AboutImageCarousel images={aboutContent.images} />
+        <CustomPageSections slot="about-above-footer" isLoggedIn={!!userId} isResident={isResident} />
       </main>
       <SiteFooter />
     </div>
