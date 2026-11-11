@@ -14,6 +14,7 @@ type Announcement = {
   category: "general" | "safety" | "maintenance" | "event";
   authorName: string;
   pinned: boolean;
+  status?: "live" | "archived";
   createdAt: string;
   imageDocumentId?: string;
   imageDocumentIds?: string[];
@@ -42,6 +43,7 @@ export default function AdminAnnouncements() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditableFields | null>(null);
   const [saving, setSaving] = useState(false);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<EditableFields>(emptyNew);
   const [adding, setAdding] = useState(false);
   const [gallery, setGallery] = useState<Array<{ _id: string; title: string }>>([]);
@@ -55,7 +57,7 @@ export default function AdminAnnouncements() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/announcements");
+      const res = await fetch("/api/announcements?includeArchived=true");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load announcements");
       setItems(data.announcements);
@@ -137,6 +139,53 @@ export default function AdminAnnouncements() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function toggleStatus(a: Announcement) {
+    const status = a.status === "archived" ? "live" : "archived";
+    setStatusUpdatingId(a._id);
+    setError(null);
+    try {
+      const res = await fetch("/api/announcements", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: a._id, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to update announcement status");
+      setItems((prev) => prev.map((item) => (item._id === a._id ? data.announcement : item)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }
+
+  function renderStatusToggle(a: Announcement) {
+    const isLive = a.status !== "archived";
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isLive}
+        aria-label={`${a.title} announcement status: ${isLive ? "Live" : "Archived"}`}
+        onClick={() => void toggleStatus(a)}
+        disabled={statusUpdatingId !== null}
+        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+          isLive ? "border-marina/25 bg-marina/5 text-marina" : "border-ink/15 bg-sand/50 text-ink/60"
+        }`}
+      >
+        {statusUpdatingId === a._id ? "Updating…" : isLive ? "Live" : "Archived"}
+        <span
+          aria-hidden="true"
+          className={`relative h-4 w-7 rounded-full p-0.5 transition ${isLive ? "bg-marina" : "bg-ink/30"}`}
+        >
+          <span
+            className={`block h-3 w-3 rounded-full bg-white transition-transform ${isLive ? "translate-x-3" : ""}`}
+          />
+        </span>
+      </button>
+    );
   }
 
   async function remove(id: string) {
@@ -274,6 +323,7 @@ export default function AdminAnnouncements() {
               <div key={a._id} className="rounded-xl border border-ink/10 p-5">
                 {isEditing && draft ? (
                   <div className="space-y-3">
+                    <div className="flex justify-end">{renderStatusToggle(a)}</div>
                     <input
                       className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
                       value={draft.title}
@@ -337,7 +387,8 @@ export default function AdminAnnouncements() {
                         <p className="mt-3 text-sm text-ink/70">{a.body}</p>
                         </div>
                       </div>
-                      <div className="flex shrink-0 gap-3">
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                        {renderStatusToggle(a)}
                         <button
                           onClick={() => startEdit(a)}
                           className="text-xs font-medium text-marina underline underline-offset-4"

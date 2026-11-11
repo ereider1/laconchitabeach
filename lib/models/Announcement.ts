@@ -7,6 +7,7 @@ export interface IAnnouncement {
   authorName: string;
   authorClerkId: string;
   pinned: boolean;
+  status: "live" | "archived";
   imageDocumentId?: string;
   imageDocumentIds?: string[];
   createdAt: Date;
@@ -25,6 +26,7 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
     authorName: { type: String, required: true },
     authorClerkId: { type: String, required: true },
     pinned: { type: Boolean, default: false },
+    status: { type: String, enum: ["live", "archived"], default: "live" },
     imageDocumentId: { type: String },
     imageDocumentIds: { type: [String], default: undefined },
   },

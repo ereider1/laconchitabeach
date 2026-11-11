@@ -6,15 +6,19 @@ import { isAdmin } from "@/lib/isAdmin";
 import { hasApprovedResidentAccess } from "@/lib/registration";
 import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasApprovedResidentAccess(userId))) {
+  const admin = await isAdmin(userId);
+  if (!admin && !(await hasApprovedResidentAccess(userId))) {
     return NextResponse.json({ error: "Resident registration is not approved" }, { status: 403 });
   }
 
+  const includeArchived = admin && req.nextUrl.searchParams.get("includeArchived") === "true";
   await connectToDatabase();
-  const announcements = await Announcement.find().sort({ pinned: -1, createdAt: -1 }).lean();
+  const announcements = await Announcement.find(includeArchived ? {} : { status: { $ne: "archived" } })
+    .sort({ pinned: -1, createdAt: -1 })
+    .lean();
   return NextResponse.json({ announcements: announcements.map((announcement) => ({
     ...announcement,
     imageDocumentIds: announcement.imageDocumentIds?.length
@@ -63,8 +67,11 @@ export async function PATCH(req: NextRequest) {
 
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  if ("status" in updates && updates.status !== "live" && updates.status !== "archived") {
+    return NextResponse.json({ error: "status must be live or archived" }, { status: 400 });
+  }
 
-  const allowed = ["title", "body", "category", "pinned", "imageDocumentId", "imageDocumentIds"];
+  const allowed = ["title", "body", "category", "pinned", "status", "imageDocumentId", "imageDocumentIds"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];

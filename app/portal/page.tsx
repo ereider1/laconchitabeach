@@ -15,7 +15,7 @@ async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
   const [hasProfile, announcements, events, myPosts] = await Promise.all([
     Resident.exists({ clerkUserId }),
-    Announcement.find().sort({ createdAt: -1 }).limit(2).lean(),
+    Announcement.find({ status: { $ne: "archived" } }).sort({ createdAt: -1 }).limit(2).lean(),
     Event.find({ startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).lean(),
     MaintenanceRequest.find({ submittedByClerkId: clerkUserId }).sort({ createdAt: -1 }).lean(),
   ]);
