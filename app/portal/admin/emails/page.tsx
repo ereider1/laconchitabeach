@@ -17,7 +17,7 @@ export default async function AdminEmailsPage() {
       <div className="mb-6">
         <h2 className="font-display text-2xl text-ink">Emails</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Messages sent through the website contact form.
+          Website contact messages and your sent replies.
         </p>
       </div>
 
@@ -30,6 +30,11 @@ export default async function AdminEmailsPage() {
           message: message.message,
           createdAt: message.createdAt.toLocaleString(),
           dateTime: message.createdAt.toISOString(),
+          replies: (message.replies ?? []).map((reply) => ({
+            body: reply.body,
+            sentAt: reply.sentAt.toLocaleString(),
+            dateTime: reply.sentAt.toISOString(),
+          })),
         }))}
       />
     </section>

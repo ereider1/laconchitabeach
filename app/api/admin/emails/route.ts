@@ -65,7 +65,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unable to send your response right now. Please try again." }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true });
+    const sentAt = new Date();
+    try {
+      const updatedMessage = await ContactMessage.findByIdAndUpdate(
+        payload.id,
+        { $push: { replies: { body: reply, sentAt } } },
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedMessage) {
+        return NextResponse.json(
+          { error: "Your response was sent, but its conversation was removed before it could be saved. Do not resend it." },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        reply: {
+          body: reply,
+          sentAt: sentAt.toLocaleString(),
+          dateTime: sentAt.toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Email was sent, but its conversation history could not be saved.", error);
+      return NextResponse.json(
+        { error: "Your response was sent, but its conversation history could not be saved. Do not resend it." },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Unable to send an admin email response.", error);
     return NextResponse.json({ error: "Unable to send your response right now. Please try again." }, { status: 502 });

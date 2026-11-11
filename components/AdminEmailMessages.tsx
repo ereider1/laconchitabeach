@@ -10,6 +10,11 @@ export type AdminEmailMessage = {
   message: string;
   createdAt: string;
   dateTime: string;
+  replies: {
+    body: string;
+    sentAt: string;
+    dateTime: string;
+  }[];
 };
 
 export default function AdminEmailMessages({
@@ -17,7 +22,9 @@ export default function AdminEmailMessages({
 }: {
   initialMessages: AdminEmailMessage[];
 }) {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(
+    initialMessages.map((message) => ({ ...message, replies: message.replies ?? [] }))
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -41,9 +48,20 @@ export default function AdminEmailMessages({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: message.id, reply }),
       });
-      const result: { error?: string } = await response.json();
-      if (!response.ok) throw new Error(result.error ?? "Failed to send response.");
+      const result: { error?: string; reply?: AdminEmailMessage["replies"][number] } =
+        await response.json();
+      const sentReply = result.reply;
+      if (!response.ok || !sentReply) {
+        throw new Error(result.error ?? "Failed to send response.");
+      }
 
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage.id === message.id
+            ? { ...currentMessage, replies: [...currentMessage.replies, sentReply] }
+            : currentMessage
+        )
+      );
       setReplyingId(null);
       setReplyText("");
       setSuccess(`Response sent to ${message.email}.`);
@@ -111,9 +129,12 @@ export default function AdminEmailMessages({
                 </p>
               </div>
               <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
-                <time dateTime={message.dateTime} className="text-xs text-ink/50">
-                  {message.createdAt}
-                </time>
+                <div className="text-right">
+                  <span className="block text-xs font-semibold text-marina">Received</span>
+                  <time dateTime={message.dateTime} className="text-xs text-ink/50">
+                    {message.createdAt}
+                  </time>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -140,6 +161,23 @@ export default function AdminEmailMessages({
             <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink/80">
               {message.message}
             </p>
+            {message.replies.length > 0 && (
+              <ol className="mt-4 space-y-3 border-l-2 border-marina/20 pl-4">
+                {message.replies.map((reply, index) => (
+                  <li key={`${reply.dateTime}-${index}`} className="rounded-xl bg-sand/40 p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold text-marina">Sent</span>
+                      <time dateTime={reply.dateTime} className="text-xs text-ink/50">
+                        {reply.sentAt}
+                      </time>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-ink/80">
+                      {reply.body}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
             {replyingId === message.id && (
               <div className="mt-5 border-t border-ink/10 pt-4">
                 <label
