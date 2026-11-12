@@ -73,25 +73,25 @@ export const defaultHomePageContent: HomePageContent = {
       title: "Announcements",
       description: "Board updates, closures, and safety notices in one clear community feed.",
       actionText: "Open portal",
-      href: "/sign-in",
+      href: "/portal/announcements",
     },
     {
       title: "Resident directory",
       description: "Find a neighbor by name or street, with privacy controlled by each resident.",
       actionText: "Open portal",
-      href: "/sign-in",
+      href: "/portal/directory",
     },
     {
       title: "Documents",
       description: "Bylaws, budgets, meeting minutes, and community forms in one organized place.",
       actionText: "Open portal",
-      href: "/sign-in",
+      href: "/portal/documents",
     },
     {
       title: "Community corner",
       description: "Lost and found, local listings, maintenance requests, and neighbor-to-neighbor help.",
       actionText: "Open portal",
-      href: "/sign-in",
+      href: "/portal/maintenance",
     },
   ],
   lifeEyebrow: "Life by the water",
@@ -118,6 +118,17 @@ export const defaultHomePageContent: HomePageContent = {
   footerTagline: "Community news, neighbors, and beach life.",
   footerCopyright: "La Conchita.",
 };
+
+const residentServiceHrefs: Record<string, string> = {
+  announcements: "/portal/announcements",
+  "resident directory": "/portal/directory",
+  documents: "/portal/documents",
+  "community corner": "/portal/maintenance",
+};
+
+export function getHomePageServiceHref(service: HomePageContent["services"][number]) {
+  return residentServiceHrefs[service.title.trim().toLowerCase()] ?? service.href;
+}
 
 function isSafeUrl(value: string) {
   if (/[\u0000-\u001f"'<>\\]/.test(value)) return false;

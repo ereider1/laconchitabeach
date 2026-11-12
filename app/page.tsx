@@ -11,7 +11,11 @@ import {
 } from "@/components/WeatherDisclosure";
 import { ArrowRight, CloudRain, ExternalLink, TriangleAlert } from "lucide-react";
 import { defaultCommunityPreparednessContent } from "@/lib/communityPreparedness";
-import { defaultHomePageContent, isHomePageContent } from "@/lib/homePageContent";
+import {
+  defaultHomePageContent,
+  getHomePageServiceHref,
+  isHomePageContent,
+} from "@/lib/homePageContent";
 import { connectToDatabase } from "@/lib/mongodb";
 import GlobalSettings from "@/lib/models/GlobalSettings";
 import { hasApprovedResidentAccess } from "@/lib/registration";
@@ -125,16 +129,12 @@ export default async function HomePage() {
               {homePageContent.services.map((service, index) => (
                 <Link
                   key={`${service.title}-${index}`}
-                  href={service.href}
+                  href={getHomePageServiceHref(service)}
                   data-mark={String(index + 1).padStart(2, "0")}
-                  className="service-card rounded-2xl p-6 transition hover:-translate-y-1 hover:border-marina/35 hover:shadow-xl"
+                  className="service-card group rounded-2xl p-6 transition hover:-translate-y-1 hover:border-marina/35 hover:shadow-xl"
                 >
-                  <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-ink">{service.title}</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors group-hover:text-marina group-focus-visible:text-marina">{service.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-ink/60">{service.description}</p>
-                  <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-marina">
-                    {service.actionText}
-                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </span>
                 </Link>
               ))}
             </div>
