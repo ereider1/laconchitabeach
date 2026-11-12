@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import {
   Bell,
   CalendarDays,
+  Mail,
   FileText,
   Gauge,
   Menu,
@@ -35,6 +36,7 @@ const links: Array<{
   { href: "/portal/events", label: "Events & RSVPs", icon: Sparkles },
   { href: "/portal/maintenance", label: "Community Corner", icon: MessageCircle },
   { href: "/portal/profile", label: "My profile", icon: UserRound },
+  { href: "/portal/contact", label: "Contact Admin", icon: Mail },
 ];
 
 export default function PortalSidebar({
@@ -127,13 +129,18 @@ export default function PortalSidebar({
           {navLinks.map((l) => {
             const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
             const Icon = l.icon;
+            const isContactLink = l.href === "/portal/contact";
             return (
               <Link
                 key={l.href}
                 href={l.href}
                 onClick={() => setIsMenuOpen(false)}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  active
+                  isContactLink
+                    ? active
+                      ? "border border-coral bg-coral text-white shadow-lg"
+                      : "border border-coral/40 bg-coral/15 font-semibold text-white hover:bg-coral/25"
+                    : active
                     ? "bg-marina text-white shadow-lg"
                     : "text-white/65 hover:bg-white/10 hover:text-white"
                 }`}

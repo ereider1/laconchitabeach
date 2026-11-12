@@ -6,9 +6,15 @@ import { useRouter } from "next/navigation";
 const emptyForm = { name: "", email: "", subject: "", message: "" };
 const successMessage = "Thank you for reaching out. Your message has been sent. We will respond shortly.";
 
-export default function ContactForm() {
+export default function ContactForm({
+  initialEmail = "",
+  redirectTo = "/",
+}: {
+  initialEmail?: string;
+  redirectTo?: string;
+}) {
   const router = useRouter();
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState({ ...emptyForm, email: initialEmail });
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{
     kind: "success" | "error";
@@ -18,9 +24,9 @@ export default function ContactForm() {
   useEffect(() => {
     if (feedback?.kind !== "success") return;
 
-    const timeoutId = window.setTimeout(() => router.replace("/"), 2000);
+    const timeoutId = window.setTimeout(() => router.replace(redirectTo), 2000);
     return () => window.clearTimeout(timeoutId);
-  }, [feedback?.kind, router]);
+  }, [feedback?.kind, redirectTo, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,7 +45,7 @@ export default function ContactForm() {
         throw new Error(result.error ?? "Unable to send your message.");
       }
 
-      setForm(emptyForm);
+      setForm({ ...emptyForm, email: initialEmail });
       setFeedback({ kind: "success", message: successMessage });
     } catch (error) {
       setFeedback({
