@@ -9,6 +9,7 @@ import Resident from "@/lib/models/Resident";
 import AnnouncementMediaCarousel from "@/components/AnnouncementMediaCarousel";
 import PortalCalendarPage from "@/app/portal/calendar/page";
 import { hasApprovedResidentAccess } from "@/lib/registration";
+import ResidentComments from "@/components/ResidentComments";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
@@ -139,6 +140,7 @@ export default async function PortalDashboard() {
                       />
                     </div>
                   )}
+                  <ResidentComments targetType="announcement" targetId={a._id} />
                 </div>
               </details>
             ))}
@@ -156,13 +158,15 @@ export default async function PortalDashboard() {
               <p className="text-sm text-ink/60">No upcoming events.</p>
             )}
             {events.map((event) => (
-              <Link
-                key={event._id}
-                href={`/portal/events#event-${event._id}`}
-                className="block rounded-lg border border-ink/10 p-4 font-medium text-ink transition hover:border-marina/30 hover:text-marina"
-              >
-                {event.title}
-              </Link>
+              <div key={event._id} className="rounded-lg border border-ink/10 p-4">
+                <Link
+                  href={`/portal/events#event-${event._id}`}
+                  className="block font-medium text-ink transition hover:text-marina"
+                >
+                  {event.title}
+                </Link>
+                <ResidentComments targetType="event" targetId={event._id} />
+              </div>
             ))}
           </div>
         </section>
