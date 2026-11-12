@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, MapPin, Phone, Search, UsersRound } from "lucide-react";
+import { Mail, MapPin, Phone, Search } from "lucide-react";
 
 type Resident = {
   _id: string;
@@ -25,6 +25,14 @@ export default function DirectoryPage() {
   const residents = currentResult?.residents ?? [];
   const isAdmin = currentResult?.isAdmin ?? false;
   const error = currentResult?.error ?? null;
+  const groupedResidents = residents.reduce<Record<string, Resident[]>>((groups, resident) => {
+    const letter = resident.fullName.trim().charAt(0).toUpperCase();
+    const key = /^[A-Z]$/.test(letter) ? letter : "#";
+    (groups[key] ??= []).push(resident);
+    return groups;
+  }, {});
+  const directoryLetters = Object.keys(groupedResidents).sort();
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -96,54 +104,66 @@ export default function DirectoryPage() {
 
       {!loading && !error && residents.length > 0 && (
         <>
-          <ul className="mt-3 grid gap-3 xl:hidden">
-            {residents.map((r) => (
-              <li
-                key={r._id}
-                className="min-w-0 rounded-xl border border-ink/10 bg-white/90 p-4 shadow-sm sm:p-5"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sand text-sm font-semibold text-marina">
-                    {r.fullName
-                      .split(/\s+/)
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="break-words font-semibold leading-5 text-ink">{r.fullName}</h3>
-                    <p className="mt-1 flex items-start gap-1.5 break-words text-sm leading-5 text-ink/60">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
-                      {r.address}
-                    </p>
-                  </div>
-                </div>
-                {isAdmin && (
-                  <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 text-sm">
-                    {r.email && (
-                      <a
-                        href={`mailto:${r.email}`}
-                        className="flex min-w-0 items-start gap-2 rounded-lg py-1 text-marina underline decoration-marina/30 underline-offset-4"
+          <div className="relative xl:hidden">
+            <nav
+              aria-label="Jump to last name"
+              className="sticky top-1/2 z-10 float-right -mr-1 ml-2 flex -translate-y-1/2 flex-col items-center rounded-full bg-white/85 px-1 py-1 shadow-sm backdrop-blur-sm"
+            >
+              {alphabet.map((letter) => {
+                const available = directoryLetters.includes(letter);
+                return (
+                  <a
+                    key={letter}
+                    href={available ? `#directory-letter-${letter}` : undefined}
+                    aria-label={available ? `Jump to ${letter}` : `${letter} has no residents`}
+                    aria-disabled={!available}
+                    tabIndex={available ? 0 : -1}
+                    className={`grid h-[1.28rem] w-5 place-items-center text-[0.72rem] leading-none transition sm:h-6 sm:w-6 sm:text-xs ${
+                      available
+                        ? "font-medium text-marina hover:scale-110 hover:text-deep-ocean"
+                        : "pointer-events-none text-ink/20"
+                    }`}
+                  >
+                    {letter}
+                  </a>
+                );
+              })}
+            </nav>
+            <ul className="grid gap-3 pr-8">
+              {directoryLetters.map((letter) => (
+                <li key={letter} id={`directory-letter-${letter}`} className="scroll-mt-6">
+                  <h3 className="mb-2 border-b border-ink/10 px-1 pb-1 text-sm font-semibold text-ink/70">{letter}</h3>
+                  <ul className="grid gap-3">
+                    {groupedResidents[letter].map((r) => (
+                      <li
+                        key={r._id}
+                        className="min-w-0 rounded-xl border border-ink/10 bg-white/90 p-4 shadow-sm sm:p-5"
                       >
-                        <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className="break-all">{r.email}</span>
-                      </a>
-                    )}
-                    {r.phone && (
-                      <a
-                        href={`tel:${r.phone}`}
-                        className="flex min-w-0 items-center gap-2 rounded-lg py-1 text-ink/70"
-                      >
-                        <Phone className="h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
-                        <span>{r.phone}</span>
-                      </a>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sand text-sm font-semibold text-marina">
+                            {r.fullName.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="break-words font-semibold leading-5 text-ink">{r.fullName}</h4>
+                            <p className="mt-1 flex items-start gap-1.5 break-words text-sm leading-5 text-ink/60">
+                              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
+                              {r.address}
+                            </p>
+                          </div>
+                        </div>
+                        {isAdmin && (
+                          <div className="mt-4 grid gap-2 border-t border-ink/10 pt-3 text-sm">
+                            {r.email && <a href={`mailto:${r.email}`} className="flex min-w-0 items-start gap-2 rounded-lg py-1 text-marina underline decoration-marina/30 underline-offset-4"><Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="break-all">{r.email}</span></a>}
+                            {r.phone && <a href={`tel:${r.phone}`} className="flex min-w-0 items-center gap-2 rounded-lg py-1 text-ink/70"><Phone className="h-4 w-4 shrink-0 text-marina" aria-hidden="true" /><span>{r.phone}</span></a>}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <div className="mt-3 hidden overflow-hidden rounded-xl border border-ink/10 xl:block">
             <table className="w-full table-fixed text-left text-sm">
