@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MessageCircle } from "lucide-react";
 
 type Comment = { _id: string; authorName: string; body: string; createdAt: string };
 type Props = { targetType: "announcement" | "event" | "community-post"; targetId: string };
@@ -60,7 +61,10 @@ export default function ResidentComments({ targetType, targetId }: Props) {
   }
 
   return <section className="mt-5 border-t border-ink/10 pt-4" aria-label="Resident comments">
-    <p className="text-sm font-semibold text-marina">Comments {comments.length > 0 && `(${comments.length})`}</p>
+    <p className="flex items-center gap-2 text-sm font-semibold text-marina">
+      <MessageCircle className="h-4 w-4" aria-hidden="true" />
+      <span>Comments {comments.length > 0 && `(${comments.length})`}</span>
+    </p>
     <div className="mt-3 space-y-2">{loading ? <p className="text-xs text-ink/50">Loading comments…</p> : comments.map((comment) => <div key={comment._id} className="rounded-lg bg-sand/50 px-3 py-2"><p className="text-xs font-semibold text-ink">{comment.authorName} <span className="font-normal text-ink/45">· {new Date(comment.createdAt).toLocaleDateString()}</span></p>{editingId === comment._id ? <><textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} maxLength={2000} className="mt-2 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm" /><div className="mt-2 flex gap-3"><button type="button" onClick={() => void updateComment(comment._id).catch((e) => setError(e.message))} className="text-xs font-semibold text-marina">Save</button><button type="button" onClick={() => setEditingId(null)} className="text-xs text-ink/60">Cancel</button></div></> : <><p className="mt-1 whitespace-pre-wrap text-sm text-ink/70">{comment.body}</p>{canModerate && <div className="mt-2 flex gap-3"><button type="button" onClick={() => { setEditingId(comment._id); setEditBody(comment.body); }} className="text-xs font-semibold text-marina underline underline-offset-2">Edit</button><button type="button" onClick={() => void deleteComment(comment._id).catch((e) => setError(e.message))} className="text-xs font-semibold text-coral underline underline-offset-2">Delete</button></div>}</>}</div>)}</div>
     <form onSubmit={submit} className="mt-3 flex flex-col gap-2 sm:flex-row">
       <input value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder="Add a comment…" aria-label="Add a comment" className="min-w-0 flex-1 rounded-lg border border-ink/15 px-3 py-2 text-sm" />
