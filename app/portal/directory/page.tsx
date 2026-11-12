@@ -68,7 +68,7 @@ export default function DirectoryPage() {
           Only residents who&apos;ve opted in appear here.
         </p>
 
-        <div className="relative mt-5 max-w-xl sm:mt-6">
+        <div className="relative mt-5 max-w-xl pr-8 sm:mt-6 sm:pr-0">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40"
             aria-hidden="true"
@@ -84,7 +84,7 @@ export default function DirectoryPage() {
         </div>
       </div>
 
-      <div className="mt-5 flex min-h-6 items-center justify-between gap-3 sm:mt-6">
+      <div className="mt-5 flex min-h-6 items-center justify-between gap-3 pr-8 sm:mt-6 sm:pr-0">
         <h2 className="text-sm font-semibold text-ink">Neighbors</h2>
         <p className="text-xs text-ink/55" aria-live="polite">
           {loading ? "Loading residents…" : `${residents.length} ${residents.length === 1 ? "resident" : "residents"}`}
@@ -107,7 +107,7 @@ export default function DirectoryPage() {
           <div className="relative xl:hidden">
             <nav
               aria-label="Jump to last name"
-              className="fixed right-2 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center rounded-full bg-white/90 px-1 py-1 shadow-sm backdrop-blur-sm"
+              className="fixed right-2 top-[58%] z-30 flex -translate-y-1/2 flex-col items-center rounded-full bg-white/90 px-1 py-1 shadow-sm backdrop-blur-sm"
             >
               {alphabet.map((letter) => {
                 const available = directoryLetters.includes(letter);
