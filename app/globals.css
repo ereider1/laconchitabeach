@@ -8,8 +8,8 @@
 
 
 :root {
-  --font-display: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Avenir Next", Avenir, var(--font-plus-jakarta-sans), "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Avenir Next", Avenir, var(--font-plus-jakarta-sans), "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --ocean: #079ec4;
   --deep-ocean: #0b3040;

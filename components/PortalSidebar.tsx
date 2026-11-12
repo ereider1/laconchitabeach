@@ -52,7 +52,11 @@ export default function PortalSidebar({
     initialPendingRegistrationCount,
   );
   const navLinks = [
-    ...links.filter((link) => link.href !== "/portal/documents" || isAdmin),
+    ...links.filter(
+      (link) =>
+        (link.href !== "/portal/documents" || isAdmin) &&
+        (link.href !== "/portal/contact" || !isAdmin),
+    ),
     ...(isAdmin ? [{ href: "/portal/admin", label: "Admin", icon: ShieldCheck }] : []),
   ];
 

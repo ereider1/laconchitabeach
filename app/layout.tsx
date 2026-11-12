@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
 
 const title = "La Conchita Beach | California Coastal Community";
 const description =
@@ -59,7 +66,7 @@ export default async function RootLayout({
     : configuredPublishableKey;
 
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" className={plusJakartaSans.variable} data-scroll-behavior="smooth">
       <body className="font-body">
         <ClerkProvider
           publishableKey={publishableKey}
