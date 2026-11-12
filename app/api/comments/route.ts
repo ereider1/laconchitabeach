@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { hasApprovedResidentAccess } from "@/lib/registration";
+import { isAdmin } from "@/lib/isAdmin";
 import Comment, { type CommentTargetType } from "@/lib/models/Comment";
 import Announcement from "@/lib/models/Announcement";
 import Event from "@/lib/models/Event";
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
   await connectToDatabase();
   const comments = await Comment.find({ targetType: targetType as CommentTargetType, targetId }).sort({ createdAt: 1 }).lean();
-  return NextResponse.json({ comments });
+  return NextResponse.json({ comments, canModerate: await isAdmin(access.userId) });
 }
 
 export async function POST(req: NextRequest) {
@@ -59,4 +60,31 @@ export async function POST(req: NextRequest) {
     body: trimmedBody,
   });
   return NextResponse.json({ comment }, { status: 201 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin(userId))) return NextResponse.json({ error: "Only board members can edit comments" }, { status: 403 });
+  const { id, body } = await req.json();
+  const trimmedBody = typeof body === "string" ? body.trim() : "";
+  if (!id || !trimmedBody || trimmedBody.length > 2000) {
+    return NextResponse.json({ error: "A comment between 1 and 2,000 characters is required" }, { status: 400 });
+  }
+  await connectToDatabase();
+  const comment = await Comment.findByIdAndUpdate(id, { body: trimmedBody }, { new: true }).lean();
+  if (!comment) return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  return NextResponse.json({ comment });
+}
+
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin(userId))) return NextResponse.json({ error: "Only board members can delete comments" }, { status: 403 });
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  await connectToDatabase();
+  const comment = await Comment.findByIdAndDelete(id);
+  if (!comment) return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  return NextResponse.json({ ok: true });
 }
