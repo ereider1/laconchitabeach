@@ -24,6 +24,45 @@ const PHOTO_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
+function extensionForPhoto(file: File) {
+  const type = PHOTO_TYPES[file.type];
+  if (type) return type;
+  const match = file.name.toLowerCase().match(/\.(avif|gif|jpe?g|png|webp)$/);
+  return match?.[1] === "jpeg" ? "jpg" : match?.[1];
+}
+
+async function preparePhoto(file: File): Promise<{ file: File; extension: string }> {
+  const extension = extensionForPhoto(file);
+  if (!extension || (file.type && !file.type.startsWith("image/"))) {
+    throw new Error("Choose a JPG, PNG, GIF, WebP, or AVIF image.");
+  }
+  if (file.size <= MAX_PHOTO_SIZE) return { file, extension };
+
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const image = new window.Image();
+    image.src = imageUrl;
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("This photo could not be prepared for upload."));
+    });
+    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const compressed = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.82)
+    );
+    if (!compressed || compressed.size > MAX_PHOTO_SIZE) {
+      throw new Error("This photo is still too large. Choose a smaller image.");
+    }
+    return { file: new File([compressed], "community-photo.jpg", { type: "image/jpeg" }), extension: "jpg" };
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
 const statusColor: Record<Req["status"], string> = {
   open: "bg-coral/20 text-coral",
   "in-progress": "bg-dune/20 text-dune",
@@ -99,13 +138,10 @@ export default function MaintenancePage() {
     try {
       let photoUrl: string | undefined;
       if (photo) {
-        const extension = PHOTO_TYPES[photo.type];
-        if (!extension || photo.size > MAX_PHOTO_SIZE) {
-          throw new Error("Choose a JPG, PNG, GIF, WebP, or AVIF image up to 4 MB.");
-        }
+        const preparedPhoto = await preparePhoto(photo);
 
         const uploadForm = new FormData();
-        uploadForm.append("photo", photo, `${crypto.randomUUID()}.${extension}`);
+        uploadForm.append("photo", preparedPhoto.file, `${crypto.randomUUID()}.${preparedPhoto.extension}`);
         const uploadResponse = await fetch("/api/maintenance/upload", {
           method: "POST",
           body: uploadForm,
@@ -195,7 +231,7 @@ export default function MaintenancePage() {
             id="community-photo"
             ref={photoInputRef}
             type="file"
-            accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+            accept="image/*"
             className="block w-full text-sm text-ink/70 file:mr-3 file:rounded-full file:border-0 file:bg-marina/10 file:px-4 file:py-2 file:font-medium file:text-marina"
             onChange={(e) => {
               if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);

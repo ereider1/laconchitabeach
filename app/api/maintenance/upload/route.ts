@@ -12,6 +12,13 @@ const PHOTO_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
+function extensionForPhoto(photo: File) {
+  const type = PHOTO_TYPES[photo.type];
+  if (type) return type;
+  const match = photo.name.toLowerCase().match(/\.(avif|gif|jpe?g|png|webp)$/);
+  return match?.[1] === "jpeg" ? "jpg" : match?.[1];
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   const { userId } = await auth();
   if (!userId) {
@@ -35,7 +42,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    const extension = PHOTO_TYPES[photo.type];
+    const extension = extensionForPhoto(photo);
     if (!extension) {
       return NextResponse.json(
         { error: "Choose a JPG, PNG, GIF, WebP, or AVIF image." },
@@ -49,7 +56,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       {
         access: "private",
         addRandomSuffix: true,
-        contentType: photo.type,
+        contentType: photo.type || `image/${extension === "jpg" ? "jpeg" : extension}`,
       }
     );
     return NextResponse.json({ url: blob.url });

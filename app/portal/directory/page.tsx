@@ -107,7 +107,7 @@ export default function DirectoryPage() {
           <div className="relative xl:hidden">
             <nav
               aria-label="Jump to last name"
-              className="sticky top-1/2 z-10 float-right -mr-1 ml-2 flex -translate-y-1/2 flex-col items-center rounded-full bg-white/85 px-1 py-1 shadow-sm backdrop-blur-sm"
+              className="fixed right-2 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center rounded-full bg-white/90 px-1 py-1 shadow-sm backdrop-blur-sm"
             >
               {alphabet.map((letter) => {
                 const available = directoryLetters.includes(letter);
