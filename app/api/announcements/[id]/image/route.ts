@@ -31,7 +31,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     headers: {
       "Content-Type": result.blob.contentType ?? "application/octet-stream",
       "Content-Disposition": "inline",
-      "Cache-Control": "private, no-cache",
+      // The source is private, but approved residents can safely reuse the
+      // same image in their browser for a short period without re-fetching it.
+      "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
     },
   });
 }
