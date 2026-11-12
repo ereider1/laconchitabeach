@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAnnouncementAuthorName } from "@/lib/announcementAuthor";
 import AnnouncementMediaCarousel from "@/components/AnnouncementMediaCarousel";
+import ResidentComments from "@/components/ResidentComments";
 
 type Announcement = {
   _id: string;
@@ -166,6 +167,7 @@ export default function AnnouncementsClient({ isAdmin }: { isAdmin: boolean }) {
                 <p className="mt-3 text-xs text-ink/40">
                   {getAnnouncementAuthorName(a.authorName)} &middot; {new Date(a.createdAt).toLocaleDateString()}
                 </p>
+                <ResidentComments targetType="announcement" targetId={a._id} />
               </div>
             </div>
           </article>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Check } from "lucide-react";
+import ResidentComments from "@/components/ResidentComments";
 
 type EventItem = {
   _id: string;
@@ -142,6 +143,7 @@ export default function PortalEventsPage() {
                   </span>
                 </p>
               )}
+              <ResidentComments targetType="event" targetId={e._id} />
             </div>
           );
         })}

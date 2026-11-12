@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Pencil, X } from "lucide-react";
 import { COMMUNITY_POST_CATEGORIES } from "@/lib/communityCategories";
+import ResidentComments from "@/components/ResidentComments";
 
 type Req = {
   _id: string;
@@ -397,6 +398,7 @@ export default function MaintenancePage() {
             </div>
             <p className="mt-4 w-full text-sm leading-6 text-ink/70">{r.description}</p>
             {r.canEdit && <button type="button" onClick={() => startEdit(r)} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-marina underline underline-offset-4"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Edit post</button>}
+            <ResidentComments targetType="community-post" targetId={r._id} />
               </>
             )}
           </div>
