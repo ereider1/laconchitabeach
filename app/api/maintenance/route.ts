@@ -20,7 +20,13 @@ export async function GET() {
 
   await connectToDatabase();
   const requests = await MaintenanceRequest.find().sort({ createdAt: -1 }).lean();
-  return NextResponse.json({ requests });
+  const admin = await isAdmin(userId);
+  return NextResponse.json({
+    requests: requests.map((request) => ({
+      ...request,
+      canEdit: admin || request.submittedByClerkId === userId,
+    })),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -72,11 +78,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   const allowed = admin
-    ? ["address", "category", "description", "status"]
-    : ["address", "category", "description"];
+    ? ["address", "category", "description", "status", "photoUrl"]
+    : ["address", "category", "description", "photoUrl"];
   const fields: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in updates) fields[key] = updates[key];
+  }
+  if ("photoUrl" in fields && fields.photoUrl !== null && typeof fields.photoUrl !== "string") {
+    return NextResponse.json({ error: "Invalid photo URL" }, { status: 400 });
   }
 
   await connectToDatabase();

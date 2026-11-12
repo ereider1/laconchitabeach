@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { Pencil, X } from "lucide-react";
 import { COMMUNITY_POST_CATEGORIES } from "@/lib/communityCategories";
 
 type Req = {
@@ -13,6 +14,7 @@ type Req = {
   status: "open" | "in-progress" | "resolved";
   photoUrl?: string;
   createdAt: string;
+  canEdit?: boolean;
 };
 
 const MAX_PHOTO_SIZE = 4 * 1024 * 1024;
@@ -46,14 +48,16 @@ async function preparePhoto(file: File): Promise<{ file: File; extension: string
       image.onload = () => resolve();
       image.onerror = () => reject(new Error("This photo could not be prepared for upload."));
     });
-    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const compressed = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.82)
-    );
+    let compressed: Blob | null = null;
+    for (const [maxDimension, quality] of [[1600, 0.82], [1280, 0.72], [1024, 0.62]] as const) {
+      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+      compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (compressed && compressed.size <= MAX_PHOTO_SIZE) break;
+    }
     if (!compressed || compressed.size > MAX_PHOTO_SIZE) {
       throw new Error("This photo is still too large. Choose a smaller image.");
     }
@@ -74,6 +78,12 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [optimizingPhoto, setOptimizingPhoto] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ address: string; category: string; description: string } | null>(null);
+  const [editPhoto, setEditPhoto] = useState<File | null>(null);
+  const [removeEditPhoto, setRemoveEditPhoto] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [showPostForm, setShowPostForm] = useState(false);
   const [form, setForm] = useState({ address: "", category: "other", description: "" });
   const [photo, setPhoto] = useState<File | null>(null);
@@ -131,14 +141,56 @@ export default function MaintenancePage() {
     if (photoInputRef.current) photoInputRef.current.value = "";
   }
 
+  function startEdit(post: Req) {
+    setEditingId(post._id);
+    setDraft({ address: post.address, category: post.category, description: post.description });
+    setEditPhoto(null);
+    setRemoveEditPhoto(false);
+    setError(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!draft) return;
+    setSavingId(id);
+    try {
+      let photoUrl: string | undefined | null;
+      if (editPhoto) {
+        const preparedPhoto = await preparePhoto(editPhoto);
+        const uploadForm = new FormData();
+        uploadForm.append("photo", preparedPhoto.file, `${crypto.randomUUID()}.${preparedPhoto.extension}`);
+        const uploadResponse = await fetch("/api/maintenance/upload", { method: "POST", body: uploadForm });
+        const uploadData = await uploadResponse.json();
+        if (!uploadResponse.ok || !uploadData.url) throw new Error(uploadData.error ?? "Photo upload failed");
+        photoUrl = uploadData.url;
+      } else if (removeEditPhoto) {
+        photoUrl = null;
+      }
+      const response = await fetch("/api/maintenance", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...draft, ...(photoUrl !== undefined ? { photoUrl } : {}) }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not update post.");
+      setRequests((current) => current.map((post) => (post._id === id ? data.request : post)));
+      setEditingId(null);
+      setDraft(null);
+      setEditPhoto(null);
+      setRemoveEditPhoto(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update post.");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setOptimizingPhoto(false);
     setError(null);
     try {
       let photoUrl: string | undefined;
       if (photo) {
+        if (photo.size > MAX_PHOTO_SIZE) setOptimizingPhoto(true);
         const preparedPhoto = await preparePhoto(photo);
+        setOptimizingPhoto(false);
 
         const uploadForm = new FormData();
         uploadForm.append("photo", preparedPhoto.file, `${crypto.randomUUID()}.${preparedPhoto.extension}`);
@@ -168,6 +220,7 @@ export default function MaintenancePage() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSubmitting(false);
+      setOptimizingPhoto(false);
     }
   }
 
@@ -261,6 +314,11 @@ export default function MaintenancePage() {
               </button>
             </div>
           )}
+          {optimizingPhoto && (
+            <p className="text-xs text-marina" aria-live="polite">
+              This photo is large, so optimizing it before upload. This may take a little longer…
+            </p>
+          )}
           <p className="text-xs text-ink/50">JPG, PNG, GIF, WebP, or AVIF, up to 4 MB.</p>
         </div>
         <button
@@ -268,7 +326,7 @@ export default function MaintenancePage() {
           disabled={submitting}
           className="w-full rounded-full bg-marina px-5 py-3 text-sm font-semibold text-fog disabled:opacity-50 sm:w-auto sm:py-2"
         >
-          {submitting ? "Submitting…" : "Submit post"}
+          {optimizingPhoto ? "Optimizing photo…" : submitting ? "Submitting…" : "Submit post"}
         </button>
         </form>
       ) : (
@@ -292,6 +350,23 @@ export default function MaintenancePage() {
         )}
         {requests.map((r) => (
           <div id={`post-${r._id}`} key={r._id} className="rounded-2xl border border-ink/10 p-4">
+            {editingId === r._id && draft ? (
+              <div className="space-y-3">
+                <input className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm" value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} aria-label="Post address" />
+                <select className="rounded-lg border border-ink/15 px-3 py-2 text-sm" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} aria-label="Post category">
+                  {COMMUNITY_POST_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                </select>
+                <textarea className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm" rows={4} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} aria-label="Post description" />
+                {(r.photoUrl && !removeEditPhoto) && <Image src={`/api/maintenance/${r._id}/photo`} alt="Current post image" width={128} height={96} unoptimized className="h-24 w-32 rounded-lg object-cover" />}
+                <input type="file" accept="image/*" onChange={(e) => { setEditPhoto(e.target.files?.[0] ?? null); setRemoveEditPhoto(false); }} className="block w-full text-sm text-ink/70 file:mr-3 file:rounded-full file:border-0 file:bg-marina/10 file:px-4 file:py-2 file:font-medium file:text-marina" aria-label="Add or replace post image" />
+                {r.photoUrl && <button type="button" onClick={() => { setRemoveEditPhoto(true); setEditPhoto(null); }} className="text-left text-sm font-medium text-coral underline underline-offset-4">{removeEditPhoto ? "Image will be removed" : "Remove image"}</button>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => saveEdit(r._id)} disabled={savingId === r._id} className="rounded-full bg-marina px-4 py-2 text-sm font-semibold text-fog disabled:opacity-50">{savingId === r._id ? "Saving…" : "Save"}</button>
+                  <button type="button" onClick={() => { setEditingId(null); setDraft(null); }} disabled={savingId === r._id} className="inline-flex items-center gap-1 rounded-full border border-ink/15 px-4 py-2 text-sm text-ink/70"><X className="h-4 w-4" aria-hidden="true" />Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <>
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               {r.photoUrl && (
@@ -321,6 +396,9 @@ export default function MaintenancePage() {
               </span>
             </div>
             <p className="mt-4 w-full text-sm leading-6 text-ink/70">{r.description}</p>
+            {r.canEdit && <button type="button" onClick={() => startEdit(r)} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-marina underline underline-offset-4"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Edit post</button>}
+              </>
+            )}
           </div>
         ))}
       </div>
