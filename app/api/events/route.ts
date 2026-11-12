@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
 
   const event = await Event.findById(eventId);
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  if (event.startsAt.getTime() <= Date.now()) {
+    return NextResponse.json({ error: "RSVPs are closed for past events" }, { status: 410 });
+  }
 
   const existingIndex = event.rsvps.findIndex((r) => r.clerkUserId === userId);
   if (existingIndex >= 0) {

@@ -19,6 +19,7 @@ export default function PortalEventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [now, setNow] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -26,7 +27,16 @@ export default function PortalEventsPage() {
       const res = await fetch("/api/events");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load events");
-      setEvents(data.events.filter((event: EventItem) => new Date(event.startsAt) >= new Date()));
+      const eventHash = window.location.hash.slice(1);
+      const linkedEventId = eventHash.startsWith("event-") ? eventHash.slice("event-".length) : null;
+      const currentTime = Date.now();
+      setNow(currentTime);
+      setEvents(
+        data.events.filter(
+          (event: EventItem) =>
+            new Date(event.startsAt).getTime() >= currentTime || event._id === linkedEventId,
+        ),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -36,6 +46,11 @@ export default function PortalEventsPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -78,6 +93,7 @@ export default function PortalEventsPage() {
           <p className="text-sm text-ink/60">No upcoming events.</p>
         )}
         {events.map((e) => {
+          const isPast = now !== null && new Date(e.startsAt).getTime() <= now;
           const going = e.rsvps.some((r) => r.clerkUserId === user?.id);
           return (
             <div
@@ -94,26 +110,38 @@ export default function PortalEventsPage() {
                   minute: "2-digit",
                 })}
               </p>
+              {isPast && (
+                <p className="mt-2 inline-flex rounded-full bg-sand px-3 py-1 text-sm font-semibold text-ink">
+                  This event is in the past. RSVPs are closed.
+                </p>
+              )}
               <div className="mt-2 flex flex-col items-stretch gap-4 sm:mt-1 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <h3 className="break-words font-display text-xl leading-tight text-ink">{e.title}</h3>
                   <p className="text-sm text-ink/60">{e.location}</p>
                   <p className="mt-2 text-sm leading-6 text-ink/70">{e.description}</p>
                 </div>
-                <button
-                  onClick={() => toggleRsvp(e._id)}
-                  disabled={pending === e._id}
-                  className={`inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 sm:w-auto sm:px-4 sm:py-2 ${
-                    going ? "bg-sand text-ink" : "bg-marina text-fog hover:bg-marina-light"
-                  }`}
-                >
-                  {going && <Check className="h-4 w-4" aria-hidden="true" />}
-                  {going ? "You're going" : "RSVP"}
-                </button>
+                {!isPast && (
+                  <button
+                    onClick={() => toggleRsvp(e._id)}
+                    disabled={pending === e._id}
+                    className={`inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 sm:w-auto sm:px-4 sm:py-2 ${
+                      going ? "bg-sand text-ink" : "bg-marina text-fog hover:bg-marina-light"
+                    }`}
+                  >
+                    {going && <Check className="h-4 w-4" aria-hidden="true" />}
+                    {going ? "You're going" : "RSVP"}
+                  </button>
+                )}
               </div>
-              <p className="mt-3 text-sm font-semibold text-marina/80">
-                {e.rsvps.length} <span className="font-normal">resident{e.rsvps.length === 1 ? "" : "s"} going</span>
-              </p>
+              {!isPast && (
+                <p className="mt-3 text-sm font-semibold text-marina/80">
+                  {e.rsvps.length}{" "}
+                  <span className="font-normal">
+                    resident{e.rsvps.length === 1 ? "" : "s"} going
+                  </span>
+                </p>
+              )}
             </div>
           );
         })}
