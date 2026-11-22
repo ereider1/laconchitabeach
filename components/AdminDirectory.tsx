@@ -19,6 +19,12 @@ export default function AdminDirectory() {
   const [q, setQ] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [content, setContent] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sentCount, setSentCount] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -81,6 +87,24 @@ export default function AdminDirectory() {
     }
   }
 
+  async function sendEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSending(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/directory-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, content, residentIds: selectedIds.length ? selectedIds : undefined }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Unable to send the email.");
+      setSentCount(data.recipientCount);
+      setSubject("");
+      setContent("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to send the email.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   const filtered = residents.filter((r) => {
     const term = q.trim().toLowerCase();
     if (!term) return true;
@@ -113,6 +137,12 @@ export default function AdminDirectory() {
         >
           COPY EMAILS
         </button>
+        <button type="button" disabled={selectedIds.length === 0} onClick={() => { setComposeOpen(true); setSentCount(null); }} className="rounded-full border border-marina/30 px-4 py-2 text-xs font-semibold tracking-wide text-marina transition hover:bg-marina/5 disabled:cursor-not-allowed disabled:opacity-40">
+          EMAIL SELECTED{selectedIds.length ? ` (${selectedIds.length})` : ""}
+        </button>
+        <button type="button" onClick={() => { setSelectedIds([]); setComposeOpen(true); setSentCount(null); }} className="rounded-full border border-marina/30 px-4 py-2 text-xs font-semibold tracking-wide text-marina transition hover:bg-marina/5">
+          EMAIL ALL
+        </button>
         <span className="shrink-0 text-xs text-ink/50">
           {residents.filter((r) => r.listedInDirectory).length} listed of {residents.length}
         </span>
@@ -139,10 +169,24 @@ export default function AdminDirectory() {
         </div>
       )}
 
+      {composeOpen && (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-deep-ocean/30 p-4" role="dialog" aria-modal="true" aria-labelledby="admin-compose-email-title">
+          <form onSubmit={sendEmail} className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+            <h2 id="admin-compose-email-title" className="font-display text-2xl text-ink">Email directory</h2>
+            <p className="mt-1 text-sm text-ink/60">Sending via Zoho to {selectedIds.length ? `${selectedIds.length} selected resident${selectedIds.length === 1 ? "" : "s"}` : "all listed directory residents"} in Bcc.</p>
+            <label className="mt-5 block text-sm font-semibold text-ink">Subject<input required value={subject} onChange={(event) => setSubject(event.target.value)} className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 font-normal" /></label>
+            <label className="mt-4 block text-sm font-semibold text-ink">Message<textarea required rows={8} value={content} onChange={(event) => setContent(event.target.value)} className="mt-1 w-full resize-y rounded-lg border border-ink/15 px-3 py-2 font-normal" /></label>
+            {sentCount !== null && <p className="mt-3 text-sm text-marina" role="status">Sent to {sentCount} residents.</p>}
+            <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => setComposeOpen(false)} className="rounded-lg px-4 py-2 text-sm text-ink/70 hover:bg-sand">Cancel</button><button type="submit" disabled={sending} className="rounded-lg bg-marina px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{sending ? "Sending…" : "Send email"}</button></div>
+          </form>
+        </div>
+      )}
+
       <div className="mt-6 overflow-hidden rounded-xl border border-ink/10">
         <table className="w-full text-left text-sm">
           <thead className="bg-sand/50 text-xs uppercase tracking-wider text-ink/60">
             <tr>
+              <th className="w-12 px-4 py-3" aria-label="Select residents"><span className="sr-only">Select</span></th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Address</th>
               <th className="px-4 py-3">Email</th>
@@ -152,14 +196,15 @@ export default function AdminDirectory() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={5}>Loading…</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td className="px-4 py-4 text-ink/50" colSpan={5}>No matches.</td></tr>
+              <tr><td className="px-4 py-4 text-ink/50" colSpan={6}>No matches.</td></tr>
             )}
             {!loading &&
               filtered.map((r) => (
                 <tr key={r._id} className="border-t border-ink/10">
+                  <td className="px-4 py-3">{r.email && <input type="checkbox" checked={selectedIds.includes(r._id)} onChange={() => setSelectedIds((ids) => ids.includes(r._id) ? ids.filter((id) => id !== r._id) : [...ids, r._id])} className="h-4 w-4 accent-marina" aria-label={`Select ${r.fullName}`} />}</td>
                   <td className="px-4 py-3 font-medium text-ink">{r.fullName}</td>
                   <td className="px-4 py-3 text-ink/70">{r.address}</td>
                   <td className="px-4 py-3 font-mono text-xs text-ink/60">{r.email}</td>

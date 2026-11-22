@@ -86,9 +86,11 @@ export default function DirectoryPage() {
 
       <div className="mt-5 flex min-h-6 items-center justify-between gap-3 pr-8 sm:mt-6 sm:pr-0">
         <h2 className="text-sm font-semibold text-ink">Neighbors</h2>
-        <p className="text-xs text-ink/55" aria-live="polite">
-          {loading ? "Loading residents…" : `${residents.length} ${residents.length === 1 ? "resident" : "residents"}`}
-        </p>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <p className="text-xs text-ink/55" aria-live="polite">
+            {loading ? "Loading residents…" : `${residents.length} ${residents.length === 1 ? "resident" : "residents"}`}
+          </p>
+        </div>
       </div>
 
       {!loading && error && (
@@ -144,8 +146,8 @@ export default function DirectoryPage() {
                             {r.fullName.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <h4 className="break-words font-semibold leading-5 text-ink">{r.fullName}</h4>
-                            <p className="mt-1 flex items-start gap-1.5 break-words text-sm leading-5 text-ink/60">
+                            <h4 className="wrap-break-word font-semibold leading-5 text-ink">{r.fullName}</h4>
+                            <p className="mt-1 flex items-start gap-1.5 wrap-break-word text-sm leading-5 text-ink/60">
                               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-marina" aria-hidden="true" />
                               {r.address}
                             </p>
@@ -182,14 +184,14 @@ export default function DirectoryPage() {
               <tbody>
                 {residents.map((r) => (
                   <tr key={r._id} className="border-t border-ink/10">
-                    <td className="break-words px-4 py-3 font-medium text-ink">{r.fullName}</td>
-                    <td className="break-words px-4 py-3 text-ink/70">{r.address}</td>
+                    <td className="wrap-break-word px-4 py-3 font-medium text-ink">{r.fullName}</td>
+                    <td className="wrap-break-word px-4 py-3 text-ink/70">{r.address}</td>
                     {isAdmin && (
                       <>
                         <td className="break-all px-4 py-3 font-mono text-xs text-ink/60">
                           {r.email ?? ""}
                         </td>
-                        <td className="break-words px-4 py-3 font-mono text-xs text-ink/60">
+                        <td className="wrap-break-word px-4 py-3 font-mono text-xs text-ink/60">
                           {r.phone ?? ""}
                         </td>
                       </>

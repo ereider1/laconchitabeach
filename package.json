@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.12",
+    "@types/nodemailer": "^8.0.2",
     "@vercel/blob": "^2.6.1",
     "lucide-react": "^1.25.0",
     "mongoose": "^9.7.3",
     "next": "^16.2.10",
+    "nodemailer": "^10.6.1",
     "postcss": "^8.5.16",
     "react": "19.2.4",
     "react-dom": "19.2.4",
