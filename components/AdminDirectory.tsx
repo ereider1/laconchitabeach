@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, CheckCircle2, X, XCircle } from "lucide-react";
 
 type Resident = {
   _id: string;
@@ -25,6 +25,7 @@ export default function AdminDirectory() {
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState<number | null>(null);
+  const [sendNotice, setSendNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -98,8 +99,14 @@ export default function AdminDirectory() {
       setSentCount(data.recipientCount);
       setSubject("");
       setContent("");
+      setComposeOpen(false);
+      setSendNotice({ type: "success", message: `Email sent to ${data.recipientCount} resident${data.recipientCount === 1 ? "" : "s"}.` });
+      window.setTimeout(() => setSendNotice(null), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to send the email.");
+      const message = err instanceof Error ? err.message : "Unable to send the email.";
+      setError(message);
+      setSendNotice({ type: "error", message: "Email was not sent." });
+      window.setTimeout(() => setSendNotice(null), 2000);
     } finally {
       setSending(false);
     }
@@ -149,6 +156,13 @@ export default function AdminDirectory() {
       </div>
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
+
+      {sendNotice && (
+        <div role="alert" aria-live="assertive" className={`fixed left-1/2 top-6 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border-2 px-5 py-4 text-base font-semibold text-white shadow-2xl ${sendNotice.type === "success" ? "border-emerald-300 bg-emerald-700" : "border-red-200 bg-red-700"}`}>
+          {sendNotice.type === "success" ? <CheckCircle2 className="h-6 w-6 shrink-0" aria-hidden="true" /> : <XCircle className="h-6 w-6 shrink-0" aria-hidden="true" />}
+          {sendNotice.message}
+        </div>
+      )}
 
       {copied && (
         <div

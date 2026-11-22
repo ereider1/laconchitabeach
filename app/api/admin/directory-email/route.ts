@@ -5,6 +5,7 @@ import Resident from "@/lib/models/Resident";
 import { isAdmin } from "@/lib/isAdmin";
 import nodemailer from "nodemailer";
 import mongoose from "mongoose";
+import OutboundEmail from "@/lib/models/OutboundEmail";
 
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_CONTENT_LENGTH = 50_000;
@@ -82,6 +83,14 @@ export async function POST(request: NextRequest) {
     console.error("Zoho SMTP rejected a directory email.", error);
     return NextResponse.json({ error: "Zoho could not send the email. Check the SMTP settings and app password." }, { status: 502 });
   }
+
+  await OutboundEmail.create({
+    name: "Directory residents",
+    email: `Bcc · ${recipients.length} recipients`,
+    subject,
+    message: content,
+    recipientCount: recipients.length,
+  });
 
   return NextResponse.json({ ok: true, recipientCount: recipients.length });
 }

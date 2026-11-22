@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
 import ContactMessage from "@/lib/models/ContactMessage";
+import OutboundEmail from "@/lib/models/OutboundEmail";
 import { isAdmin } from "@/lib/isAdmin";
 import AdminEmailMessages from "@/components/AdminEmailMessages";
 
@@ -10,7 +11,10 @@ export default async function AdminEmailsPage() {
   if (!(await isAdmin(userId))) redirect("/portal");
 
   await connectToDatabase();
-  const messages = await ContactMessage.find().sort({ createdAt: -1 }).lean();
+  const [messages, outboundMessages] = await Promise.all([
+    ContactMessage.find().sort({ createdAt: -1 }).lean(),
+    OutboundEmail.find().sort({ createdAt: -1 }).lean(),
+  ]);
 
   return (
     <section>
@@ -22,7 +26,8 @@ export default async function AdminEmailsPage() {
       </div>
 
       <AdminEmailMessages
-        initialMessages={messages.map((message) => ({
+        initialMessages={[
+          ...messages.map((message) => ({
           id: message._id.toString(),
           name: message.name,
           email: message.email,
@@ -35,7 +40,19 @@ export default async function AdminEmailsPage() {
             sentAt: reply.sentAt.toLocaleString(),
             dateTime: reply.sentAt.toISOString(),
           })),
-        }))}
+          })),
+          ...outboundMessages.map((message) => ({
+            id: `outbound-${message._id.toString()}`,
+            name: message.name,
+            email: message.email,
+            subject: message.subject,
+            message: message.message,
+            createdAt: message.createdAt.toLocaleString(),
+            dateTime: message.createdAt.toISOString(),
+            replies: [],
+            isOutbound: true,
+          })),
+        ].sort((a, b) => b.dateTime.localeCompare(a.dateTime))}
       />
     </section>
   );

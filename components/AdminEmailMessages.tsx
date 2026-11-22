@@ -10,6 +10,7 @@ export type AdminEmailMessage = {
   message: string;
   createdAt: string;
   dateTime: string;
+  isOutbound?: boolean;
   replies: {
     body: string;
     sentAt: string;
@@ -120,22 +121,22 @@ export default function AdminEmailMessages({
                 <h3 className="font-display text-lg text-ink">{message.subject}</h3>
                 <p className="mt-1 text-sm text-ink/70">
                   {message.name} ·{" "}
-                  <a
+                  {message.isOutbound ? message.email : <a
                     href={`mailto:${message.email}`}
                     className="text-marina underline underline-offset-2"
                   >
                     {message.email}
-                  </a>
+                  </a>}
                 </p>
               </div>
               <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
                 <div className="text-right">
-                  <span className="block text-xs font-semibold text-marina">Received</span>
+                  <span className="block text-xs font-semibold text-marina">{message.isOutbound ? "Sent" : "Received"}</span>
                   <time dateTime={message.dateTime} className="text-xs text-ink/50">
                     {message.createdAt}
                   </time>
                 </div>
-                <button
+                {!message.isOutbound && <button
                   type="button"
                   onClick={() => {
                     setError(null);
@@ -147,15 +148,15 @@ export default function AdminEmailMessages({
                   className="rounded-full border border-marina/30 px-3 py-1.5 text-xs font-semibold text-marina transition hover:bg-sand/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {replyingId === message.id ? "Cancel" : "Respond"}
-                </button>
-                <button
+                </button>}
+                {!message.isOutbound && <button
                   type="button"
                   onClick={() => removeMessage(message.id)}
                   disabled={deletingId !== null}
                   className="rounded-full border border-coral/30 px-3 py-1.5 text-xs font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {deletingId === message.id ? "Deleting…" : "Delete"}
-                </button>
+                </button>}
               </div>
             </div>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink/80">
