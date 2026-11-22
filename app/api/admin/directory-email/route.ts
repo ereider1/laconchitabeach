@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Select at least one valid resident." }, { status: 400 });
   }
   const residents = await Resident.find({
-    listedInDirectory: true,
+    ...(requestedIds ? {} : { listedInDirectory: true }),
     ...(requestedIds ? { _id: { $in: requestedIds } } : {}),
   }).select("email").lean();
   const recipients = [...new Set(residents.map((resident) => resident.email.trim().toLowerCase()).filter(Boolean))];
