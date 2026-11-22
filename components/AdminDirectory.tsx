@@ -158,8 +158,8 @@ export default function AdminDirectory() {
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
 
       {sendNotice && (
-        <div role="alert" aria-live="assertive" className={`fixed left-1/2 top-6 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border-2 px-5 py-4 text-base font-semibold text-white shadow-2xl ${sendNotice.type === "success" ? "border-emerald-300 bg-emerald-700" : "border-red-200 bg-red-700"}`}>
-          {sendNotice.type === "success" ? <CheckCircle2 className="h-6 w-6 shrink-0" aria-hidden="true" /> : <XCircle className="h-6 w-6 shrink-0" aria-hidden="true" />}
+        <div role="alert" aria-live="assertive" className={`fixed left-1/2 top-6 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border-2 px-5 py-4 text-base font-semibold shadow-2xl ${sendNotice.type === "success" ? "border-emerald-600 bg-emerald-50 text-emerald-950" : "border-red-600 bg-red-50 text-red-950"}`}>
+          {sendNotice.type === "success" ? <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-700" aria-hidden="true" /> : <XCircle className="h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />}
           {sendNotice.message}
         </div>
       )}

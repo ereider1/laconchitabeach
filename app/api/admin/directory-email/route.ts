@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
     subject,
     message: content,
     recipientCount: recipients.length,
+    recipients,
   });
 
   return NextResponse.json({ ok: true, recipientCount: recipients.length });

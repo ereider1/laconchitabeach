@@ -11,6 +11,7 @@ export type AdminEmailMessage = {
   createdAt: string;
   dateTime: string;
   isOutbound?: boolean;
+  recipients?: string[];
   replies: {
     body: string;
     sentAt: string;
@@ -128,6 +129,12 @@ export default function AdminEmailMessages({
                     {message.email}
                   </a>}
                 </p>
+                {message.isOutbound && (
+                  <p className="mt-2 max-w-3xl break-words text-xs leading-5 text-ink/60">
+                    <span className="font-semibold text-ink/75">Bcc recipients:</span>{" "}
+                    {message.recipients?.length ? message.recipients.join(", ") : message.email}
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
                 <div className="text-right">

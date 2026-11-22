@@ -6,6 +6,7 @@ export interface IOutboundEmail {
   subject: string;
   message: string;
   recipientCount: number;
+  recipients: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const OutboundEmailSchema = new Schema<IOutboundEmail>(
     subject: { type: String, required: true },
     message: { type: String, required: true },
     recipientCount: { type: Number, required: true },
+    recipients: { type: [String], required: true, default: [] },
   },
   { timestamps: true }
 );
