@@ -11,6 +11,7 @@ export interface IContactMessage {
   }[];
   createdAt: Date;
   updatedAt: Date;
+  trashedAt?: Date;
 }
 
 const ContactMessageReplySchema = new Schema(
@@ -28,6 +29,7 @@ const ContactMessageSchema = new Schema<IContactMessage>(
     subject: { type: String, required: true },
     message: { type: String, required: true },
     replies: { type: [ContactMessageReplySchema], default: [] },
+    trashedAt: { type: Date },
   },
   { timestamps: true }
 );

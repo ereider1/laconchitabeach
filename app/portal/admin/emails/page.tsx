@@ -13,8 +13,8 @@ export default async function AdminEmailsPage() {
 
   await connectToDatabase();
   const [messages, outboundMessages] = await Promise.all([
-    ContactMessage.find().sort({ createdAt: -1 }).lean(),
-    OutboundEmail.find().sort({ createdAt: -1 }).lean(),
+    ContactMessage.find({ trashedAt: { $exists: false } }).sort({ createdAt: -1 }).lean(),
+    OutboundEmail.find({ trashedAt: { $exists: false } }).sort({ createdAt: -1 }).lean(),
   ]);
 
   return (

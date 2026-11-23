@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search, Trash2 } from "lucide-react";
 
 export type AdminEmailMessage = {
   id: string;
@@ -33,6 +34,34 @@ export default function AdminEmailMessages({
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [trashing, setTrashing] = useState(false);
+
+  const visibleMessages = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return messages;
+    return messages.filter((message) => `${message.subject} ${message.name} ${message.email} ${message.message}`.toLowerCase().includes(term));
+  }, [messages, query]);
+  const allVisibleSelected = visibleMessages.length > 0 && visibleMessages.every((message) => selectedIds.includes(message.id));
+
+  async function moveSelectedToTrash() {
+    if (selectedIds.length === 0 || !confirm(`Move ${selectedIds.length} email${selectedIds.length === 1 ? "" : "s"} to trash?`)) return;
+    setTrashing(true);
+    try {
+      await Promise.all(selectedIds.map(async (id) => {
+        const response = await fetch(`/api/admin/emails?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+        if (!response.ok) throw new Error("Unable to move selected emails to trash.");
+      }));
+      setMessages((current) => current.filter((message) => !selectedIds.includes(message.id)));
+      setSelectedIds([]);
+      setSuccess("Selected emails moved to trash.");
+    } catch (trashError) {
+      setError(trashError instanceof Error ? trashError.message : "Unable to move emails to trash.");
+    } finally {
+      setTrashing(false);
+    }
+  }
 
   async function sendReply(message: AdminEmailMessage) {
     const reply = replyText.trim();
@@ -111,16 +140,28 @@ export default function AdminEmailMessages({
     <>
       {error && <p role="alert" className="mb-4 text-sm text-coral">{error}</p>}
       {success && <p role="status" className="mb-4 text-sm text-marina">{success}</p>}
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-ink/10 bg-sand/25 p-3 sm:flex-row sm:items-center">
+        <label className="flex shrink-0 items-center gap-2 px-1 text-sm font-medium text-ink/70"><input type="checkbox" checked={allVisibleSelected} onChange={() => setSelectedIds((ids) => allVisibleSelected ? ids.filter((id) => !visibleMessages.some((message) => message.id === id)) : [...new Set([...ids, ...visibleMessages.map((message) => message.id)])])} className="h-4 w-4 accent-marina" aria-label="Select all visible emails" /> Select all</label>
+        <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search emails…" className="w-full rounded-lg border border-ink/15 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm" /></div>
+        <button type="button" disabled={selectedIds.length === 0 || trashing} onClick={() => void moveSelectedToTrash()} className="inline-flex items-center justify-center gap-2 rounded-lg border border-coral/30 px-4 py-2 text-sm font-semibold text-coral hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 className="h-4 w-4" aria-hidden="true" /> Move to trash{selectedIds.length ? ` (${selectedIds.length})` : ""}</button>
+      </div>
+      {visibleMessages.length === 0 && <p className="rounded-2xl bg-sand/55 px-5 py-8 text-sm text-ink/60">No emails match your search.</p>}
       <ul className="space-y-4">
-        {messages.map((message) => (
+        {visibleMessages.map((message) => (
           <li
             key={message.id}
-            className="rounded-2xl border border-ink/10 bg-white p-5 shadow-sm sm:p-6"
+            className="rounded-2xl border border-ink/10 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6"
           >
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <input type="checkbox" checked={selectedIds.includes(message.id)} onChange={() => setSelectedIds((ids) => ids.includes(message.id) ? ids.filter((id) => id !== message.id) : [...ids, message.id])} className="mt-1 h-4 w-4 shrink-0 accent-marina" aria-label={`Select ${message.subject}`} />
               <div>
-                <h3 className="font-display text-lg text-ink">{message.subject}</h3>
-                <p className="mt-1 text-sm text-ink/70">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-display text-lg text-ink">{message.subject}</h3>
+                  <span className={`rounded-full px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wider ${message.isOutbound ? "bg-marina/10 text-marina" : "bg-sand text-ink/60"}`}>
+                    {message.isOutbound ? "Resident email" : "Web form"}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-ink/70">
                   {message.name} ·{" "}
                   {message.isOutbound ? message.email : <a
                     href={`mailto:${message.email}`}
@@ -166,9 +207,11 @@ export default function AdminEmailMessages({
                 </button>}
               </div>
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink/80">
+            <div className="mt-5 rounded-xl bg-sand/30 px-4 py-3">
+              <p className="whitespace-pre-wrap text-sm leading-7 text-ink/85">
               {message.message}
-            </p>
+              </p>
+            </div>
             {message.replies.length > 0 && (
               <ol className="mt-4 space-y-3 border-l-2 border-marina/20 pl-4">
                 {message.replies.map((reply, index) => (

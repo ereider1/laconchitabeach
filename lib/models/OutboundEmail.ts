@@ -9,6 +9,7 @@ export interface IOutboundEmail {
   recipients: string[];
   createdAt: Date;
   updatedAt: Date;
+  trashedAt?: Date;
 }
 
 const OutboundEmailSchema = new Schema<IOutboundEmail>(
@@ -19,6 +20,7 @@ const OutboundEmailSchema = new Schema<IOutboundEmail>(
     message: { type: String, required: true },
     recipientCount: { type: Number, required: true },
     recipients: { type: [String], required: true, default: [] },
+    trashedAt: { type: Date },
   },
   { timestamps: true }
 );
