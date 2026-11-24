@@ -75,71 +75,73 @@ export default function CustomImageCollection({ layout, images, eyebrow, title, 
   return (
     <section className="border-y border-sand/30 bg-white px-6 py-12 sm:px-10 sm:py-16" aria-label={title || "Image collection"}>
       <div className="mx-auto max-w-6xl">
-        {(eyebrow || title || content || (layout === "image-carousel" && images.length > 1)) && (
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div className="min-w-0">
+        {(eyebrow || title || content) && (
+          <div className="mb-6 text-center">
+            <div className="mx-auto min-w-0">
               {eyebrow && <p className="eyebrow text-marina">{eyebrow}</p>}
               {title && (
                 <h2 className="mt-2 text-2xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-3xl">
                   {title}
                 </h2>
               )}
-              {content && <p className="mt-3 max-w-3xl whitespace-pre-wrap leading-7 text-ink/65">{content}</p>}
+              {content && <p className="mx-auto mt-3 max-w-3xl whitespace-pre-wrap leading-7 text-ink/65">{content}</p>}
             </div>
-            {layout === "image-carousel" && images.length > 1 && (
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => moveCarousel(-1)}
-                  aria-label="Previous image"
-                  className="rounded-full border border-ink/15 p-2 text-ink transition hover:bg-ink/5"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveCarousel(1)}
-                  aria-label="Next image"
-                  className="rounded-full border border-ink/15 p-2 text-ink transition hover:bg-ink/5"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
           </div>
         )}
 
-        <div
-          ref={carouselRef}
-          className={
-            layout === "image-gallery"
-              ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-              : "flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3"
-          }
-          aria-label={layout === "image-gallery" ? "Image gallery" : "Image carousel"}
-        >
-          {images.map((image, index) => (
-            <button
-              key={`${image}-${index}`}
-              type="button"
-              onClick={() => setSelectedImageIndex(index)}
-              aria-label={`View image ${index + 1} of ${images.length}`}
-              className={`group relative block overflow-hidden rounded-2xl bg-sand focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
-                layout === "image-gallery"
-                  ? "aspect-[4/3] w-full"
-                  : "aspect-[4/3] w-[85%] shrink-0 snap-center sm:w-[65%] lg:w-[48%]"
-              }`}
-            >
-              <Image
-                src={image}
-                alt={title ? `${title} — image ${index + 1}` : `Gallery image ${index + 1}`}
-                fill
-                sizes={layout === "image-gallery" ? "(max-width: 768px) 100vw, 33vw" : "(max-width: 768px) 85vw, 50vw"}
-                className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                unoptimized
-              />
-            </button>
-          ))}
+        <div className={layout === "image-carousel" ? "relative px-10 sm:px-12" : ""}>
+          {layout === "image-carousel" && images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => moveCarousel(-1)}
+                aria-label="Previous image"
+                className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full border border-ink/15 bg-white p-2 text-ink shadow-sm transition hover:bg-ink/5"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveCarousel(1)}
+                aria-label="Next image"
+                className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full border border-ink/15 bg-white p-2 text-ink shadow-sm transition hover:bg-ink/5"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          <div
+            ref={carouselRef}
+            className={
+              layout === "image-gallery"
+                ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                : "flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3"
+            }
+            aria-label={layout === "image-gallery" ? "Image gallery" : "Image carousel"}
+          >
+            {images.map((image, index) => (
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                onClick={() => setSelectedImageIndex(index)}
+                aria-label={`View image ${index + 1} of ${images.length}`}
+                className={`group relative block overflow-hidden rounded-2xl bg-sand focus:outline-none focus-visible:ring-2 focus-visible:ring-marina focus-visible:ring-offset-2 ${
+                  layout === "image-gallery"
+                    ? "aspect-[4/3] w-full"
+                    : "aspect-[4/3] w-[85%] shrink-0 snap-center sm:w-[65%] lg:w-[48%]"
+                }`}
+              >
+                <Image
+                  src={image}
+                  alt={title ? `${title} — image ${index + 1}` : `Gallery image ${index + 1}`}
+                  fill
+                  sizes={layout === "image-gallery" ? "(max-width: 768px) 100vw, 33vw" : "(max-width: 768px) 85vw, 50vw"}
+                  className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                  unoptimized
+                />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

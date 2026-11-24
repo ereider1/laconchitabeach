@@ -71,7 +71,7 @@ export default async function CustomPageSections({
         } = section as IPageSection & { _id?: string | number };
 
         const renderButton = buttonText && buttonLink && (
-          <div className="mt-7">
+          <div className="mt-7 flex justify-center">
             <Link
               href={buttonLink}
               className="inline-flex rounded-full bg-marina px-6 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition hover:bg-marina-light"
@@ -82,7 +82,7 @@ export default async function CustomPageSections({
         );
 
         const contentElement = (
-          <div className="max-w-lg">
+          <div className="mx-auto w-full max-w-lg text-center">
             {eyebrow && <p className="eyebrow text-marina">{eyebrow}</p>}
             {title && (
               <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
@@ -168,15 +168,15 @@ export default async function CustomPageSections({
 
         return (
           <section key={String(_id)} className="bg-white px-6 py-20 sm:px-10 border-t border-b border-sand/30">
-            <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
+            <div className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
               {eyebrow && <p className="eyebrow text-marina">{eyebrow}</p>}
               {title && (
-                <h2 className="mt-3 text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
+                <h2 className="mt-3 w-full text-3xl font-bold uppercase tracking-[-0.04em] text-ink sm:text-4xl">
                   {title}
                 </h2>
               )}
               {content && (
-                <div className="mt-5 max-w-2xl whitespace-pre-wrap leading-7 text-ink/65 text-center">
+                <div className="mt-5 w-full max-w-2xl whitespace-pre-wrap leading-7 text-center text-ink/65">
                   {content}
                 </div>
               )}
