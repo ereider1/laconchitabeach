@@ -190,7 +190,7 @@ export default function AdminEmailMessages({
                     {message.createdAt}
                   </time>
                 </div>
-                {!message.isOutbound && <button
+                <button
                   type="button"
                   onClick={() => {
                     setError(null);
@@ -202,7 +202,7 @@ export default function AdminEmailMessages({
                   className="rounded-full border border-marina/30 px-3 py-1.5 text-xs font-semibold text-marina transition hover:bg-sand/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {replyingId === message.id ? "Cancel" : "Respond"}
-                </button>}
+                </button>
                 {!message.isOutbound && <button
                   type="button"
                   onClick={() => removeMessage(message.id)}

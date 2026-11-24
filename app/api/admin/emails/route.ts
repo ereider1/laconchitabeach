@@ -6,6 +6,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import ContactMessage from "@/lib/models/ContactMessage";
 import { isAdmin } from "@/lib/isAdmin";
 import OutboundEmail from "@/lib/models/OutboundEmail";
+import type { IOutboundEmail } from "@/lib/models/OutboundEmail";
 
 const MAX_REPLY_LENGTH = 10_000;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     !("id" in payload) ||
     !("reply" in payload) ||
     typeof payload.id !== "string" ||
-    !mongoose.isObjectIdOrHexString(payload.id) ||
+    (!mongoose.isObjectIdOrHexString(payload.id) && !payload.id.startsWith("outbound-")) ||
     typeof payload.reply !== "string"
   ) {
     return NextResponse.json({ error: "A valid message and response are required" }, { status: 400 });
@@ -67,13 +68,19 @@ export async function POST(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const message = await ContactMessage.findById(payload.id).lean();
+    const isOutbound = payload.id.startsWith("outbound-");
+    const message = isOutbound
+      ? await OutboundEmail.findById(payload.id.slice("outbound-".length)).lean()
+      : await ContactMessage.findById(payload.id).lean();
     if (!message) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+
+    const recipients = isOutbound ? (message as unknown as IOutboundEmail).recipients : [message.email];
+    if (!recipients?.length) return NextResponse.json({ error: "No recipients found for this email." }, { status: 409 });
 
     const subject = /^re:/i.test(message.subject) ? message.subject : `Re: ${message.subject}`;
     const result = await new Resend(apiKey).emails.send({
       from,
-      to: [message.email],
+      to: recipients,
       subject,
       text: reply,
       attachments,
@@ -86,11 +93,18 @@ export async function POST(request: NextRequest) {
 
     const sentAt = new Date();
     try {
-      const updatedMessage = await ContactMessage.findByIdAndUpdate(
-        payload.id,
-        { $push: { replies: { body: reply, sentAt, attachments: attachments.map(({ filename, contentType, content }) => ({ filename, contentType, size: content.length })) } } },
-        { new: true, runValidators: true }
-      ).lean();
+      const replyRecord = { body: reply, sentAt, attachments: attachments.map(({ filename, contentType, content }) => ({ filename, contentType, size: content.length })) };
+      const updatedMessage = isOutbound
+        ? await OutboundEmail.findByIdAndUpdate(
+          payload.id.slice("outbound-".length),
+          { $push: { replies: replyRecord } },
+          { new: true, runValidators: true }
+        ).lean()
+        : await ContactMessage.findByIdAndUpdate(
+          payload.id,
+          { $push: { replies: replyRecord } },
+          { new: true, runValidators: true }
+        ).lean();
 
       if (!updatedMessage) {
         return NextResponse.json(

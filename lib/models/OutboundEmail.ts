@@ -8,6 +8,7 @@ export interface IOutboundEmail {
   recipientCount: number;
   recipients: string[];
   attachments: { filename: string; contentType: string; size: number }[];
+  replies: { body: string; sentAt: Date; attachments: { filename: string; contentType: string; size: number }[] }[];
   createdAt: Date;
   updatedAt: Date;
   trashedAt?: Date;
@@ -24,6 +25,14 @@ const OutboundEmailSchema = new Schema<IOutboundEmail>(
     attachments: {
       type: [{ filename: String, contentType: String, size: Number }],
       required: true,
+      default: [],
+    },
+    replies: {
+      type: [{
+        body: String,
+        sentAt: Date,
+        attachments: [{ filename: String, contentType: String, size: Number }],
+      }],
       default: [],
     },
     trashedAt: { type: Date },

@@ -58,7 +58,16 @@ export default async function AdminEmailsPage() {
             message: message.message,
             createdAt: message.createdAt.toLocaleString(),
             dateTime: message.createdAt.toISOString(),
-            replies: [],
+            replies: (message.replies ?? []).map((reply) => ({
+              body: reply.body,
+              sentAt: reply.sentAt.toLocaleString(),
+              dateTime: reply.sentAt.toISOString(),
+              attachments: (reply.attachments ?? []).map((attachment) => ({
+                filename: attachment.filename,
+                contentType: attachment.contentType,
+                size: attachment.size,
+              })),
+            })),
             isOutbound: true,
             recipients: message.recipients ?? [],
             attachments: (message.attachments ?? []).map((attachment) => ({
