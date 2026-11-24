@@ -203,14 +203,14 @@ export default function AdminEmailMessages({
                 >
                   {replyingId === message.id ? "Cancel" : "Respond"}
                 </button>
-                {!message.isOutbound && <button
+                <button
                   type="button"
                   onClick={() => removeMessage(message.id)}
                   disabled={deletingId !== null}
                   className="rounded-full border border-coral/30 px-3 py-1.5 text-xs font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {deletingId === message.id ? "Deleting…" : "Delete"}
-                </button>}
+                </button>
               </div>
             </div>
             <div className="mt-5 rounded-xl bg-sand/30 px-4 py-3">
