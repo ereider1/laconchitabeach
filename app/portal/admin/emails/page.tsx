@@ -43,6 +43,11 @@ export default async function AdminEmailsPage() {
             body: reply.body,
             sentAt: reply.sentAt.toLocaleString(),
             dateTime: reply.sentAt.toISOString(),
+            attachments: (reply.attachments ?? []).map((attachment) => ({
+              filename: attachment.filename,
+              contentType: attachment.contentType,
+              size: attachment.size,
+            })),
           })),
           })),
           ...outboundMessages.map((message) => ({

@@ -17,6 +17,7 @@ export type AdminEmailMessage = {
     body: string;
     sentAt: string;
     dateTime: string;
+    attachments?: { filename: string; contentType: string; size: number }[];
   }[];
 };
 
@@ -31,6 +32,7 @@ export default function AdminEmailMessages({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,10 +76,13 @@ export default function AdminEmailMessages({
     setError(null);
     setSuccess(null);
     try {
+      const formData = new FormData();
+      formData.set("id", message.id);
+      formData.set("reply", reply);
+      replyAttachments.forEach((file) => formData.append("attachments", file));
       const response = await fetch("/api/admin/emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: message.id, reply }),
+        body: formData,
       });
       const result: { error?: string; reply?: AdminEmailMessage["replies"][number] } =
         await response.json();
@@ -95,6 +100,7 @@ export default function AdminEmailMessages({
       );
       setReplyingId(null);
       setReplyText("");
+      setReplyAttachments([]);
       setSuccess(`Response sent to ${message.email}.`);
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Something went wrong.");
@@ -225,6 +231,7 @@ export default function AdminEmailMessages({
                     <p className="whitespace-pre-wrap text-sm leading-6 text-ink/80">
                       {reply.body}
                     </p>
+                    {reply.attachments?.length ? <p className="mt-2 text-xs text-ink/60">Attachments: {reply.attachments.map((attachment) => attachment.filename).join(", ")}</p> : null}
                   </li>
                 ))}
               </ol>
@@ -247,12 +254,15 @@ export default function AdminEmailMessages({
                   className="w-full resize-y rounded-xl border border-marina/20 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-marina focus:ring-1 focus:ring-marina"
                   disabled={sendingId === message.id}
                 />
+                <label className="mt-3 block text-sm font-semibold text-ink">Attachments <span className="font-normal text-ink/50">(up to 5 files, 10 MB total)</span><input type="file" multiple onChange={(event) => setReplyAttachments(Array.from(event.target.files ?? []))} className="mt-1 block w-full rounded-lg border border-ink/15 px-3 py-2 text-sm font-normal" disabled={sendingId === message.id} /></label>
+                {replyAttachments.length > 0 && <p className="mt-2 text-xs text-ink/60">{replyAttachments.map((file) => file.name).join(", ")}</p>}
                 <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => {
                       setReplyingId(null);
                       setReplyText("");
+                      setReplyAttachments([]);
                     }}
                     disabled={sendingId === message.id}
                     className="rounded-full border border-marina/30 px-4 py-2 text-xs font-semibold text-marina transition hover:bg-sand/50 disabled:opacity-50"

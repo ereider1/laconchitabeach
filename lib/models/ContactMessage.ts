@@ -8,6 +8,7 @@ export interface IContactMessage {
   replies: {
     body: string;
     sentAt: Date;
+    attachments: { filename: string; contentType: string; size: number }[];
   }[];
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,10 @@ const ContactMessageReplySchema = new Schema(
   {
     body: { type: String, required: true },
     sentAt: { type: Date, required: true },
+    attachments: {
+      type: [{ filename: String, contentType: String, size: Number }],
+      default: [],
+    },
   },
   { _id: false }
 );

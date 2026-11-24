@@ -8,6 +8,8 @@ import { isAdmin } from "@/lib/isAdmin";
 import OutboundEmail from "@/lib/models/OutboundEmail";
 
 const MAX_REPLY_LENGTH = 10_000;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 5;
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
@@ -15,8 +17,11 @@ export async function POST(request: NextRequest) {
   if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   let payload: unknown;
+  let uploadedFiles: File[] = [];
   try {
-    payload = await request.json();
+    const formData = await request.formData();
+    payload = Object.fromEntries(formData.entries());
+    uploadedFiles = formData.getAll("attachments").filter((file): file is File => file instanceof File && file.size > 0);
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -41,6 +46,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (uploadedFiles.length > MAX_ATTACHMENTS || uploadedFiles.some((file) => file.size > MAX_ATTACHMENT_BYTES)) {
+    return NextResponse.json({ error: `Attach up to ${MAX_ATTACHMENTS} files, each no larger than 10 MB.` }, { status: 413 });
+  }
+  if (uploadedFiles.reduce((total, file) => total + file.size, 0) > MAX_ATTACHMENT_BYTES) {
+    return NextResponse.json({ error: "Attachments must total 10 MB or less." }, { status: 413 });
+  }
+  const attachments = await Promise.all(uploadedFiles.map(async (file) => ({
+    filename: file.name,
+    contentType: file.type || "application/octet-stream",
+    content: Buffer.from(await file.arrayBuffer()),
+  })));
+
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
   if (!apiKey || !from) {
@@ -59,6 +76,7 @@ export async function POST(request: NextRequest) {
       to: [message.email],
       subject,
       text: reply,
+      attachments,
     });
 
     if (result.error) {
@@ -70,7 +88,7 @@ export async function POST(request: NextRequest) {
     try {
       const updatedMessage = await ContactMessage.findByIdAndUpdate(
         payload.id,
-        { $push: { replies: { body: reply, sentAt } } },
+        { $push: { replies: { body: reply, sentAt, attachments: attachments.map(({ filename, contentType, content }) => ({ filename, contentType, size: content.length })) } } },
         { new: true, runValidators: true }
       ).lean();
 
@@ -87,6 +105,7 @@ export async function POST(request: NextRequest) {
           body: reply,
           sentAt: sentAt.toLocaleString(),
           dateTime: sentAt.toISOString(),
+          attachments: attachments.map(({ filename, contentType, content }) => ({ filename, contentType, size: content.length })),
         },
       });
     } catch (error) {
