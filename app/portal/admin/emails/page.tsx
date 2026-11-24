@@ -56,6 +56,11 @@ export default async function AdminEmailsPage() {
             replies: [],
             isOutbound: true,
             recipients: message.recipients ?? [],
+            attachments: (message.attachments ?? []).map((attachment) => ({
+              filename: attachment.filename,
+              contentType: attachment.contentType,
+              size: attachment.size,
+            })),
           })),
         ].sort((a, b) => b.dateTime.localeCompare(a.dateTime))}
       />

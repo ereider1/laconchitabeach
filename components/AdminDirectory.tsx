@@ -23,6 +23,7 @@ export default function AdminDirectory() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState<number | null>(null);
   const [sendNotice, setSendNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -93,12 +94,18 @@ export default function AdminDirectory() {
     setSending(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/directory-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, content, residentIds: selectedIds.length ? selectedIds : undefined }) });
+      const formData = new FormData();
+      formData.set("subject", subject);
+      formData.set("content", content);
+      selectedIds.forEach((id) => formData.append("residentIds", id));
+      attachments.forEach((file) => formData.append("attachments", file));
+      const response = await fetch("/api/admin/directory-email", { method: "POST", body: formData });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Unable to send the email.");
       setSentCount(data.recipientCount);
       setSubject("");
       setContent("");
+      setAttachments([]);
       setComposeOpen(false);
       setSendNotice({ type: "success", message: `Email sent to ${data.recipientCount} resident${data.recipientCount === 1 ? "" : "s"}.` });
       window.setTimeout(() => setSendNotice(null), 2000);
@@ -190,6 +197,8 @@ export default function AdminDirectory() {
             <p className="mt-1 text-sm text-ink/60">Sending via Zoho to {selectedIds.length ? `${selectedIds.length} selected resident${selectedIds.length === 1 ? "" : "s"}` : "all listed directory residents"} in Bcc.</p>
             <label className="mt-5 block text-sm font-semibold text-ink">Subject<input required value={subject} onChange={(event) => setSubject(event.target.value)} className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 font-normal" /></label>
             <label className="mt-4 block text-sm font-semibold text-ink">Message<textarea required rows={8} value={content} onChange={(event) => setContent(event.target.value)} className="mt-1 w-full resize-y rounded-lg border border-ink/15 px-3 py-2 font-normal" /></label>
+            <label className="mt-4 block text-sm font-semibold text-ink">Attachments <span className="font-normal text-ink/50">(up to 5 files, 10 MB total)</span><input type="file" multiple onChange={(event) => setAttachments(Array.from(event.target.files ?? []))} className="mt-1 block w-full rounded-lg border border-ink/15 px-3 py-2 text-sm font-normal" /></label>
+            {attachments.length > 0 && <p className="mt-2 text-xs text-ink/60">{attachments.map((file) => file.name).join(", ")}</p>}
             {sentCount !== null && <p className="mt-3 text-sm text-marina" role="status">Sent to {sentCount} residents.</p>}
             <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => setComposeOpen(false)} className="rounded-lg px-4 py-2 text-sm text-ink/70 hover:bg-sand">Cancel</button><button type="submit" disabled={sending} className="rounded-lg bg-marina px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{sending ? "Sending…" : "Send email"}</button></div>
           </form>

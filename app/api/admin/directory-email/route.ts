@@ -9,6 +9,8 @@ import OutboundEmail from "@/lib/models/OutboundEmail";
 
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_CONTENT_LENGTH = 50_000;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 5;
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
@@ -16,8 +18,13 @@ export async function POST(request: NextRequest) {
   if (!(await isAdmin(userId))) return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
   let payload: unknown;
+  let uploadedFiles: File[] = [];
   try {
-    payload = await request.json();
+    const formData = await request.formData();
+    payload = Object.fromEntries(formData.entries());
+    uploadedFiles = formData.getAll("attachments").filter((file): file is File => file instanceof File && file.size > 0);
+    const residentIds = formData.getAll("residentIds").filter((id): id is string => typeof id === "string");
+    if (residentIds.length > 0) (payload as Record<string, unknown>).residentIds = residentIds;
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -38,6 +45,20 @@ export async function POST(request: NextRequest) {
   if (!subject || subject.length > MAX_SUBJECT_LENGTH || !content || content.length > MAX_CONTENT_LENGTH) {
     return NextResponse.json({ error: "Enter a subject and a message within the allowed length" }, { status: 400 });
   }
+
+  const files = uploadedFiles;
+  if (files.length > MAX_ATTACHMENTS || files.some((file) => file.size > MAX_ATTACHMENT_BYTES)) {
+    return NextResponse.json({ error: `Attach up to ${MAX_ATTACHMENTS} files, each no larger than 10 MB.` }, { status: 413 });
+  }
+  const totalAttachmentBytes = files.reduce((total, file) => total + file.size, 0);
+  if (totalAttachmentBytes > MAX_ATTACHMENT_BYTES) {
+    return NextResponse.json({ error: "Attachments must total 10 MB or less." }, { status: 413 });
+  }
+  const attachments = await Promise.all(files.map(async (file) => ({
+    filename: file.name,
+    contentType: file.type || "application/octet-stream",
+    content: Buffer.from(await file.arrayBuffer()),
+  })));
 
   const smtpHost = process.env.ZOHO_SMTP_HOST ?? "smtppro.zoho.com";
   const smtpPort = Number(process.env.ZOHO_SMTP_PORT ?? "465");
@@ -78,6 +99,7 @@ export async function POST(request: NextRequest) {
       bcc: recipients,
       subject,
       text: content,
+      attachments,
     });
   } catch (error) {
     console.error("Zoho SMTP rejected a directory email.", error);
@@ -91,6 +113,7 @@ export async function POST(request: NextRequest) {
     message: content,
     recipientCount: recipients.length,
     recipients,
+    attachments: attachments.map(({ filename, contentType, content }) => ({ filename, contentType, size: content.length })),
   });
 
   return NextResponse.json({ ok: true, recipientCount: recipients.length });
