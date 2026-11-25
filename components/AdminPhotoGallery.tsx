@@ -17,6 +17,7 @@ type UploadItem = {
 
 export default function AdminPhotoGallery() {
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragging, setDragging] = useState(false);
@@ -136,7 +137,8 @@ export default function AdminPhotoGallery() {
       <h2 className="font-display text-2xl text-ink">Photo Gallery</h2>
       <p className="mt-1 text-sm text-ink/60">Upload and manage photos for the La Conchita community.</p>
 
-      <section className="mt-6 rounded-xl border border-ink/10 p-5">
+      <div className="mt-6 flex justify-end"><button type="button" onClick={() => setShowUpload((visible) => !visible)} className="rounded-full border border-marina px-4 py-2 text-sm font-semibold text-marina hover:bg-marina/10">{showUpload ? "Hide general upload" : "Upload general images"}</button></div>
+      {showUpload && <section className="mt-4 rounded-xl border border-ink/10 p-5">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -171,7 +173,7 @@ export default function AdminPhotoGallery() {
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       {error && <p className="mt-4 text-sm text-coral">{error}</p>}
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
