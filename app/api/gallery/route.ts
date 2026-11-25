@@ -19,7 +19,8 @@ export async function GET() {
     const { userId } = await auth();
     if (!(await access(userId))) return NextResponse.json({ error: "Resident access required" }, { status: userId ? 403 : 401 });
     await connectToDatabase();
-    const photos = await ResidentPhoto.find({ $or: [{ status: { $ne: "pending" } }, { status: "pending", ownerClerkId: userId }] }).sort({ createdAt: -1 }).lean();
+    await ResidentPhoto.updateMany({ status: { $exists: false } }, { $set: { status: "approved" } });
+    const photos = await ResidentPhoto.find({ $or: [{ status: "approved" }, { status: "pending", ownerClerkId: userId }] }).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ photos: photos.map(({ reports, ...photo }) => ({ ...photo, hasReport: (reports ?? []).some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
   } catch (error) {
     console.error("Gallery list failed", error);
@@ -37,19 +38,10 @@ export async function POST(request: NextRequest) {
   if (file.size > MAX || !ALLOWED.has(file.type)) return NextResponse.json({ error: "Choose a JPG, PNG, WebP, or AVIF photo smaller than 8 MB." }, { status: 400 });
   const caption = String(form.get("caption") ?? "").trim().slice(0, 240);
   try {
-    const { default: sharp } = await import("sharp");
     const input = Buffer.from(await file.arrayBuffer());
-    const image = sharp(input, { failOn: "error" });
-    const metadata = await image.metadata();
-    if (!metadata.width || !metadata.height || metadata.width > 12000 || metadata.height > 12000) throw new Error("This image has invalid dimensions.");
-    // sharp drops EXIF/IPTC/XMP by default, including GPS metadata.
-    const full = await sharp(input).rotate().resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 86 }).toBuffer();
-    const thumb = await sharp(input).rotate().resize(720, 720, { fit: "cover" }).jpeg({ quality: 78 }).toBuffer();
     const key = crypto.randomUUID();
-    const [original, thumbnail] = await Promise.all([
-      put(`resident-gallery/${key}.jpg`, full, { access: "private", addRandomSuffix: false, contentType: "image/jpeg" }),
-      put(`resident-gallery/${key}-thumb.jpg`, thumb, { access: "private", addRandomSuffix: false, contentType: "image/jpeg" }),
-    ]);
+    const original = await put(`resident-gallery/${key}`, input, { access: "private", addRandomSuffix: false, contentType: file.type });
+    const thumbnail = original;
     const user = await currentUser();
     await connectToDatabase();
     const resident = await Resident.findOne({ clerkUserId: userId }).select("fullName listedInDirectory").lean();

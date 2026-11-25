@@ -19,7 +19,7 @@ async function getDashboardData(clerkUserId: string) {
     Resident.exists({ clerkUserId }),
     Announcement.find({ status: { $ne: "archived" } }).sort({ createdAt: -1 }).limit(2).lean(),
     Event.find({ startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).lean(),
-    ResidentPhoto.find().sort({ createdAt: -1 }).limit(4).lean(),
+    ResidentPhoto.find({ status: "approved" }).sort({ createdAt: -1 }).limit(4).lean(),
   ]);
   return {
     hasProfile: !!hasProfile,
