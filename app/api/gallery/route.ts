@@ -21,7 +21,7 @@ export async function GET() {
     if (!(await access(userId))) return NextResponse.json({ error: "Resident access required" }, { status: userId ? 403 : 401 });
     await connectToDatabase();
     const photos = await ResidentPhoto.find().sort({ createdAt: -1 }).lean();
-    return NextResponse.json({ photos: photos.map(({ reports = [], ...photo }) => ({ ...photo, hasReport: reports.some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
+    return NextResponse.json({ photos: photos.map(({ reports, ...photo }) => ({ ...photo, hasReport: (reports ?? []).some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
   } catch (error) {
     console.error("Gallery list failed", error);
     return NextResponse.json({ error: "The photo gallery is temporarily unavailable. Please try again." }, { status: 500 });
