@@ -34,7 +34,7 @@ const tiles: Array<{
   { href: "/portal/admin/photo-gallery", label: "Photo Gallery", icon: Images, bg: "bg-coral" },
 ];
 
-export default function AdminNavGrid({ pendingRegistrationCount = 0 }: { pendingRegistrationCount?: number }) {
+export default function AdminNavGrid({ pendingRegistrationCount = 0, pendingPhotoCount = 0 }: { pendingRegistrationCount?: number; pendingPhotoCount?: number }) {
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState(pendingRegistrationCount);
 
@@ -85,6 +85,9 @@ export default function AdminNavGrid({ pendingRegistrationCount = 0 }: { pending
                 <Bell className="h-3 w-3" aria-hidden="true" />
                 {pendingCount}
               </span>
+            )}
+            {t.href === "/portal/admin/photo-gallery" && pendingPhotoCount > 0 && (
+              <span className="absolute right-2 top-2 inline-flex min-w-6 items-center justify-center gap-1 rounded-full bg-coral px-1.5 py-1 text-[10px] font-bold leading-none text-white shadow-sm" aria-label={`${pendingPhotoCount} photo${pendingPhotoCount === 1 ? "" : "s"} awaiting approval`}><Bell className="h-3 w-3" aria-hidden="true" />{pendingPhotoCount}</span>
             )}
             <Icon className="h-6 w-6 text-fog" strokeWidth={1.8} aria-hidden="true" />
             <span className="font-display text-xs font-semibold leading-tight text-fog">

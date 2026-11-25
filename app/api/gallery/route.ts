@@ -19,7 +19,7 @@ export async function GET() {
     const { userId } = await auth();
     if (!(await access(userId))) return NextResponse.json({ error: "Resident access required" }, { status: userId ? 403 : 401 });
     await connectToDatabase();
-    const photos = await ResidentPhoto.find().sort({ createdAt: -1 }).lean();
+    const photos = await ResidentPhoto.find({ $or: [{ status: { $ne: "pending" } }, { status: "pending", ownerClerkId: userId }] }).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ photos: photos.map(({ reports, ...photo }) => ({ ...photo, hasReport: (reports ?? []).some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
   } catch (error) {
     console.error("Gallery list failed", error);
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const user = await currentUser();
     await connectToDatabase();
     const resident = await Resident.findOne({ clerkUserId: userId }).select("fullName listedInDirectory").lean();
-    const photo = await ResidentPhoto.create({ ownerClerkId: userId, uploaderName: resident?.listedInDirectory ? (resident.fullName || user?.fullName || "Resident") : undefined, originalUrl: original.url, thumbnailUrl: thumbnail.url, caption: caption || undefined, reports: [] });
+    const photo = await ResidentPhoto.create({ ownerClerkId: userId, uploaderName: resident?.listedInDirectory ? (resident.fullName || user?.fullName || "Resident") : undefined, originalUrl: original.url, thumbnailUrl: thumbnail.url, caption: caption || undefined, status: "pending", reports: [] });
     return NextResponse.json({ photo: { ...photo.toObject(), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` } }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Photo upload failed. Please try again." }, { status: 400 });

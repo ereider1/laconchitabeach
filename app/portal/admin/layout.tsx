@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { connectToDatabase } from "@/lib/mongodb";
 import Resident from "@/lib/models/Resident";
+import ResidentPhoto from "@/lib/models/ResidentPhoto";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
@@ -13,6 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   await connectToDatabase();
   const pendingRegistrationCount = await Resident.countDocuments({ registrationStatus: "pending" });
+  const pendingPhotoCount = await ResidentPhoto.countDocuments({ status: "pending" });
 
   return (
     <div>
@@ -28,7 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         Manage everything residents see across the intranet.
       </p>
 
-      <AdminNavGrid pendingRegistrationCount={pendingRegistrationCount} />
+      <AdminNavGrid pendingRegistrationCount={pendingRegistrationCount} pendingPhotoCount={pendingPhotoCount} />
 
       <div className="mt-10">{children}</div>
     </div>

@@ -1,19 +1,12 @@
-import Link from "next/link";
+"use client";
 import Image from "next/image";
-
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 type Photo = { _id: string; caption?: string; thumbnailUrl: string };
-
 export default function RecentResidentPhotos({ photos }: { photos: Photo[] }) {
-  return (
-    <section className="mb-10 rounded-2xl border border-ink/10 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg text-marina">Recent beach photos</h2>
-          <p className="mt-1 text-sm text-ink/55">Moments shared by your neighbors.</p>
-        </div>
-        <Link href="/portal/gallery" className="rounded-full bg-marina px-4 py-2 text-sm font-semibold text-white transition hover:bg-marina/90">Open photo gallery</Link>
-      </div>
-      {photos.length === 0 ? <p className="rounded-lg bg-sand/50 px-4 py-5 text-sm text-ink/60">No resident photos yet. Share the first one from the gallery.</p> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{photos.map((photo) => <Link key={photo._id} href="/portal/gallery" className="group relative aspect-square overflow-hidden rounded-xl bg-sand"><Image src={photo.thumbnailUrl} alt={photo.caption || "Resident beach photo"} fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover transition group-hover:scale-105" unoptimized /></Link>)}</div>}
-    </section>
-  );
+  const [active, setActive] = useState<number | null>(null); const [touchStart, setTouchStart] = useState<number | null>(null); const current = active === null ? null : photos[active];
+  useEffect(() => { if (active === null) return; const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActive(null); if (e.key === "ArrowLeft") setActive((v) => v === null ? null : (v + photos.length - 1) % photos.length); if (e.key === "ArrowRight") setActive((v) => v === null ? null : (v + 1) % photos.length); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [active, photos.length]);
+  function move(direction: number) { setActive((v) => v === null ? null : (v + direction + photos.length) % photos.length); }
+  return <section className="mb-10 rounded-2xl border border-ink/10 bg-white p-4 shadow-sm sm:p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-lg text-marina">Recent beach photos</h2><p className="mt-1 text-sm text-ink/55">Moments shared by your neighbors.</p></div><div className="flex flex-wrap gap-2"><Link href="/portal/gallery" className="rounded-full border border-marina px-4 py-2 text-sm font-semibold text-marina transition hover:bg-marina/10">Open photo gallery</Link><Link href="/portal/gallery?upload=1" className="rounded-full bg-marina px-4 py-2 text-sm font-semibold text-white transition hover:bg-marina/90">Submit Photos</Link></div></div>{photos.length === 0 ? <p className="rounded-lg bg-sand/50 px-4 py-5 text-sm text-ink/60">No resident photos yet. Share the first one from the gallery.</p> : <div className="grid grid-cols-4 gap-2 sm:gap-3">{photos.map((photo, index) => <button key={photo._id} type="button" onClick={() => setActive(index)} className="group relative aspect-square overflow-hidden rounded-lg bg-sand focus:outline-none focus:ring-2 focus:ring-marina"><Image src={photo.thumbnailUrl} alt={photo.caption || "Resident beach photo"} fill sizes="25vw" className="object-cover transition group-hover:scale-105" unoptimized /></button>)}</div>}{current && active !== null && <div role="dialog" aria-modal="true" aria-label="Recent photo viewer" className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-3 sm:p-6" onClick={() => setActive(null)} onTouchStart={(e) => setTouchStart(e.changedTouches[0]?.clientX ?? null)} onTouchEnd={(e) => { if (touchStart === null) return; const distance = (e.changedTouches[0]?.clientX ?? touchStart) - touchStart; if (Math.abs(distance) > 45) move(distance < 0 ? 1 : -1); setTouchStart(null); }}><div className="relative h-[min(78vh,42rem)] w-full max-w-4xl" onClick={(e) => e.stopPropagation()}><Image src={`/api/gallery/${current._id}/image`} alt={current.caption || "Resident beach photo"} fill sizes="100vw" className="object-contain" unoptimized /><button type="button" onClick={() => setActive(null)} aria-label="Close photo viewer" className="absolute right-0 top-0 rounded-full bg-white p-2 text-ink"><X className="h-5 w-5" /></button><button type="button" onClick={() => move(-1)} aria-label="Previous photo" className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-ink shadow"><ChevronLeft className="h-5 w-5" /></button><button type="button" onClick={() => move(1)} aria-label="Next photo" className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-ink shadow"><ChevronRight className="h-5 w-5" /></button><p className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 p-4 pt-10 text-sm text-white">{current.caption}</p></div></div>}</section>;
 }

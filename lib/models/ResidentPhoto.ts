@@ -6,6 +6,7 @@ export interface IResidentPhoto {
   originalUrl: string;
   thumbnailUrl: string;
   caption?: string;
+  status: "pending" | "approved" | "rejected";
   createdAt: Date;
   updatedAt: Date;
   reports: Array<{ reporterClerkId: string; reason?: string; createdAt: Date; resolvedAt?: Date; resolvedBy?: string }>;
@@ -17,6 +18,7 @@ const ResidentPhotoSchema = new Schema<IResidentPhoto>({
   originalUrl: { type: String, required: true },
   thumbnailUrl: { type: String, required: true },
   caption: { type: String, maxlength: 240 },
+  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
   reports: [{ reporterClerkId: String, reason: String, createdAt: Date, resolvedAt: Date, resolvedBy: String }],
 }, { timestamps: true });
 
