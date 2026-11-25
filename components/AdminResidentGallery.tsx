@@ -1,0 +1,12 @@
+"use client";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+type Photo = { _id: string; caption?: string; uploaderName?: string; createdAt: string; reports: Array<{ resolvedAt?: string }> };
+export default function AdminResidentGallery() {
+  const [photos, setPhotos] = useState<Photo[]>([]); const [error, setError] = useState("");
+  async function load() { const r = await fetch("/api/admin/gallery", { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw new Error(d.error); setPhotos(d.photos); }
+  useEffect(() => { const timer = window.setTimeout(() => void load().catch((e) => setError(e.message)), 0); return () => window.clearTimeout(timer); }, []);
+  async function remove(id: string) { if (!confirm("Remove this resident photo?")) return; const r = await fetch(`/api/gallery?id=${id}`, { method: "DELETE" }); if (!r.ok) { const d = await r.json(); return setError(d.error); } setPhotos((p) => p.filter((x) => x._id !== id)); }
+  async function resolve(id: string, index: number) { const r = await fetch("/api/admin/gallery", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, reportIndex: index }) }); if (!r.ok) { const d = await r.json(); return setError(d.error); } await load(); }
+  return <section className="mt-10"><h3 className="font-display text-xl text-ink">Resident uploads & reports</h3>{error && <p className="mt-3 text-sm text-coral">{error}</p>}<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{photos.map((photo) => <article key={photo._id} className="rounded-xl border border-ink/10 bg-white p-3"><div className="relative aspect-video overflow-hidden rounded-lg bg-sand"><Image src={`/api/gallery/${photo._id}/image?size=thumb`} alt={photo.caption || "Resident photo"} fill className="object-cover" unoptimized /></div><p className="mt-2 text-sm font-medium">{photo.caption || "Untitled photo"}</p><p className="text-xs text-ink/50">{photo.uploaderName || "Private uploader"} · {new Date(photo.createdAt).toLocaleDateString()}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void remove(photo._id)} className="rounded-full bg-coral px-3 py-1.5 text-xs font-semibold text-white">Remove photo</button>{photo.reports.map((report, index) => !report.resolvedAt && <button key={index} type="button" onClick={() => void resolve(photo._id, index)} className="rounded-full border border-marina px-3 py-1.5 text-xs font-semibold text-marina">Resolve report</button>)}</div></article>)}</div></section>;
+}

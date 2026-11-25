@@ -10,13 +10,16 @@ import AnnouncementMediaCarousel from "@/components/AnnouncementMediaCarousel";
 import PortalCalendarPage from "@/app/portal/calendar/page";
 import { hasApprovedResidentAccess } from "@/lib/registration";
 import ResidentComments from "@/components/ResidentComments";
+import ResidentPhoto from "@/lib/models/ResidentPhoto";
+import RecentResidentPhotos from "@/components/RecentResidentPhotos";
 
 async function getDashboardData(clerkUserId: string) {
   await connectToDatabase();
-  const [hasProfile, announcements, events] = await Promise.all([
+  const [hasProfile, announcements, events, photos] = await Promise.all([
     Resident.exists({ clerkUserId }),
     Announcement.find({ status: { $ne: "archived" } }).sort({ createdAt: -1 }).limit(2).lean(),
     Event.find({ startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).lean(),
+    ResidentPhoto.find().sort({ createdAt: -1 }).limit(4).lean(),
   ]);
   return {
     hasProfile: !!hasProfile,
@@ -29,6 +32,7 @@ async function getDashboardData(clerkUserId: string) {
           : [],
     })))),
     events: JSON.parse(JSON.stringify(events)),
+    photos: photos.map((photo) => ({ _id: String(photo._id), caption: photo.caption, thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })),
   };
 }
 
@@ -49,12 +53,14 @@ export default async function PortalDashboard() {
   let events: Array<{ _id: string; title: string }> = [];
   let dbError = false;
   let hasProfile = true;
+  let photos: Array<{ _id: string; caption?: string; thumbnailUrl: string }> = [];
 
   try {
     const data = await getDashboardData(userId ?? "");
     hasProfile = data.hasProfile;
     announcements = data.announcements;
     events = data.events;
+    photos = data.photos;
   } catch {
     dbError = true;
   }
@@ -81,6 +87,7 @@ export default async function PortalDashboard() {
       )}
 
       <div className="mt-5">
+        <RecentResidentPhotos photos={photos} />
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-lg text-marina">Latest announcements</h2>
