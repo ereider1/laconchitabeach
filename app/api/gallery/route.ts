@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { put, del } from "@vercel/blob";
-import sharp from "sharp";
 import { connectToDatabase } from "@/lib/mongodb";
 import ResidentPhoto from "@/lib/models/ResidentPhoto";
 import Resident from "@/lib/models/Resident";
@@ -38,6 +37,7 @@ export async function POST(request: NextRequest) {
   if (file.size > MAX || !ALLOWED.has(file.type)) return NextResponse.json({ error: "Choose a JPG, PNG, WebP, or AVIF photo smaller than 8 MB." }, { status: 400 });
   const caption = String(form.get("caption") ?? "").trim().slice(0, 240);
   try {
+    const { default: sharp } = await import("sharp");
     const input = Buffer.from(await file.arrayBuffer());
     const image = sharp(input, { failOn: "error" });
     const metadata = await image.metadata();
