@@ -16,11 +16,16 @@ async function access(userId: string | null) {
 }
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!(await access(userId))) return NextResponse.json({ error: "Resident access required" }, { status: userId ? 403 : 401 });
-  await connectToDatabase();
-  const photos = await ResidentPhoto.find().sort({ createdAt: -1 }).lean();
-  return NextResponse.json({ photos: photos.map(({ reports, ...photo }) => ({ ...photo, hasReport: reports.some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
+  try {
+    const { userId } = await auth();
+    if (!(await access(userId))) return NextResponse.json({ error: "Resident access required" }, { status: userId ? 403 : 401 });
+    await connectToDatabase();
+    const photos = await ResidentPhoto.find().sort({ createdAt: -1 }).lean();
+    return NextResponse.json({ photos: photos.map(({ reports = [], ...photo }) => ({ ...photo, hasReport: reports.some((r) => !r.resolvedAt), thumbnailUrl: `/api/gallery/${photo._id}/image?size=thumb` })) });
+  } catch (error) {
+    console.error("Gallery list failed", error);
+    return NextResponse.json({ error: "The photo gallery is temporarily unavailable. Please try again." }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
